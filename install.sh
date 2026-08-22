@@ -83,11 +83,12 @@ note() {
 on_error() {
     local status=$?
     local line="$1"
-    printf 'tupoproxy installer: command failed at line %s (exit %s)\n' \
-        "$line" "$status" >&2
+    local command="$2"
+    printf 'tupoproxy installer: command failed at line %s (exit %s): %s\n' \
+        "$line" "$status" "$command" >&2
     exit "$status"
 }
-trap 'on_error "$LINENO"' ERR
+trap 'on_error "$LINENO" "$BASH_COMMAND"' ERR
 
 while (($#)); do
     case "$1" in
@@ -203,7 +204,7 @@ prompt_value() {
     local prompt="$2"
     local value="${!variable_name}"
     if [[ -n "$value" ]]; then
-        return
+        return 0
     fi
     [[ -r /dev/tty ]] || die "$prompt must be supplied as a command-line option"
     read -r -p "$prompt: " value </dev/tty
@@ -213,14 +214,14 @@ prompt_value() {
 
 prompt_public_port() {
     local value
-    [[ -z "$PUBLIC_PORT" && "$SETUP_WIZARD" == "1" ]] || return
+    [[ -z "$PUBLIC_PORT" && "$SETUP_WIZARD" == "1" ]] || return 0
     read -r -p "Public proxy port [auto]: " value </dev/tty
     PUBLIC_PORT="$value"
 }
 
 prompt_setup_options() {
     local value
-    [[ "$SETUP_WIZARD" == "1" ]] || return
+    [[ "$SETUP_WIZARD" == "1" ]] || return 0
 
     read -r -p "TLS fingerprint (chrome/firefox/compat/legacy) [chrome]: " value </dev/tty
     [[ -z "$value" ]] || PROFILE="${value,,}"
@@ -241,7 +242,7 @@ installation_value() {
 
 load_existing_installation() {
     local saved_fullchain saved_key saved_value
-    [[ -r "$CONFIG_DIR/INSTALLATION.txt" ]] || return
+    [[ -r "$CONFIG_DIR/INSTALLATION.txt" ]] || return 0
 
     [[ -n "$DOMAIN" ]] || DOMAIN="$(installation_value Domain)"
     [[ -n "$EMAIL" ]] || EMAIL="$(installation_value 'ACME e-mail')"
@@ -432,7 +433,7 @@ choose_public_port() {
     systemctl stop tupoproxy-edge.service 2>/dev/null || true
     if [[ -n "$PUBLIC_PORT" ]]; then
         port_is_listening "$PUBLIC_PORT" && die "requested public port ${PUBLIC_PORT} is already in use"
-        return
+        return 0
     fi
     for candidate in 443 8443 2053 2083 2087 2096; do
         if ! port_is_listening "$candidate"; then
@@ -440,7 +441,7 @@ choose_public_port() {
             if [[ "$candidate" != "443" ]]; then
                 note "Port 443 is occupied; selected free proxy port ${candidate}"
             fi
-            return
+            return 0
         fi
     done
     die "none of the supported public ports is free; specify one with --port"
@@ -470,7 +471,7 @@ prompt_dns_settings() {
         read -r value </dev/tty
         if [[ -z "$value" || "$value" == "manual" ]]; then
             ACME_MODE="manual-dns"
-            return
+            return 0
         fi
         DNS_PROVIDER="${value,,}"
     fi
@@ -493,23 +494,23 @@ choose_acme_mode() {
     local details
     if [[ -n "$CERT_FULLCHAIN" ]]; then
         ACME_MODE="existing"
-        return
+        return 0
     fi
 
     if [[ "$ACME_MODE" == "dns" ]]; then
         prompt_dns_settings
-        return
+        return 0
     fi
-    [[ "$ACME_MODE" == "auto" ]] || return
+    [[ "$ACME_MODE" == "auto" ]] || return 0
 
     if [[ -n "$DNS_PROVIDER" ]]; then
         ACME_MODE="dns"
         prompt_dns_settings
-        return
+        return 0
     fi
     if ! port_is_listening 80; then
         ACME_MODE="standalone"
-        return
+        return 0
     fi
 
     details="$(listener_details 80)"
@@ -547,7 +548,7 @@ configure_acme() {
     local -a certbot_args
 
     if [[ -n "$CERT_FULLCHAIN" ]]; then
-        return
+        return 0
     fi
 
     certbot_args=(certonly --agree-tos --keep-until-expiring --email "$EMAIL" -d "$DOMAIN")

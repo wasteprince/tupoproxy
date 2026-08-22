@@ -25,6 +25,15 @@ jobs:
           sudo apt-get update
           sudo apt-get install --yes shellcheck
           shellcheck -x install.sh install-source.sh
+          test_dir="$(mktemp -d)"
+          set +e
+          output="$(sudo env CONFIG_DIR="${test_dir}/not-installed" bash install.sh \
+            --domain invalid --email admin@example.com 2>&1)"
+          status=$?
+          set -e
+          rm -rf -- "$test_dir"
+          test "$status" -eq 1
+          grep -F 'invalid domain: invalid' <<<"$output"
       - uses: dtolnay/rust-toolchain@stable
       - uses: Swatinem/rust-cache@v2
       - name: Check all targets
