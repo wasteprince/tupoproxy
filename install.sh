@@ -86,6 +86,10 @@ on_error() {
     local status=$?
     local line="$1"
     local command="$2"
+    command="${command%%$'\n'*}"
+    if ((${#command} > 240)); then
+        command="${command:0:237}..."
+    fi
     printf 'tupoproxy installer: command failed at line %s (exit %s): %s\n' \
         "$line" "$status" "$command" >&2
     exit "$status"
@@ -614,6 +618,7 @@ configure_acme() {
 }
 
 configure_cover_site() {
+    install -d -m 0750 "$CONFIG_DIR"
     install -d -m 0755 /run/tupoproxy-cover
     cat > "$CONFIG_DIR/nginx-cover.conf" <<EOF
 # Managed by tupoproxy install.sh
