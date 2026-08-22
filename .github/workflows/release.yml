@@ -1,0 +1,80 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: write
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  build:
+    name: Build ${{ matrix.target }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        target:
+          - x86_64-unknown-linux-musl
+          - aarch64-unknown-linux-musl
+
+    steps:
+      - uses: actions/checkout@v7
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+        with:
+          key: release-${{ matrix.target }}
+      - name: Install cross
+        run: cargo install cross --version 0.2.5 --locked
+      - name: Build static binary
+        run: cross build --release --locked --target "${{ matrix.target }}" --bin tupoproxy
+      - name: Verify and package
+        env:
+          TARGET: ${{ matrix.target }}
+        run: |
+          binary="target/${TARGET}/release/tupoproxy"
+          file "$binary"
+          if readelf -l "$binary" | grep -q 'Requesting program interpreter'; then
+            echo "The release binary is dynamically linked" >&2
+            exit 1
+          fi
+          if [ "$TARGET" = "x86_64-unknown-linux-musl" ]; then
+            "$binary" --version
+          fi
+          package="tupoproxy-${TARGET}"
+          mkdir -p "dist/${package}"
+          install -m 0755 "$binary" "dist/${package}/tupoproxy"
+          install -m 0644 LICENSE README.md "dist/${package}/"
+          tar -C "dist/${package}" -czf "dist/${package}.tar.gz" .
+      - uses: actions/upload-artifact@v7
+        with:
+          name: tupoproxy-${{ matrix.target }}
+          path: dist/tupoproxy-${{ matrix.target }}.tar.gz
+          if-no-files-found: error
+
+  publish:
+    name: Publish GitHub Release
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v8
+        with:
+          pattern: tupoproxy-*
+          path: dist
+          merge-multiple: true
+      - name: Generate checksums
+        working-directory: dist
+        run: sha256sum tupoproxy-*.tar.gz | sort -k2 > CHECKSUMS.txt
+      - name: Create release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "${GITHUB_REF_NAME}" dist/* \
+            --repo "${GITHUB_REPOSITORY}" \
+            --title "tupoproxy ${GITHUB_REF_NAME}" \
+            --generate-notes \
+            --latest

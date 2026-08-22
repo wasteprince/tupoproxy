@@ -1,23 +1,21 @@
 <p align="center">
-  <img src="docs/assets/tupoproxy-hero.png" alt="tupoproxy — three-panel raccoon comic" width="100%">
+  <img src="docs/assets/tupoproxy-hero.png" alt="tupoproxy — комикс с енотом" width="100%">
 </p>
 
 <h1 align="center">tupoproxy</h1>
 
 <p align="center">
-  An MTProto proxy with selectable TLS camouflage profiles,<br>
-  adaptive downstream record shaping, real HTTPS fallback, and a deployment<br>
-  layout designed to coexist with existing sites and ACME.
+  MTProto-прокси с выбираемыми TLS-профилями, изменяемой формой исходящего<br>
+  трафика, настоящим HTTPS-прикрытием и аккуратной установкой рядом с<br>
+  существующими сайтами и автоматическим выпуском сертификатов.
 </p>
 
 <p align="center">
-  <a href="README.ru.md"><strong>Русская версия</strong></a>
+  <a href="#быстрый-старт">Быстрый старт</a>
   ·
-  <a href="#quick-start">Quick start</a>
+  <a href="deploy/README.md">Схема для сервера</a>
   ·
-  <a href="deploy/README.md">Production layout</a>
-  ·
-  <a href="docs/DPI_THREAT_MODEL.md">DPI threat model</a>
+  <a href="docs/DPI_THREAT_MODEL.md">Модель угроз DPI</a>
 </p>
 
 <p align="center">
@@ -28,121 +26,197 @@
 </p>
 
 > [!IMPORTANT]
-> tupoproxy improves the parts of FakeTLS that a server can control. Telegram
-> creates the inbound ClientHello, so the proxy cannot rewrite the app's
-> client-side JA3/JA4 fingerprint. Stateful DPI can also reassemble TCP
-> segments. No proxy can guarantee access through every future block, IP ban,
-> VPN policy, or allow-list.
+> Сервер может изменять только свою сторону FakeTLS-соединения. Входящий
+> ClientHello создаёт приложение Telegram, поэтому прокси не может переписать
+> его клиентский JA3/JA4. Современный DPI также умеет пересобирать TCP-поток.
+> Проект не обещает обход абсолютно любой будущей блокировки, блокировки IP,
+> «белого списка» или ограничений конкретного VPN.
 
-## What it adds
+## Что умеет tupoproxy
 
-| Capability | What tupoproxy does |
+| Возможность | Как это работает |
 |---|---|
-| Standard Telegram links | Keeps the compatible `ee + secret + hex(SNI)` credential format |
-| Selectable TLS profile | Maps a credential SNI to `chrome`, `firefox`, `compat`, or `legacy` |
-| Real TLS material | Fetches the selected domain's live TLS behavior and validates cached profile metadata |
-| Downstream traffic shape | Varies application-data TLS record boundaries with per-connection server entropy |
-| Probe handling | Sends invalid authentication to a real HTTPS cover endpoint instead of a proxy banner |
-| Shared public port | Uses HAProxy SNI passthrough so existing HTTPS sites keep working on the same IP |
-| Certificate renewal | Leaves port 80 and certificate ownership with the existing web server/ACME client |
-| VPN coexistence | Uses ordinary TCP/443 and avoids server-side source-network restrictions by default |
-| Optional Xray leg | Can route the server-to-Telegram connection through a local SOCKS listener |
+| Стандартные ссылки Telegram | Используется совместимый credential `ee + secret + hex(SNI)` |
+| Выбор TLS-профиля | SNI из credential выбирает `chrome`, `firefox`, `compat` или `legacy` |
+| Настоящий TLS-образец | Прокси получает поведение реального домена и проверяет профиль дискового кэша |
+| Изменяемая форма трафика | Границы исходящих TLS-record меняются по фазам и для каждого подключения |
+| Защита от проб | Неверная авторизация уходит на настоящий HTTPS-сайт без баннера прокси |
+| Совместный порт 443 | HAProxy разводит трафик по SNI, не забирая сайты у nginx/Caddy |
+| Нормальный ACME | Автовыбор HTTP-01, nginx/Apache, webroot или DNS-01 без остановки чужого сервиса |
+| Работа поверх VPN | Обычный TCP/443 без обязательной фильтрации по сети клиента |
+| Опциональный Xray | Исходящее соединение к Telegram можно отправить в локальный SOCKS Xray |
 
-## How the recommended layout works
+## Рекомендуемая схема
 
 ```mermaid
 flowchart LR
-    A[Telegram or browser] -->|TCP 443| H[HAProxy<br>SNI passthrough]
-    H -->|credential SNI<br>PROXY v2| T[tupoproxy<br>127.0.0.1:8443]
-    H -->|all other SNI| N[nginx or Caddy<br>127.0.0.1:9443]
-    T -->|valid ee credential| G[Telegram DC]
-    T -->|browser or invalid probe| N
-    N --> C[Real cover site<br>valid certificate]
+    A[Telegram или браузер] -->|TCP 443| H[HAProxy<br>маршрутизация по SNI]
+    H -->|SNI из credential<br>PROXY v2| T[tupoproxy<br>127.0.0.1:8443]
+    H -->|остальные SNI| N[nginx или Caddy<br>127.0.0.1:9443]
+    T -->|валидный ee credential| G[Дата-центр Telegram]
+    T -->|браузер или неверный ключ| N
+    N --> C[Настоящий сайт-прикрытие<br>валидный сертификат]
     E[ACME HTTP-01] -->|TCP 80| N
 ```
 
-HAProxy only inspects enough of the ClientHello to route by SNI; it does not
-terminate TLS. tupoproxy receives the original byte stream. Existing web
-projects remain behind nginx/Caddy on loopback port `9443`, while ACME keeps
-using public port `80`.
+HAProxy не расшифровывает TLS: он читает SNI и передаёт исходный поток дальше.
+Существующие сайты продолжают работать через nginx/Caddy на локальном порту
+`9443`. tupoproxy слушает только `127.0.0.1:8443`, поэтому не мешает другим
+проектам и не забирает сертификаты.
 
-## Quick start
+## Быстрый старт
 
-### 1. Download the source
+Нужен сервер с Debian 12+/Ubuntu 22.04+ и домен с `A`/`AAAA`, указывающим на
+сервер. Rust, Cargo и ручная установка пакетов не нужны.
+
+### Автоматическая установка
+
+```bash
+curl -fsSLo install.sh \
+  https://raw.githubusercontent.com/wasteprince/tupoproxy/main/install.sh
+chmod +x install.sh
+sudo ./install.sh
+```
+
+Мастер попросит домен, e-mail для Let's Encrypt и желаемый порт прокси. Если
+оставить порт пустым, он возьмёт `443`, а когда тот занят — первый свободный из
+`8443`, `2053`, `2083`, `2087`, `2096`.
+
+Полностью неинтерактивный вариант:
+
+```bash
+sudo ./install.sh \
+  --domain proxy.example.com \
+  --email admin@example.com \
+  --port 8443 \
+  --profile chrome
+```
+
+Скрипт сам:
+
+- устанавливает системные зависимости через `apt`;
+- скачивает статический `amd64`/`arm64` бинарник из последнего GitHub Release;
+- проверяет SHA-256 перед установкой;
+- выпускает или подключает сертификат;
+- создаёт отдельные конфиги и systemd-сервисы tupoproxy, HAProxy и cover-nginx;
+- не заменяет глобальные конфиги HAProxy/nginx и не занимает порты других
+  проектов;
+- генерирует secret, конфиг, Telegram-ссылку и сохраняет результат в
+  `/etc/tupoproxy/INSTALLATION.txt` с правами `0600`.
+
+### Если порт 80 или 443 уже занят
+
+Порт прокси выбирается независимо от сертификата:
+
+```bash
+sudo ./install.sh --domain proxy.example.com --email admin@example.com --port 9443
+```
+
+В режиме `auto` установщик использует существующий nginx или Apache для
+HTTP-01. Если `80` занят другим сервисом либо входящие `80/443` закрыты,
+используйте DNS-01 — ему не нужен свободный порт на сервере.
+
+Cloudflare с API Token, ограниченным правом `Zone:DNS:Edit` для нужной зоны:
+
+```bash
+read -r -s -p 'Cloudflare API token: ' TUPOPROXY_CLOUDFLARE_API_TOKEN; echo
+sudo env TUPOPROXY_CLOUDFLARE_API_TOKEN="$TUPOPROXY_CLOUDFLARE_API_TOKEN" \
+  ./install.sh --domain proxy.example.com --email admin@example.com \
+  --port 9443 --acme-mode dns --dns-provider cloudflare
+unset TUPOPROXY_CLOUDFLARE_API_TOKEN
+```
+
+Также поддерживаются пакетные плагины `digitalocean`, `dnsimple`, `dnsmadeeasy`,
+`gehirn`, `google`, `linode`, `luadns`, `nsone`, `ovh`, `rfc2136` и `route53`.
+Для большинства из них передайте подготовленный INI-файл:
+
+```bash
+sudo ./install.sh --domain proxy.example.com --email admin@example.com \
+  --acme-mode dns --dns-provider digitalocean \
+  --dns-credentials /root/digitalocean.ini
+```
+
+Если занятый порт 80 уже обслуживает challenge из известного каталога,
+доступен режим без DNS API:
+
+```bash
+sudo ./install.sh --domain proxy.example.com --email admin@example.com \
+  --acme-mode webroot --acme-webroot /var/www/example
+```
+
+Для любого DNS-провайдера без настроенного API доступен универсальный ручной
+вариант: Certbot покажет одну TXT-запись, после её добавления установка
+продолжится. Такой сертификат нельзя продлевать автоматически.
+
+```bash
+sudo ./install.sh --domain proxy.example.com --email admin@example.com \
+  --port 9443 --acme-mode manual-dns
+```
+
+Если сертификат уже выпускает другой проект, передайте только пути — порт 80
+вообще не проверяется:
+
+```bash
+sudo ./install.sh --domain proxy.example.com --port 9443 \
+  --cert-fullchain /etc/letsencrypt/live/proxy.example.com/fullchain.pem \
+  --cert-key /etc/letsencrypt/live/proxy.example.com/privkey.pem
+```
+
+### Только бинарник или сборка из исходников
+
+Установить готовый бинарник без изменения серверной конфигурации:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/wasteprince/tupoproxy/main/install.sh \
+  | sudo bash -s -- --binary-only
+tupoproxy --version
+```
+
+Архивы доступны на странице [GitHub Releases](https://github.com/wasteprince/tupoproxy/releases).
+Релизы собираются статически под `x86_64-unknown-linux-musl` и
+`aarch64-unknown-linux-musl`, поэтому один архив соответствующей архитектуры
+работает и на Debian, и на Ubuntu. Для сборки текущего checkout вручную:
 
 ```bash
 git clone https://github.com/wasteprince/tupoproxy.git
 cd tupoproxy
+./install-source.sh
 ```
 
-To update an existing checkout later:
+### Ручная продакшен-схема
 
-```bash
-git pull --ff-only
-./install.sh
-```
+Если нужно делить один и тот же публичный `443` с несколькими существующими
+сайтами по SNI, используйте
+[продакшен-схему ниже](#установка-на-сервер-со-своим-доменом). Автоустановщик
+бережно выбирает другой публичный порт, когда `443` уже занят.
 
-### 2. Install build dependencies
+## Установка на сервер со своим доменом
 
-Debian or Ubuntu:
+Пример ниже рассчитан на Debian/Ubuntu, nginx и systemd. Все значения
+`example.com` обязательно заменяются:
 
-```bash
-sudo apt update
-sudo apt install -y git curl build-essential pkg-config ca-certificates openssl
-```
-
-Install the stable Rust toolchain if `cargo` is not already available:
-
-```bash
-curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
-. "$HOME/.cargo/env"
-```
-
-### 3. Build and install the local fork
-
-```bash
-./install.sh
-tupoproxy --version
-```
-
-The script builds this checkout with `cargo --locked` and installs only
-`/usr/local/bin/tupoproxy`. It never downloads or substitutes an upstream
-binary.
-
-### 4. Choose a deployment
-
-- For an own domain, valid certificate, existing sites, and uninterrupted
-  ACME, follow the [recommended production setup](#production-setup-own-domain--shared-https).
-- For a disposable direct-port test, copy `config.toml`, replace the placeholder
-  domain and zero secret, then run `tupoproxy ./config.toml`.
-- For a container build, see [Docker](#docker).
-
-## Production setup: own domain + shared HTTPS
-
-The following example assumes Debian/Ubuntu, nginx, systemd, and these names:
-
-| Purpose | Example to replace |
+| Назначение | Значение в примере |
 |---|---|
-| Public host/link | `proxy.example.com` |
-| Chrome credential SNI | `chrome.proxy.example.com` |
-| Firefox credential SNI | `firefox.proxy.example.com` |
-| Public proxy port | `443` |
-| Internal tupoproxy port | `127.0.0.1:8443` |
-| Internal real HTTPS cover | `127.0.0.1:9443` |
+| Публичный адрес ссылок | `proxy.example.com` |
+| SNI профиля Chrome | `chrome.proxy.example.com` |
+| SNI профиля Firefox | `firefox.proxy.example.com` |
+| Публичный порт | `443` |
+| Локальный порт tupoproxy | `127.0.0.1:8443` |
+| Локальный HTTPS-сайт | `127.0.0.1:9443` |
 
-Create `A` and, when used, `AAAA` records for all three hostnames. They should
-point to the same server. Do not continue until DNS resolves correctly.
+Создайте DNS-записи `A`, а при наличии IPv6 — `AAAA`, для всех используемых
+имён. Они должны указывать на один сервер. Сначала дождитесь обновления DNS.
 
-### Install the edge components
+### Установить HAProxy, nginx и Certbot
 
 ```bash
 sudo apt install -y haproxy nginx certbot
 sudo install -d -m 0755 /var/www/acme /var/www/tupoproxy-cover
 ```
 
-Your existing port-80 virtual host must serve
-`/.well-known/acme-challenge/` from `/var/www/acme`. Then request the real
-certificate before enabling the TLS cover block:
+Существующий виртуальный хост на порту `80` должен отдавать
+`/.well-known/acme-challenge/` из `/var/www/acme`. После этого получите
+сертификат:
 
 ```bash
 sudo certbot certonly --webroot -w /var/www/acme \
@@ -150,13 +224,12 @@ sudo certbot certonly --webroot -w /var/www/acme \
   -d firefox.proxy.example.com
 ```
 
-Adapt [the nginx example](deploy/nginx-cover.conf.example) to the certificate
-path produced by Certbot. Move existing public `listen 443 ssl` virtual hosts
-to loopback `127.0.0.1:9443`; do not blindly overwrite a working nginx config.
+Адаптируйте [`deploy/nginx-cover.conf.example`](deploy/nginx-cover.conf.example)
+под путь сертификата, который показал Certbot. Существующие HTTPS-виртуальные
+хосты перенесите с публичного `:443` на `127.0.0.1:9443`. Не заменяйте рабочий
+конфиг nginx целиком — добавьте нужные блоки в вашу текущую схему.
 
-### Prepare tupoproxy
-
-Create a service account and install the example configuration:
+### Подготовить конфигурацию tupoproxy
 
 ```bash
 sudo useradd --system --home /var/lib/tupoproxy \
@@ -168,17 +241,18 @@ sudo install -m 0640 -o root -g tupoproxy \
 openssl rand -hex 16
 ```
 
-Edit `/etc/tupoproxy/config.toml` and replace every `example.com` value and the
-all-zero example secret. The secret must contain exactly 32 hexadecimal
-characters. The production example already:
+Откройте `/etc/tupoproxy/config.toml` и замените:
 
-- listens only on `127.0.0.1:8443`;
-- trusts PROXY v2 only from loopback;
-- sends invalid traffic to the real TLS endpoint on `127.0.0.1:9443`;
-- enables TLS emulation and per-SNI profile selection;
-- binds the management API only to loopback.
+1. Все домены `example.com` на собственные.
+2. Нулевой секрет на результат `openssl rand -hex 16`.
+3. `public_host` на имя, которое должно быть в Telegram-ссылке.
+4. Набор `tls_fingerprints` на нужные профили.
 
-Install and start the hardened systemd service:
+Секрет — ровно 32 шестнадцатеричных символа. Пример уже ограничивает слушатель
+адресом loopback, доверяет PROXY v2 только от loopback, направляет пробы на
+настоящий TLS-порт `9443` и не публикует management API в интернет.
+
+### Установить systemd-сервис
 
 ```bash
 sudo install -m 0644 deploy/tupoproxy.service.example \
@@ -188,11 +262,11 @@ sudo systemctl enable --now tupoproxy
 sudo systemctl status tupoproxy --no-pager
 ```
 
-### Put HAProxy on public port 443
+### Передать публичный 443 HAProxy
 
-Merge [the HAProxy example](deploy/haproxy.cfg.example) into the active HAProxy
-configuration and replace both credential hostnames. First validate nginx and
-HAProxy, then switch public port `443` from nginx to HAProxy:
+Добавьте содержимое
+[`deploy/haproxy.cfg.example`](deploy/haproxy.cfg.example) в рабочий конфиг
+HAProxy и замените домены. Проверьте конфиги до перезапуска:
 
 ```bash
 sudo nginx -t
@@ -201,28 +275,29 @@ sudo systemctl reload nginx
 sudo systemctl enable --now haproxy
 ```
 
-If nginx still owns `0.0.0.0:443` or `[::]:443`, HAProxy cannot start. Only the
-loopback TLS listener should remain in nginx after the migration.
+Если nginx всё ещё слушает `0.0.0.0:443` или `[::]:443`, HAProxy не запустится.
+После переноса у nginx должен остаться только локальный TLS-порт `9443`.
+Публичный порт `80` продолжает обслуживать ACME и не затрагивается прокси.
 
-### Verify before sharing a link
+### Проверить установку
 
 ```bash
 sudo -u tupoproxy /usr/local/bin/tupoproxy \
   healthcheck /etc/tupoproxy/config.toml --mode ready
 
-openssl s_client -connect SERVER_IP:443 \
+openssl s_client -connect IP_СЕРВЕРА:443 \
   -servername chrome.proxy.example.com </dev/null
 
-curl --resolve chrome.proxy.example.com:443:SERVER_IP \
+curl --resolve chrome.proxy.example.com:443:IP_СЕРВЕРА \
   https://chrome.proxy.example.com/
 
 sudo journalctl -u tupoproxy -n 100 --no-pager
 ```
 
-The browser request must show the real cover certificate/site. The logs print
-Telegram links for users selected by `[general.links]`.
+В браузерной проверке должен открываться настоящий сайт-прикрытие с валидным
+сертификатом. Ссылки для Telegram выводятся в журнал при запуске.
 
-## TLS profile selection
+## Выбор TLS-фингерпринта через credential
 
 ```toml
 [censorship]
@@ -234,55 +309,53 @@ tls_fingerprints = {
 }
 ```
 
-| Profile | Intended use |
+| Профиль | Для чего нужен |
 |---|---|
-| `chrome` | Default modern profile and Chrome-like downstream record phases |
-| `firefox` | Firefox-oriented TLS fetch and a distinct downstream shape |
-| `compat` | Conservative sizes for paths with proxies, VPNs, or smaller MTU |
-| `legacy` | Original fixed large-record behavior for compatibility testing |
+| `chrome` | Основной современный профиль и Chrome-подобные фазы TLS-record |
+| `firefox` | Отдельный Firefox-профиль получения TLS и формы ответа |
+| `compat` | Более консервативные размеры для VPN, прокси и уменьшенного MTU |
+| `legacy` | Старое поведение с крупными фиксированными record для проверки совместимости |
 
-Each map key becomes a valid credential SNI. The link remains standard:
+Формат credential остаётся стандартным:
 
 ```text
-ee + 16-byte-secret + hex(SNI)
+ee + 16-байтовый secret + hex(SNI)
 ```
 
-For example, the `chrome.proxy.example.com` SNI selects `chrome` without adding
-private bytes to the credential. Profile selection affects real-TLS sampling
-and server-to-client record shaping; it does not impersonate or rewrite the
-Telegram application's inbound ClientHello.
+Например, SNI `firefox.proxy.example.com` выбирает `firefox`. Дополнительные
+нестандартные байты не добавляются. Выбор влияет на серверный образец TLS и
+исходящие record, но не меняет ClientHello, созданный приложением Telegram.
 
-## XHTTP and packet shaping
+## Дробление пакетов и сходство с XHTTP
 
-tupoproxy varies downstream TLS record boundaries in multiple phases and seeds
-the schedule from server-side cryptographic randomness. This reduces a fixed
-server response pattern and behaves better across common VPN MTUs.
+tupoproxy меняет границы исходящих TLS-record в несколько фаз и использует
+новую серверную случайность для каждого подключения. Это убирает один
+постоянный шаблон ответа и лучше переносит уменьшенный MTU VPN-туннелей.
 
-It is not literal XHTTP. XHTTP is a cooperating HTTP transport with request and
-response semantics; stock Telegram clients do not speak it. If the
-server-to-Telegram leg must use Xray, expose a local SOCKS listener from Xray
-and enable the commented `socks5` upstream in
+Это не буквальный XHTTP. Настоящий XHTTP — согласованный HTTP-транспорт, который
+должны понимать обе стороны; стандартный клиент Telegram его не реализует.
+Можно направить только исходящую сторону «сервер → Telegram» через локальный
+SOCKS Xray: пример закомментирован в
 [`deploy/tupoproxy.toml.example`](deploy/tupoproxy.toml.example).
 
-## Using tupoproxy while a phone VPN is enabled
+## Работа при включённом VPN на телефоне
 
-The proxy uses regular TCP/443, so it normally works inside a VPN tunnel. No
-special server flag is required. If it works without the VPN but fails with it,
-check the VPN application for:
+Специальная настройка сервера не требуется: подключение идёт по обычному
+TCP/443 и обычно проходит внутри VPN-туннеля. Если без VPN всё работает, а с VPN
+нет, проверьте в приложении VPN:
 
-- a kill switch that blocks destinations outside its policy;
-- per-app routing that excludes either Telegram or proxy connections;
-- private-DNS or domain filtering rules;
-- an explicit block of the proxy IP/domain;
-- an MTU problem on the tunnel.
+- kill switch и правила запрета неизвестных адресов;
+- раздельную маршрутизацию приложений;
+- исключён ли Telegram из проксируемых приложений;
+- фильтрацию частного DNS, домена или IP сервера;
+- MTU туннеля.
 
-The server cannot override those client-side policies. The `compat` profile is
-a useful test for paths with smaller effective MTU, but it cannot repair a VPN
-that refuses the destination entirely.
+Сервер не может отменить политику чужого VPN. Для пути с небольшим MTU можно
+проверить профиль `compat`, но он не поможет, если VPN полностью блокирует адрес.
 
 ## Docker
 
-The image is compiled from the current checkout:
+Образ собирается только из текущего исходного дерева:
 
 ```bash
 docker compose build tupoproxy
@@ -290,73 +363,75 @@ docker compose up -d tupoproxy
 docker compose logs -f tupoproxy
 ```
 
-Before starting it, replace the placeholders in `config.toml`. The default
-Compose file publishes direct port `443`; for the recommended HAProxy topology,
-adapt the container listener and PROXY-trusted network deliberately. A native
-systemd deployment is simpler when the same host already runs nginx/Caddy.
+До запуска замените заглушки в `config.toml`. Обычный Compose публикует порт
+`443` напрямую. Если на хосте уже есть nginx/Caddy и HAProxy, нативная установка
+через systemd проще; контейнерную сеть и доверенные адреса PROXY protocol нужно
+настроить под собственную топологию.
 
-## Operations
+## Управление и обновление
 
 ```bash
-# Service state and logs
+# Статус и журнал
 sudo systemctl status tupoproxy --no-pager
 sudo journalctl -u tupoproxy -f
 
-# Validate readiness
+# Проверка готовности
 sudo -u tupoproxy tupoproxy healthcheck \
   /etc/tupoproxy/config.toml --mode ready
 
-# Apply reloadable configuration
+# Применить параметры, поддерживающие hot reload
 sudo systemctl reload tupoproxy
 
-# Upgrade from source
+# Обновить бинарник из последнего GitHub Release
+sudo ./install.sh --binary-only
+sudo systemctl restart tupoproxy
+
+# Либо пересобрать обновлённый checkout
 git pull --ff-only
-./install.sh
+./install-source.sh
 sudo systemctl restart tupoproxy
 ```
 
-The control API defaults to loopback in the production example. A Python client
-is available at [`tools/tupoproxy_api.py`](tools/tupoproxy_api.py). Prometheus
-metric names use the `tupoproxy_*` prefix, and matching Grafana/Zabbix assets
-are included in `tools/`.
+Control API в продакшен-примере доступен только локально. Для него есть клиент
+[`tools/tupoproxy_api.py`](tools/tupoproxy_api.py). Метрики Prometheus используют
+префикс `tupoproxy_*`; готовые Grafana- и Zabbix-файлы лежат в `tools/`.
 
-## Troubleshooting
+## Если что-то не работает
 
-| Symptom | Check |
+| Симптом | Что проверить |
 |---|---|
-| HAProxy cannot bind `:443` | Find and move the old public nginx/Caddy `:443` listener |
-| Browser gets no cover site | Validate HAProxy SNI ACLs and nginx `127.0.0.1:9443` TLS |
-| Certificate renewal fails | Keep public port `80` and the ACME webroot route on the web server |
-| Proxy link is rejected | Confirm `ee`, a 32-hex secret, and the exact hex-encoded SNI |
-| One fingerprint fails | Check DNS/certificate coverage and TLS cache logs for that SNI |
-| Real client IP is missing | HAProxy must send PROXY v2 and only loopback must be trusted |
-| Works without VPN only | Inspect VPN app routing, kill switch, DNS filtering, and MTU |
-| Readiness fails at boot | Inspect `journalctl -u tupoproxy` and outbound Telegram connectivity |
+| HAProxy не может занять `:443` | Уберите публичный `:443` у nginx/Caddy, оставив `127.0.0.1:9443` |
+| В браузере нет сайта-прикрытия | ACL по SNI в HAProxy и TLS на `127.0.0.1:9443` |
+| Не продлевается сертификат | Для HTTP-01 проверьте порт `80`; при занятом/закрытом порте переключитесь на DNS-плагин |
+| Telegram отвергает ссылку | Проверьте `ee`, 32 hex-символа секрета и точный hex(SNI) |
+| Не работает один профиль | DNS, SAN сертификата и журнал загрузки TLS-профиля этого SNI |
+| В логах нет реального IP | HAProxy должен отправлять PROXY v2, доверен только loopback |
+| Ошибка только с VPN | Маршрутизация приложений, kill switch, DNS-фильтр и MTU VPN |
+| Readiness не проходит | `journalctl -u tupoproxy` и исходящее соединение к Telegram |
 
-## Security boundary
+## Честные ограничения
 
-- FakeTLS is camouflage, not a replacement for Telegram's MTProto encryption.
-- Server-side record shaping cannot change a client-generated JA3/JA4 value.
-- TCP segmentation alone is not a reliable defense against a reassembling DPI.
-- A real cover site makes probe fallback plausible but does not prevent IP or
-  SNI blocking.
-- Publishing several credential SNIs gives operators profile choice; it does
-  not guarantee that all profiles remain indistinguishable over time.
+- FakeTLS — маскировка, а не замена шифрования MTProto.
+- Серверная форма record не меняет клиентский JA3/JA4.
+- Одно лишь TCP-дробление ненадёжно против DPI с пересборкой потока.
+- Настоящий сайт-прикрытие делает ответ на пробы правдоподобнее, но не защищает
+  от блокировки IP или SNI.
+- Несколько профилей дают оператору выбор, но не гарантируют вечную
+  неотличимость трафика.
 
-The evidence, assumptions, and implementation boundary are documented in
+Источники, наблюдения и границы реализации собраны в
 [`docs/DPI_THREAT_MODEL.md`](docs/DPI_THREAT_MODEL.md).
 
-## Documentation map
+## Документация
 
-| Document | Purpose |
+| Файл | Содержание |
 |---|---|
-| [`README.ru.md`](README.ru.md) | Full Russian guide |
-| [`deploy/README.md`](deploy/README.md) | Shared-443 and ACME deployment notes |
-| [`docs/DPI_THREAT_MODEL.md`](docs/DPI_THREAT_MODEL.md) | Detection research and honest limitations |
-| [`docs/Config_params/CONFIG_PARAMS.en.md`](docs/Config_params/CONFIG_PARAMS.en.md) | Complete English configuration reference |
-| [`docs/Config_params/CONFIG_PARAMS.ru.md`](docs/Config_params/CONFIG_PARAMS.ru.md) | Complete Russian configuration reference |
+| [`deploy/README.md`](deploy/README.md) | Детали общей схемы `443` и ACME |
+| [`docs/DPI_THREAT_MODEL.md`](docs/DPI_THREAT_MODEL.md) | Исследование способов обнаружения и ограничения решения |
+| [`docs/Config_params/CONFIG_PARAMS.ru.md`](docs/Config_params/CONFIG_PARAMS.ru.md) | Полный справочник параметров на русском |
+| [`docs/Config_params/CONFIG_PARAMS.en.md`](docs/Config_params/CONFIG_PARAMS.en.md) | Полный справочник параметров на английском |
 
-## Development
+## Проверка исходного кода
 
 ```bash
 cargo check --locked --all-targets
@@ -365,10 +440,12 @@ cargo test --locked selected_record_profiles_have_distinct_bounded_phases
 git diff --check
 ```
 
-Please read [`CONTRIBUTING.md`](CONTRIBUTING.md) before sending a change.
+Правила участия находятся в [`CONTRIBUTING.md`](CONTRIBUTING.md).
 
-## License and attribution
+## Лицензия и происхождение
 
-tupoproxy preserves the Telemt-derived source license and required notices. See
-[`LICENSE`](LICENSE) and [`LICENSING.md`](LICENSING.md). The generated raccoon
-banner is a new asset created for this fork.
+tupoproxy — независимая модификация исходного кода Telemt 3.5.0 и не является
+официальным релизом исходного проекта. Обязательные авторские уведомления и
+текст TELEMT PL 3 сохранены в [`LICENSE`](LICENSE) и
+[`LICENSING.md`](LICENSING.md). Баннер с енотом создан специально для этого
+форка.

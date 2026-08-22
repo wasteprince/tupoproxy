@@ -1,38 +1,49 @@
-# Coexisting HTTPS deployment
+# Совместное размещение с HTTPS-проектами
 
-This layout lets tupoproxy share one public address without taking certificates
-or ports away from existing projects:
+Для нового сервера на Debian/Ubuntu корневой [`install.sh`](../install.sh)
+автоматически устанавливает зависимости и готовый статический бинарник,
+получает сертификат, настраивает изолированный cover-nginx на loopback,
+HAProxy, systemd и формирует Telegram-ссылку. Если публичный `443` занят,
+скрипт выбирает другой порт прокси. Для выпуска сертификата освобождать
+`80/443` не обязательно: используйте `--acme-mode dns` с поддерживаемым
+DNS-плагином Certbot или универсальный интерактивный режим
+`--acme-mode manual-dns`.
 
-1. HAProxy owns public TCP/443 and performs only SNI inspection/passthrough.
-2. Credential SNI values go to tupoproxy on `127.0.0.1:8443` using PROXY v2.
-3. Every other SNI goes to the existing HTTPS router on `127.0.0.1:9443`.
-4. Invalid proxy authentication is masked to that same real HTTPS router.
-5. The existing web server keeps public port 80 for ACME HTTP-01. DNS-01 also
-   works and needs no inbound ACME port.
+Ниже описана расширенная ручная схема для случаев, когда tupoproxy должен
+делить один публичный `443` с существующими сайтами по SNI:
 
-Replace every `example.com` value, create matching DNS A/AAAA records pointing
-at the proxy host, and issue one SAN/wildcard certificate covering every
-credential SNI. Validate the web path before publishing proxy links:
+1. HAProxy занимает публичный TCP/443 и только проверяет SNI, не завершая TLS.
+2. SNI из credential направляются в tupoproxy на `127.0.0.1:8443` с PROXY v2.
+3. Все остальные SNI идут в существующий HTTPS-роутер на `127.0.0.1:9443`.
+4. Неуспешная авторизация в прокси маскируется тем же настоящим HTTPS-сайтом.
+5. Существующий веб-сервер сохраняет публичный порт 80 для ACME HTTP-01.
+   DNS-01 также поддерживается и не требует входящего ACME-порта.
+
+Замените все значения `example.com`, создайте DNS-записи `A`/`AAAA`,
+указывающие на сервер, и выпустите SAN- или wildcard-сертификат для всех SNI
+из credential. Перед публикацией прокси-ссылок проверьте HTTPS-маршрут:
 
 ```sh
 curl --resolve chrome.proxy.example.com:443:SERVER_IP https://chrome.proxy.example.com/
 openssl s_client -connect SERVER_IP:443 -servername chrome.proxy.example.com </dev/null
 ```
 
-The value distributed to Telegram remains the standard compatible format:
-`ee + 16-byte-secret + hex(SNI)`. tupoproxy selects the server-side profile by
-that SNI; adding private bytes after it would corrupt the domain and is not used.
+Telegram получает credential в стандартном совместимом формате:
+`ee + 16-байтовый secret + hex(SNI)`. tupoproxy выбирает серверный профиль по
+этому SNI. Добавление собственных байтов после SNI повредило бы домен, поэтому
+такой формат не используется.
 
-## VPN coexistence
+## Совместимость с VPN
 
-tupoproxy uses ordinary TCP and works through VPNs that route Telegram TCP
-connections into the tunnel. Public TCP/443 is the most portable choice. No
-server can override a phone VPN's kill switch, per-app exclusion, private-DNS
-policy, or a tunnel that blocks the proxy address. If it fails only while the
-VPN is enabled, allow Telegram in the VPN, disable its proxy exclusion, or add
-the proxy address to the VPN route set.
+tupoproxy использует обычный TCP и работает через VPN, который направляет
+TCP-соединения Telegram в туннель. Самый переносимый вариант — публичный
+TCP/443. Сервер не может отменить kill switch, правила отдельных приложений,
+политику Private DNS или блокировку адреса внутри VPN. Если ошибка возникает
+только при включённом VPN, разрешите Telegram в настройках VPN, уберите его из
+исключений проксирования либо добавьте адрес прокси в таблицу маршрутов VPN.
 
-Do not force a tiny MSS behind HAProxy: it would apply to the loopback leg, not
-the client-facing TCP handshake. TCP stream reassembly also makes segmentation
-an unreliable primary defense. The adaptive TLS-record profiles remain active
-and tolerate the smaller effective MTU commonly introduced by VPN tunnels.
+Не следует принудительно задавать маленький MSS за HAProxy: это изменит
+loopback-сегмент, а не клиентское TCP-рукопожатие. Кроме того, DPI умеет
+пересобирать TCP-поток, поэтому сегментация ненадёжна как основная защита.
+Адаптивные профили TLS-record остаются активными и лучше переносят уменьшенный
+эффективный MTU, характерный для VPN-туннелей.
