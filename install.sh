@@ -7,6 +7,7 @@ readonly REPOSITORY="wasteprince/tupoproxy"
 readonly INSTALL_DIR="${INSTALL_DIR:-/usr/local/bin}"
 readonly CONFIG_DIR="${CONFIG_DIR:-/etc/tupoproxy}"
 readonly STATE_DIR="${STATE_DIR:-/var/lib/tupoproxy}"
+readonly STARTUP_PROBE_TIMEOUT_SECONDS=60
 
 DOMAIN=""
 TLS_DOMAIN=""
@@ -1245,45 +1246,115 @@ restart_service_or_die() {
     die "${service} failed to start; diagnostics are printed above"
 }
 
-verify_public_cover() {
-    local cover_body tls_probe decoy_probe local_decoy_probe
+print_startup_diagnostics() {
+    local service
 
-    note "Verifying the public HTTPS camouflage path"
-    if ! cover_body="$(curl --fail --silent --show-error --insecure --noproxy '*' \
-        --connect-timeout 5 --max-time 15 \
-        --resolve "${DOMAIN}:${PUBLIC_PORT}:127.0.0.1" \
-        "https://${DOMAIN}:${PUBLIC_PORT}/")"; then
-        die "public HTTPS cover check failed for ${DOMAIN}:${PUBLIC_PORT}"
-    fi
-    [[ "$cover_body" == *"${DOMAIN}"* ]] \
-        || die "public HTTPS cover returned an unexpected page"
+    for service in tupoproxy-cover.service tupoproxy.service tupoproxy-edge.service; do
+        printf '\n----- %s status -----\n' "$service" >&2
+        systemctl --no-pager --full status "$service" >&2 || true
+        printf '\n----- %s recent journal -----\n' "$service" >&2
+        journalctl --no-pager --full -n 40 -u "$service" >&2 || true
+    done
+}
+
+probe_tls_endpoint() {
+    local connect_address="$1"
+    local server_name="$2"
+    local tls_probe
 
     if ! tls_probe="$(timeout 15 openssl s_client \
-        -connect "127.0.0.1:${PUBLIC_PORT}" -servername "$DOMAIN" -alpn h2 \
-        </dev/null 2>/dev/null)"; then
-        die "public TLS probe failed for ${DOMAIN}:${PUBLIC_PORT}"
+        -connect "$connect_address" -servername "$server_name" -alpn h2 \
+        -verify_hostname "$server_name" -verify_return_error -CApath /etc/ssl/certs \
+        </dev/null 2>&1)"; then
+        printf '%s\n' "$tls_probe"
+        return 1
     fi
-    grep -Fq 'ALPN protocol: h2' <<<"$tls_probe" \
-        || die "public HTTPS cover did not negotiate HTTP/2"
+    if ! grep -Fq 'ALPN protocol: h2' <<<"$tls_probe"; then
+        printf '%s\n' "$tls_probe"
+        return 1
+    fi
+}
 
-    if ! decoy_probe="$(timeout 15 openssl s_client \
-        -connect "127.0.0.1:${PUBLIC_PORT}" -servername "$TLS_DOMAIN" -alpn h2 \
-        -verify_hostname "$TLS_DOMAIN" -verify_return_error -CApath /etc/ssl/certs \
-        </dev/null 2>/dev/null)"; then
-        die "FakeTLS decoy fallback failed for ${TLS_DOMAIN} through the public port"
-    fi
-    grep -Fq 'ALPN protocol: h2' <<<"$decoy_probe" \
-        || die "FakeTLS decoy ${TLS_DOMAIN} does not negotiate HTTP/2"
+wait_for_tls_endpoint() {
+    local label="$1"
+    local connect_address="$2"
+    local server_name="$3"
+    local deadline=$((SECONDS + STARTUP_PROBE_TIMEOUT_SECONDS))
+    local last_probe=""
+    local waiting=0
+
+    while true; do
+        if last_probe="$(probe_tls_endpoint "$connect_address" "$server_name")"; then
+            return 0
+        fi
+        if ((SECONDS >= deadline)); then
+            printf 'TLS readiness check timed out for %s. Last probe output:\n' "$label" >&2
+            printf '%s\n' "$last_probe" | tail -n 40 >&2
+            return 1
+        fi
+        if ((!waiting)); then
+            printf 'Waiting up to %s seconds for %s to become ready\n' \
+                "$STARTUP_PROBE_TIMEOUT_SECONDS" "$label"
+            waiting=1
+        fi
+        sleep 2
+    done
+}
+
+wait_for_public_cover() {
+    local deadline=$((SECONDS + STARTUP_PROBE_TIMEOUT_SECONDS))
+    local cover_body=""
+    local waiting=0
+
+    while true; do
+        if cover_body="$(curl --fail --silent --show-error --insecure --noproxy '*' \
+            --connect-timeout 5 --max-time 15 \
+            --resolve "${DOMAIN}:${PUBLIC_PORT}:127.0.0.1" \
+            "https://${DOMAIN}:${PUBLIC_PORT}/" 2>&1)" \
+            && [[ "$cover_body" == *"${DOMAIN}"* ]]; then
+            return 0
+        fi
+        if ((SECONDS >= deadline)); then
+            printf 'HTTPS cover readiness check timed out. Last response:\n%s\n' \
+                "$cover_body" >&2
+            return 1
+        fi
+        if ((!waiting)); then
+            printf 'Waiting up to %s seconds for the public HTTPS cover to become ready\n' \
+                "$STARTUP_PROBE_TIMEOUT_SECONDS"
+            waiting=1
+        fi
+        sleep 2
+    done
+}
+
+verify_public_cover() {
+    note "Verifying the public HTTPS camouflage path"
 
     if ((TLS_DECOY_LOCAL)); then
-        if ! local_decoy_probe="$(timeout 15 openssl s_client \
-            -connect "127.0.0.1:${TLS_DOMAIN_PORT}" -servername "$TLS_DOMAIN" -alpn h2 \
-            -verify_hostname "$TLS_DOMAIN" -verify_return_error -CApath /etc/ssl/certs \
-            </dev/null 2>/dev/null)"; then
+        if ! wait_for_tls_endpoint \
+            "same-server TLS decoy on TCP/${TLS_DOMAIN_PORT}" \
+            "127.0.0.1:${TLS_DOMAIN_PORT}" "$TLS_DOMAIN"; then
+            print_startup_diagnostics
             die "same-server TLS decoy failed on isolated TCP/${TLS_DOMAIN_PORT}"
         fi
-        grep -Fq 'ALPN protocol: h2' <<<"$local_decoy_probe" \
-            || die "same-server TLS decoy does not negotiate HTTP/2"
+    fi
+
+    if ! wait_for_tls_endpoint \
+        "public origin ${DOMAIN}:${PUBLIC_PORT}" \
+        "127.0.0.1:${PUBLIC_PORT}" "$DOMAIN"; then
+        print_startup_diagnostics
+        die "public TLS probe failed for ${DOMAIN}:${PUBLIC_PORT}"
+    fi
+    if ! wait_for_public_cover; then
+        print_startup_diagnostics
+        die "public HTTPS cover check failed for ${DOMAIN}:${PUBLIC_PORT}"
+    fi
+    if ! wait_for_tls_endpoint \
+        "FakeTLS decoy ${TLS_DOMAIN} through TCP/${PUBLIC_PORT}" \
+        "127.0.0.1:${PUBLIC_PORT}" "$TLS_DOMAIN"; then
+        print_startup_diagnostics
+        die "FakeTLS decoy fallback failed for ${TLS_DOMAIN} through the public port"
     fi
 }
 
@@ -1452,6 +1523,7 @@ note "Writing tupoproxy and edge configurations"
 configure_proxy
 configure_services
 open_firewall_ports
+save_summary
 
 if ((NO_START)); then
     note "Configuration complete; services were not started (--no-start)"
@@ -1460,7 +1532,6 @@ else
     restart_service_or_die tupoproxy-cover.service
     restart_service_or_die tupoproxy.service
     restart_service_or_die tupoproxy-edge.service
-    sleep 2
     systemctl --quiet is-active tupoproxy-cover.service || die "tupoproxy cover service did not start"
     systemctl --quiet is-active tupoproxy.service || die "tupoproxy service did not start"
     systemctl --quiet is-active tupoproxy-edge.service || die "tupoproxy edge did not start"
@@ -1470,7 +1541,6 @@ else
     fi
 fi
 
-save_summary
 prompt_bot_registration
 if ((AD_TAG_CHANGED)); then
     note "Applying the advertising tag from @MTProxybot"

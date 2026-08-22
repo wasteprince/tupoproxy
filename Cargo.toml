@@ -1,6 +1,6 @@
 [package]
 name = "tupoproxy"
-version = "3.5.3"
+version = "3.5.4"
 edition = "2024"
 description = "MTProto proxy with selectable TLS camouflage and real HTTPS fallback"
 repository = "https://github.com/wasteprince/tupoproxy"
