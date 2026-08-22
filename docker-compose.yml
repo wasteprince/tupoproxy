@@ -1,28 +1,27 @@
 services:
-  telemt:
-    image: ghcr.io/telemt/telemt:latest
+  tupoproxy:
+    image: tupoproxy:local
     build:
       context: .
       target: prod
-    container_name: telemt
+    container_name: tupoproxy
     restart: unless-stopped
     ports:
       - "443:443"
       - "127.0.0.1:9090:9090"
       - "127.0.0.1:9091:9091"
-    # Working dir uses tmpfs for caching 'proxy-secret' at runtime.
-    # Config is mounted as a directory (not a single file) so the API can
-    # atomically update config.toml via write-temp → rename within the same FS.
-    working_dir: /run/telemt
-    command: ["/etc/telemt/config.toml"]
+    # Working dir uses tmpfs for runtime caches. The repository example config
+    # is read-only; use a host directory mount if API config mutation is needed.
+    working_dir: /run/tupoproxy
+    command: ["/app/config.toml"]
     volumes:
-      - ./config:/etc/telemt:rw
+      - ./config.toml:/app/config.toml:ro
     tmpfs:
-      - /run/telemt:rw,mode=1777,size=4m
+      - /run/tupoproxy:rw,mode=1777,size=4m
     environment:
       - RUST_LOG=info
     healthcheck:
-      test: [ "CMD", "/app/telemt", "healthcheck", "/etc/telemt/config.toml", "--mode", "liveness" ]
+      test: [ "CMD", "/app/tupoproxy", "healthcheck", "/app/config.toml", "--mode", "liveness" ]
       interval: 30s
       timeout: 5s
       retries: 3

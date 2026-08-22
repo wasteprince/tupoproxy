@@ -192,7 +192,7 @@ fn logging_config_is_loaded_from_strict_config() {
 
             [logging]
             destination = "file"
-            path = "/tmp/telemt.log"
+            path = "/tmp/tupoproxy.log"
             rotation = "daily"
             max_size_bytes = 1024
             max_files = 3
@@ -207,7 +207,7 @@ fn logging_config_is_loaded_from_strict_config() {
     );
 
     assert_eq!(cfg.logging.destination, LoggingDestination::File);
-    assert_eq!(cfg.logging.path.as_deref(), Some("/tmp/telemt.log"));
+    assert_eq!(cfg.logging.path.as_deref(), Some("/tmp/tupoproxy.log"));
     assert_eq!(cfg.logging.rotation, LogRotation::Daily);
     assert_eq!(cfg.logging.max_size_bytes, 1024);
     assert_eq!(cfg.logging.max_files, 3);

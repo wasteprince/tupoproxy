@@ -236,6 +236,15 @@ impl ProxyConfig {
             }
         }
 
+        for domain in self.censorship.tls_fingerprints.keys() {
+            if !is_valid_tls_domain_name(domain) {
+                return Err(ProxyError::Config(format!(
+                    "Invalid tls_fingerprints entry: '{}'. Must be a valid domain name",
+                    domain
+                )));
+            }
+        }
+
         for (domain, target) in &self.censorship.exclusive_mask {
             if !is_valid_tls_domain_name(domain) {
                 return Err(ProxyError::Config(format!(

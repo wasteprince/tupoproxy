@@ -1,0 +1,57 @@
+[general]
+use_middle_proxy = true
+log_level = "normal"
+
+[general.modes]
+classic = false
+secure = false
+tls = true
+
+[general.links]
+show = "*"
+public_host = "proxy.example.com"
+public_port = 443
+
+[server]
+port = 8443
+proxy_protocol = true
+proxy_protocol_trusted_cidrs = ["127.0.0.1/32", "::1/128"]
+
+[[server.listeners]]
+ip = "127.0.0.1"
+port = 8443
+announce = "proxy.example.com"
+
+[server.api]
+enabled = true
+listen = "127.0.0.1:9091"
+whitelist = ["127.0.0.1/32", "::1/128"]
+
+[censorship]
+tls_domain = "chrome.proxy.example.com"
+tls_fingerprints = {
+  "chrome.proxy.example.com" = "chrome",
+  "firefox.proxy.example.com" = "firefox"
+}
+
+# Invalid credentials and active probes receive the real cover site's TLS.
+mask = true
+mask_dynamic = false
+mask_host = "127.0.0.1"
+mask_port = 9443
+unknown_sni_action = "mask"
+
+tls_emulation = true
+tls_front_dir = "/var/lib/tupoproxy/tlsfront"
+alpn_enforce = true
+
+[access.users]
+# Replace with: openssl rand -hex 16
+hello = "00000000000000000000000000000000"
+
+# Optional: route the server-to-Telegram leg through a local Xray XHTTP/Reality
+# SOCKS listener. This changes the outbound leg, not the stock Telegram client.
+# Set general.use_middle_proxy = false when enabling this entry.
+# [[upstreams]]
+# type = "socks5"
+# address = "127.0.0.1:1080"

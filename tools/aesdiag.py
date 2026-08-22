@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-AES-CBC validation tool for telemt middle proxy logs with support for noop padding.
+AES-CBC validation tool for tupoproxy middle proxy logs with support for noop padding.
 
 Parses log lines containing:
   - "ME diag: derived keys and handshake plaintext" (provides write_key, write_iv, hs_plain)

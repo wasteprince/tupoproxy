@@ -420,7 +420,7 @@ async fn proxy_header_write_error_on_tcp_path_still_honors_coarse_outcome_budget
 #[tokio::test]
 async fn proxy_header_write_error_on_unix_path_still_honors_coarse_outcome_budget() {
     let sock_path = format!(
-        "/tmp/telemt-mask-unix-hdr-err-{}-{}.sock",
+        "/tmp/tupoproxy-mask-unix-hdr-err-{}-{}.sock",
         std::process::id(),
         rand::random::<u64>()
     );
@@ -478,7 +478,7 @@ async fn proxy_header_write_error_on_unix_path_still_honors_coarse_outcome_budge
 #[tokio::test]
 async fn unix_socket_proxy_protocol_v1_header_is_sent_before_probe() {
     let sock_path = format!(
-        "/tmp/telemt-mask-unix-v1-{}-{}.sock",
+        "/tmp/tupoproxy-mask-unix-v1-{}-{}.sock",
         std::process::id(),
         rand::random::<u64>()
     );
@@ -555,7 +555,7 @@ async fn unix_socket_proxy_protocol_v1_header_is_sent_before_probe() {
 #[tokio::test]
 async fn unix_socket_proxy_protocol_v2_header_is_sent_before_probe() {
     let sock_path = format!(
-        "/tmp/telemt-mask-unix-v2-{}-{}.sock",
+        "/tmp/tupoproxy-mask-unix-v2-{}-{}.sock",
         std::process::id(),
         rand::random::<u64>()
     );
@@ -1137,7 +1137,7 @@ async fn proxy_protocol_v1_mixed_family_falls_back_to_unknown_header() {
 #[tokio::test]
 async fn unix_socket_mask_path_forwards_probe_and_response() {
     let sock_path = format!(
-        "/tmp/telemt-mask-test-{}-{}.sock",
+        "/tmp/tupoproxy-mask-test-{}-{}.sock",
         std::process::id(),
         rand::random::<u64>()
     );

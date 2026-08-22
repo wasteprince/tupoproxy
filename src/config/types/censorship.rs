@@ -25,6 +25,41 @@ pub enum TlsFetchProfile {
     LegacyMinimal,
 }
 
+/// Server-side TLS camouflage selected by the SNI stored in an `ee` credential.
+///
+/// The official Telegram client owns the inbound ClientHello, so this setting
+/// cannot rewrite its JA3/JA4. It selects the origin probe used to mirror the
+/// ServerHello and the downstream TLS record-size profile controlled by the
+/// proxy.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[serde(rename_all = "lowercase")]
+pub enum TlsFingerprintProfile {
+    Chrome,
+    Firefox,
+    Compat,
+    Legacy,
+}
+
+impl TlsFingerprintProfile {
+    pub fn as_str(self) -> &'static str {
+        match self {
+            Self::Chrome => "chrome",
+            Self::Firefox => "firefox",
+            Self::Compat => "compat",
+            Self::Legacy => "legacy",
+        }
+    }
+
+    pub(crate) fn fetch_profile(self) -> TlsFetchProfile {
+        match self {
+            Self::Chrome => TlsFetchProfile::ModernChromeLike,
+            Self::Firefox => TlsFetchProfile::ModernFirefoxLike,
+            Self::Compat => TlsFetchProfile::CompatTls12,
+            Self::Legacy => TlsFetchProfile::LegacyMinimal,
+        }
+    }
+}
+
 impl TlsFetchProfile {
     pub fn as_str(self) -> &'static str {
         match self {
@@ -45,7 +80,7 @@ fn default_tls_fetch_profiles() -> Vec<TlsFetchProfile> {
     ]
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct TlsFetchConfig {
     /// Ordered list of ClientHello profiles used for adaptive fallback.
     #[serde(default = "default_tls_fetch_profiles")]
@@ -108,6 +143,11 @@ pub struct AntiCensorshipConfig {
     /// Additional TLS domains for generating multiple proxy links.
     #[serde(default)]
     pub tls_domains: Vec<String>,
+
+    /// Per-SNI TLS camouflage profiles. Each key is encoded into an official
+    /// `ee` credential, making the selected domain the profile selector.
+    #[serde(default)]
+    pub tls_fingerprints: HashMap<String, TlsFingerprintProfile>,
 
     /// Policy for TLS ClientHello with unknown (non-configured) SNI.
     #[serde(default)]
@@ -260,6 +300,7 @@ impl Default for AntiCensorshipConfig {
         Self {
             tls_domain: default_tls_domain(),
             tls_domains: Vec::new(),
+            tls_fingerprints: HashMap::new(),
             unknown_sni_action: UnknownSniAction::Drop,
             tls_fetch_scope: default_tls_fetch_scope(),
             tls_fetch: TlsFetchConfig::default(),

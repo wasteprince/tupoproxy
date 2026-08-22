@@ -21,7 +21,7 @@ fn shadowsocks_upstream_url_loads_successfully() {
         url = TEST_SHADOWSOCKS_URL,
     );
     let dir = std::env::temp_dir();
-    let path = dir.join("telemt_shadowsocks_valid_test.toml");
+    let path = dir.join("tupoproxy_shadowsocks_valid_test.toml");
     std::fs::write(&path, toml).unwrap();
     let cfg = ProxyConfig::load(&path).unwrap();
 
@@ -54,7 +54,7 @@ fn shadowsocks_requires_direct_mode() {
         url = TEST_SHADOWSOCKS_URL,
     );
     let dir = std::env::temp_dir();
-    let path = dir.join("telemt_shadowsocks_me_reject_test.toml");
+    let path = dir.join("tupoproxy_shadowsocks_me_reject_test.toml");
     std::fs::write(&path, toml).unwrap();
     let err = ProxyConfig::load(&path).unwrap_err().to_string();
 
@@ -80,7 +80,7 @@ fn invalid_shadowsocks_url_is_rejected() {
         url = "not-a-valid-ss-url"
     "#;
     let dir = std::env::temp_dir();
-    let path = dir.join("telemt_shadowsocks_invalid_url_test.toml");
+    let path = dir.join("tupoproxy_shadowsocks_invalid_url_test.toml");
     std::fs::write(&path, toml).unwrap();
     let err = ProxyConfig::load(&path).unwrap_err().to_string();
 
@@ -109,7 +109,7 @@ fn shadowsocks_plugins_are_rejected() {
         url = TEST_SHADOWSOCKS_URL,
     );
     let dir = std::env::temp_dir();
-    let path = dir.join("telemt_shadowsocks_plugin_reject_test.toml");
+    let path = dir.join("tupoproxy_shadowsocks_plugin_reject_test.toml");
     std::fs::write(&path, toml).unwrap();
     let err = ProxyConfig::load(&path).unwrap_err().to_string();
 
@@ -131,7 +131,7 @@ fn invalid_user_ad_tag_reports_access_user_ad_tags_key() {
         alice = "not_hex"
     "#;
     let dir = std::env::temp_dir();
-    let path = dir.join("telemt_invalid_user_ad_tag_message_test.toml");
+    let path = dir.join("tupoproxy_invalid_user_ad_tag_message_test.toml");
     std::fs::write(&path, toml).unwrap();
     let cfg = ProxyConfig::load(&path).unwrap();
     let err = cfg.validate().unwrap_err().to_string();
@@ -152,7 +152,7 @@ fn invalid_dns_override_is_rejected() {
         user = "00000000000000000000000000000000"
     "#;
     let dir = std::env::temp_dir();
-    let path = dir.join("telemt_invalid_dns_override_test.toml");
+    let path = dir.join("tupoproxy_invalid_dns_override_test.toml");
     std::fs::write(&path, toml).unwrap();
     let err = ProxyConfig::load(&path).unwrap_err().to_string();
     assert!(err.contains("must be bracketed"));
@@ -172,7 +172,7 @@ fn valid_dns_override_is_accepted() {
         user = "00000000000000000000000000000000"
     "#;
     let dir = std::env::temp_dir();
-    let path = dir.join("telemt_valid_dns_override_test.toml");
+    let path = dir.join("tupoproxy_valid_dns_override_test.toml");
     std::fs::write(&path, toml).unwrap();
     let cfg = ProxyConfig::load(&path).unwrap();
     assert_eq!(cfg.network.dns_overrides.len(), 2);

@@ -123,7 +123,7 @@ fn extract_sni_with_infinite_loop_potential_extension_rejected() {
 
     // Extension: zero length but claims more?
     // If our parser didn't advance, it might loop.
-    // Telemt uses `pos += 4 + elen;` so it always advances.
+    // tupoproxy uses `pos += 4 + elen;` so it always advances.
     h.extend_from_slice(&[0x12, 0x34]); // Unknown type
     h.extend_from_slice(&[0x00, 0x00]); // Length 0
 

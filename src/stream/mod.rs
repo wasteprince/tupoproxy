@@ -27,7 +27,7 @@ pub use buffer_pool::{BufferPool, PoolStats, PooledBuffer};
 // Re-export stream implementations
 #[allow(unused_imports)]
 pub use crypto_stream::{CryptoReader, CryptoWriter, PassthroughStream};
-pub use tls_stream::{FakeTlsReader, FakeTlsWriter};
+pub use tls_stream::{FakeTlsReader, FakeTlsWriter, TlsRecordProfile};
 
 // Re-export frame types
 #[allow(unused_imports)]

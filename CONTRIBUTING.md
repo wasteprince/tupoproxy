@@ -1,88 +1,42 @@
-# Issues
-### Warnung
+# Contributing to tupoproxy
 
-Before opening Issue, if it is more question than problem or bug - ask about that [in our chat](https://t.me/telemtrs)
+Thank you for improving tupoproxy. Changes to authentication, TLS emulation,
+framing, relay loops, randomization, or concurrency are security-sensitive and
+need focused review.
 
-***Each of your Issues triggers attempts to reproduce problems and analyze them, which are done manually by people***
+## Before opening an issue
 
-Issues is **NOT** about:
-- Question and Answer
-- Helpdesk
-- Configuration or Intergraion Support
+- Search existing issues and the documentation.
+- Include the tupoproxy version, operating system, deployment topology, and
+  sanitized logs.
+- Never post proxy secrets, API authorization headers, private keys, or public
+  client IP addresses.
+- Separate reproducible bugs from general deployment questions.
 
----
+## Pull requests
 
-# Pull Requests
+Keep each pull request focused on one problem. Explain the failure mode, why the
+change is safe, and which checks were run. Add a regression test before a bug
+fix whenever practical.
 
-### General
-- ONLY signed and verified commits
-- ONLY from your name
-- DO NOT commit with `codex`, `claude`, or other AI tools as author/committer
-- PREFER `flow` branch for development, not `main`
+Required local checks:
 
----
+```bash
+cargo check --locked --all-targets
+cargo test --locked <relevant-test-or-module>
+git diff --check
+```
 
-### Definition of Ready (MANDATORY)
+Do not run a repository-wide formatter as part of an unrelated change. Avoid
+new allocations, blocking calls, or unrestricted logging in connection hot
+paths. Preserve constant-time authentication comparisons and zeroization of
+secret material.
 
-A Pull Request WILL be ignored or closed if:
+## Documentation and compatibility
 
-- it does NOT build
-- it does NOT pass tests
-- it does NOT follow formatting rules
-- it contains unrelated or excessive changes
-- the author cannot clearly explain the change
+User-facing behavior and new configuration fields must be documented in both
+configuration references. Call out breaking changes to metric names, file
+paths, credentials, or service layouts explicitly.
 
----
-
-### Blessed Principles
-- PR must build
-- PR must pass tests
-- PR must be understood by author
-
----
-
-### AI Usage Policy
-
-AI tools (Claude, ChatGPT, Codex, DeepSeek, etc.) are allowed as **assistants**, NOT as decision-makers.
-
-By submitting a PR, you confirm that:
-
-- you fully understand the code you submit
-- you verified correctness manually
-- you reviewed architecture and dependencies
-- you take full responsibility for the change
-
-AI-generated code is treated as **draft** and must be validated like any other external contribution.
-
-The problem isn’t AI as a tool, but the dilution of responsibility. If the commit history says "Claude/GPT authored this", then who is accountable for the bug? Claude? GPT? Anthropic? OpenAI? Samuel Altman?
-
-The user who didn’t read the diff? No one? But, in a sensitive system, *"no one"* is an unacceptable maintainer model.
-
-PRs that look like unverified AI dumps WILL be closed
-
----
-
-### Maintainer Policy
-
-Maintainers reserve the right to:
-
-- close PRs that do not meet basic quality requirements
-- request explanations before review
-- ignore low-effort contributions
-
-Respect the reviewers time
-
----
-
-### Enforcement
-
-Pull Requests that violate project standards may be closed without review.
-
-This includes (but is not limited to):
-
-- non-building code
-- failing tests
-- unverified or low-effort changes
-- inability to explain the change
-
-These actions follow the Code of Conduct and are intended to preserve signal, quality, and Telemt's integrity
+By contributing, you agree that your change is distributed under the license
+terms applicable to this repository.

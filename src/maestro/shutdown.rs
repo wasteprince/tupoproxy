@@ -1,4 +1,4 @@
-//! Shutdown and signal handling for telemt.
+//! Shutdown and signal handling for tupoproxy.
 //!
 //! Handles graceful shutdown on various signals:
 //! - SIGINT (Ctrl+C) / SIGTERM: Graceful shutdown

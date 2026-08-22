@@ -45,7 +45,7 @@ fn common_anchored_open_rejects_nul_filename() {
     let parent = std::env::current_dir()
         .expect("cwd must be available")
         .join("target")
-        .join(format!("telemt-direct-relay-nul-{}", std::process::id()));
+        .join(format!("tupoproxy-direct-relay-nul-{}", std::process::id()));
     std::fs::create_dir_all(&parent).expect("parent directory must be creatable");
 
     let path = SanitizedUnknownDcLogPath {
@@ -67,7 +67,7 @@ fn common_anchored_open_creates_owner_only_file_permissions() {
     let parent = std::env::current_dir()
         .expect("cwd must be available")
         .join("target")
-        .join(format!("telemt-direct-relay-perm-{}", std::process::id()));
+        .join(format!("tupoproxy-direct-relay-perm-{}", std::process::id()));
     std::fs::create_dir_all(&parent).expect("parent directory must be creatable");
 
     let sanitized = SanitizedUnknownDcLogPath {

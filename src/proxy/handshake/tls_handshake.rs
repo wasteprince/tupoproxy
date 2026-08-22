@@ -395,9 +395,26 @@ where
         record_recent_user_success_in(shared, user_id);
     }
 
+    let record_profile = matched_tls_domain
+        .and_then(|domain| config.censorship.tls_fingerprints.get(domain))
+        .copied()
+        .map(|profile| match profile {
+            TlsFingerprintProfile::Chrome => TlsRecordProfile::Chrome,
+            TlsFingerprintProfile::Firefox => TlsRecordProfile::Firefox,
+            TlsFingerprintProfile::Compat => TlsRecordProfile::Compat,
+            TlsFingerprintProfile::Legacy => TlsRecordProfile::Legacy,
+        })
+        .unwrap_or(TlsRecordProfile::Chrome);
+    // Keep record boundaries unpredictable to a passive observer.  The
+    // validation digest is present in the ClientHello and therefore must not
+    // be used as the sole PRNG seed for downstream traffic shaping.
+    let mut jitter_seed_bytes = [0u8; 8];
+    rng.fill(&mut jitter_seed_bytes);
+    let jitter_seed = u64::from_le_bytes(jitter_seed_bytes);
+
     HandshakeResult::Success((
         FakeTlsReader::new(reader),
-        FakeTlsWriter::new(writer),
+        FakeTlsWriter::with_profile(writer, record_profile, jitter_seed),
         validated_user,
     ))
 }

@@ -1,0 +1,38 @@
+[Unit]
+Description=tupoproxy MTProto proxy
+Documentation=https://github.com/wasteprince/tupoproxy
+After=network-online.target haproxy.service nginx.service
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=tupoproxy
+Group=tupoproxy
+WorkingDirectory=/var/lib/tupoproxy
+ExecStart=/usr/local/bin/tupoproxy --foreground --pid-file /run/tupoproxy/tupoproxy.pid /etc/tupoproxy/config.toml
+ExecReload=/bin/kill -HUP $MAINPID
+Restart=on-failure
+RestartSec=5s
+RuntimeDirectory=tupoproxy
+RuntimeDirectoryMode=0750
+StateDirectory=tupoproxy
+StateDirectoryMode=0750
+LimitNOFILE=262144
+
+NoNewPrivileges=true
+PrivateDevices=true
+PrivateTmp=true
+ProtectControlGroups=true
+ProtectHome=true
+ProtectKernelModules=true
+ProtectKernelTunables=true
+ProtectSystem=strict
+RestrictAddressFamilies=AF_INET AF_INET6 AF_UNIX
+RestrictNamespaces=true
+RestrictRealtime=true
+RestrictSUIDSGID=true
+LockPersonality=true
+MemoryDenyWriteExecute=true
+
+[Install]
+WantedBy=multi-user.target

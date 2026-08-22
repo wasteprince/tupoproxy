@@ -1110,6 +1110,7 @@ where
         app_data_records_sizes,
         total_app_data_len,
         behavior_profile,
+        selected_fetch_profile: Some(profile),
         cert_info: None,
         cert_payload: None,
     })
@@ -1275,6 +1276,7 @@ where
             source: TlsProfileSource::Rustls,
             ..TlsBehaviorProfile::default()
         },
+        selected_fetch_profile: None,
         cert_info,
         cert_payload,
     })
@@ -1468,7 +1470,8 @@ pub async fn fetch_real_tls_with_strategy(
     .await;
 
     match rustls_result {
-        Ok(rustls) => {
+        Ok(mut rustls) => {
+            rustls.selected_fetch_profile = Some(rustls_profile);
             if let Some(mut raw) = raw_result {
                 raw.cert_info = rustls.cert_info;
                 raw.cert_payload = rustls.cert_payload;

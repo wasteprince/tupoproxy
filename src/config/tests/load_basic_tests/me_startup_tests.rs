@@ -13,7 +13,7 @@ fn stun_nat_probe_concurrency_zero_is_rejected() {
         user = "00000000000000000000000000000000"
     "#;
     let dir = std::env::temp_dir();
-    let path = dir.join("telemt_stun_nat_probe_concurrency_zero_test.toml");
+    let path = dir.join("tupoproxy_stun_nat_probe_concurrency_zero_test.toml");
     std::fs::write(&path, toml).unwrap();
     let err = ProxyConfig::load(&path).unwrap_err().to_string();
     assert!(err.contains("general.stun_nat_probe_concurrency must be > 0"));
@@ -30,7 +30,7 @@ fn me_reinit_every_default_is_set() {
         user = "00000000000000000000000000000000"
     "#;
     let dir = std::env::temp_dir();
-    let path = dir.join("telemt_me_reinit_every_default_test.toml");
+    let path = dir.join("tupoproxy_me_reinit_every_default_test.toml");
     std::fs::write(&path, toml).unwrap();
     let cfg = ProxyConfig::load(&path).unwrap();
     assert_eq!(
@@ -53,7 +53,7 @@ fn me_reinit_every_zero_is_rejected() {
         user = "00000000000000000000000000000000"
     "#;
     let dir = std::env::temp_dir();
-    let path = dir.join("telemt_me_reinit_every_zero_test.toml");
+    let path = dir.join("tupoproxy_me_reinit_every_zero_test.toml");
     std::fs::write(&path, toml).unwrap();
     let err = ProxyConfig::load(&path).unwrap_err().to_string();
     assert!(err.contains("general.me_reinit_every_secs must be > 0"));
@@ -74,7 +74,7 @@ fn me_single_endpoint_outage_backoff_range_is_validated() {
         user = "00000000000000000000000000000000"
     "#;
     let dir = std::env::temp_dir();
-    let path = dir.join("telemt_me_single_endpoint_outage_backoff_range_test.toml");
+    let path = dir.join("tupoproxy_me_single_endpoint_outage_backoff_range_test.toml");
     std::fs::write(&path, toml).unwrap();
     let err = ProxyConfig::load(&path).unwrap_err().to_string();
     assert!(err.contains(
@@ -96,7 +96,7 @@ fn me_single_endpoint_shadow_writers_too_large_is_rejected() {
         user = "00000000000000000000000000000000"
     "#;
     let dir = std::env::temp_dir();
-    let path = dir.join("telemt_me_single_endpoint_shadow_writers_limit_test.toml");
+    let path = dir.join("tupoproxy_me_single_endpoint_shadow_writers_limit_test.toml");
     std::fs::write(&path, toml).unwrap();
     let err = ProxyConfig::load(&path).unwrap_err().to_string();
     assert!(err.contains("general.me_single_endpoint_shadow_writers must be within [0, 32]"));
@@ -116,7 +116,7 @@ fn me_adaptive_floor_min_writers_out_of_range_is_rejected() {
         user = "00000000000000000000000000000000"
     "#;
     let dir = std::env::temp_dir();
-    let path = dir.join("telemt_me_adaptive_floor_min_writers_out_of_range_test.toml");
+    let path = dir.join("tupoproxy_me_adaptive_floor_min_writers_out_of_range_test.toml");
     std::fs::write(&path, toml).unwrap();
     let err = ProxyConfig::load(&path).unwrap_err().to_string();
     assert!(
@@ -140,7 +140,7 @@ fn me_floor_mode_adaptive_is_parsed() {
         user = "00000000000000000000000000000000"
     "#;
     let dir = std::env::temp_dir();
-    let path = dir.join("telemt_me_floor_mode_adaptive_test.toml");
+    let path = dir.join("tupoproxy_me_floor_mode_adaptive_test.toml");
     std::fs::write(&path, toml).unwrap();
     let cfg = ProxyConfig::load(&path).unwrap();
     assert_eq!(cfg.general.me_floor_mode, MeFloorMode::Adaptive);
@@ -160,7 +160,7 @@ fn me_adaptive_floor_max_active_writers_per_core_zero_is_rejected() {
         user = "00000000000000000000000000000000"
     "#;
     let dir = std::env::temp_dir();
-    let path = dir.join("telemt_me_adaptive_floor_max_active_per_core_zero_test.toml");
+    let path = dir.join("tupoproxy_me_adaptive_floor_max_active_per_core_zero_test.toml");
     std::fs::write(&path, toml).unwrap();
     let err = ProxyConfig::load(&path).unwrap_err().to_string();
     assert!(err.contains("general.me_adaptive_floor_max_active_writers_per_core must be > 0"));
@@ -180,7 +180,7 @@ fn me_adaptive_floor_max_warm_writers_global_zero_is_rejected() {
         user = "00000000000000000000000000000000"
     "#;
     let dir = std::env::temp_dir();
-    let path = dir.join("telemt_me_adaptive_floor_max_warm_global_zero_test.toml");
+    let path = dir.join("tupoproxy_me_adaptive_floor_max_warm_global_zero_test.toml");
     std::fs::write(&path, toml).unwrap();
     let err = ProxyConfig::load(&path).unwrap_err().to_string();
     assert!(err.contains("general.me_adaptive_floor_max_warm_writers_global must be > 0"));
@@ -200,7 +200,7 @@ fn upstream_connect_retry_attempts_zero_is_rejected() {
         user = "00000000000000000000000000000000"
     "#;
     let dir = std::env::temp_dir();
-    let path = dir.join("telemt_upstream_connect_retry_attempts_zero_test.toml");
+    let path = dir.join("tupoproxy_upstream_connect_retry_attempts_zero_test.toml");
     std::fs::write(&path, toml).unwrap();
     let err = ProxyConfig::load(&path).unwrap_err().to_string();
     assert!(err.contains("general.upstream_connect_retry_attempts must be > 0"));
@@ -220,7 +220,7 @@ fn upstream_unhealthy_fail_threshold_zero_is_rejected() {
         user = "00000000000000000000000000000000"
     "#;
     let dir = std::env::temp_dir();
-    let path = dir.join("telemt_upstream_unhealthy_fail_threshold_zero_test.toml");
+    let path = dir.join("tupoproxy_upstream_unhealthy_fail_threshold_zero_test.toml");
     std::fs::write(&path, toml).unwrap();
     let err = ProxyConfig::load(&path).unwrap_err().to_string();
     assert!(err.contains("general.upstream_unhealthy_fail_threshold must be > 0"));
@@ -240,7 +240,7 @@ fn tg_connect_zero_is_rejected() {
         user = "00000000000000000000000000000000"
     "#;
     let dir = std::env::temp_dir();
-    let path = dir.join("telemt_tg_connect_zero_test.toml");
+    let path = dir.join("tupoproxy_tg_connect_zero_test.toml");
     std::fs::write(&path, toml).unwrap();
     let err = ProxyConfig::load(&path).unwrap_err().to_string();
     assert!(err.contains("general.tg_connect must be > 0"));
@@ -260,7 +260,7 @@ fn rpc_proxy_req_every_out_of_range_is_rejected() {
         user = "00000000000000000000000000000000"
     "#;
     let dir = std::env::temp_dir();
-    let path = dir.join("telemt_rpc_proxy_req_every_out_of_range_test.toml");
+    let path = dir.join("tupoproxy_rpc_proxy_req_every_out_of_range_test.toml");
     std::fs::write(&path, toml).unwrap();
     let err = ProxyConfig::load(&path).unwrap_err().to_string();
     assert!(err.contains("general.rpc_proxy_req_every must be 0 or within [10, 300]"));
@@ -280,7 +280,7 @@ fn rpc_proxy_req_every_zero_and_valid_range_are_accepted() {
         user = "00000000000000000000000000000000"
     "#;
     let dir = std::env::temp_dir();
-    let path_zero = dir.join("telemt_rpc_proxy_req_every_zero_ok_test.toml");
+    let path_zero = dir.join("tupoproxy_rpc_proxy_req_every_zero_ok_test.toml");
     std::fs::write(&path_zero, toml_zero).unwrap();
     let cfg_zero = ProxyConfig::load(&path_zero).unwrap();
     assert_eq!(cfg_zero.general.rpc_proxy_req_every, 0);
@@ -296,7 +296,7 @@ fn rpc_proxy_req_every_zero_and_valid_range_are_accepted() {
         [access.users]
         user = "00000000000000000000000000000000"
     "#;
-    let path_valid = dir.join("telemt_rpc_proxy_req_every_valid_ok_test.toml");
+    let path_valid = dir.join("tupoproxy_rpc_proxy_req_every_valid_ok_test.toml");
     std::fs::write(&path_valid, toml_valid).unwrap();
     let cfg_valid = ProxyConfig::load(&path_valid).unwrap();
     assert_eq!(cfg_valid.general.rpc_proxy_req_every, 40);

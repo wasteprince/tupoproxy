@@ -13,7 +13,7 @@ fn conntrack_pressure_high_watermark_out_of_range_is_rejected() {
         user = "00000000000000000000000000000000"
     "#;
     let dir = std::env::temp_dir();
-    let path = dir.join("telemt_conntrack_high_watermark_invalid_test.toml");
+    let path = dir.join("tupoproxy_conntrack_high_watermark_invalid_test.toml");
     std::fs::write(&path, toml).unwrap();
     let err = ProxyConfig::load(&path).unwrap_err().to_string();
     assert!(
@@ -38,7 +38,7 @@ fn conntrack_pressure_low_watermark_must_be_below_high() {
         user = "00000000000000000000000000000000"
     "#;
     let dir = std::env::temp_dir();
-    let path = dir.join("telemt_conntrack_low_watermark_invalid_test.toml");
+    let path = dir.join("tupoproxy_conntrack_low_watermark_invalid_test.toml");
     std::fs::write(&path, toml).unwrap();
     let err = ProxyConfig::load(&path).unwrap_err().to_string();
     assert!(err.contains(
@@ -60,7 +60,7 @@ fn conntrack_delete_budget_zero_is_rejected() {
         user = "00000000000000000000000000000000"
     "#;
     let dir = std::env::temp_dir();
-    let path = dir.join("telemt_conntrack_delete_budget_invalid_test.toml");
+    let path = dir.join("tupoproxy_conntrack_delete_budget_invalid_test.toml");
     std::fs::write(&path, toml).unwrap();
     let err = ProxyConfig::load(&path).unwrap_err().to_string();
     assert!(err.contains("server.conntrack_control.delete_budget_per_sec must be > 0"));
@@ -80,7 +80,7 @@ fn conntrack_hybrid_mode_requires_listener_allow_list() {
         user = "00000000000000000000000000000000"
     "#;
     let dir = std::env::temp_dir();
-    let path = dir.join("telemt_conntrack_hybrid_requires_ips_test.toml");
+    let path = dir.join("tupoproxy_conntrack_hybrid_requires_ips_test.toml");
     std::fs::write(&path, toml).unwrap();
     let err = ProxyConfig::load(&path).unwrap_err().to_string();
     assert!(
@@ -104,7 +104,7 @@ fn conntrack_profile_is_loaded_from_config() {
         user = "00000000000000000000000000000000"
     "#;
     let dir = std::env::temp_dir();
-    let path = dir.join("telemt_conntrack_profile_parse_test.toml");
+    let path = dir.join("tupoproxy_conntrack_profile_parse_test.toml");
     std::fs::write(&path, toml).unwrap();
     let cfg = ProxyConfig::load(&path).unwrap();
     assert_eq!(
@@ -124,7 +124,7 @@ fn force_close_default_matches_drain_ttl() {
         user = "00000000000000000000000000000000"
     "#;
     let dir = std::env::temp_dir();
-    let path = dir.join("telemt_force_close_default_test.toml");
+    let path = dir.join("tupoproxy_force_close_default_test.toml");
     std::fs::write(&path, toml).unwrap();
     let cfg = ProxyConfig::load(&path).unwrap();
     assert_eq!(cfg.general.me_reinit_drain_timeout_secs, 90);
@@ -145,7 +145,7 @@ fn force_close_zero_uses_runtime_safety_fallback() {
         user = "00000000000000000000000000000000"
     "#;
     let dir = std::env::temp_dir();
-    let path = dir.join("telemt_force_close_zero_fallback_test.toml");
+    let path = dir.join("tupoproxy_force_close_zero_fallback_test.toml");
     std::fs::write(&path, toml).unwrap();
     let cfg = ProxyConfig::load(&path).unwrap();
     assert_eq!(cfg.general.me_reinit_drain_timeout_secs, 0);
@@ -167,7 +167,7 @@ fn force_close_bumped_when_below_drain_ttl() {
         user = "00000000000000000000000000000000"
     "#;
     let dir = std::env::temp_dir();
-    let path = dir.join("telemt_force_close_bump_test.toml");
+    let path = dir.join("tupoproxy_force_close_bump_test.toml");
     std::fs::write(&path, toml).unwrap();
     let cfg = ProxyConfig::load(&path).unwrap();
     assert_eq!(cfg.general.me_reinit_drain_timeout_secs, 90);

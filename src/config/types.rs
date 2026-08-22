@@ -29,7 +29,8 @@ pub use access::{AccessConfig, CidrRateLimitKey, RateLimitBps};
 pub(crate) use access::{CidrAutoTemplate, CidrAutoTemplateFamily};
 pub use api::{ApiConfig, ApiGrayAction};
 pub use censorship::{
-    AntiCensorshipConfig, ExclusiveMaskTarget, TlsFetchConfig, TlsFetchProfile, UnknownSniAction,
+    AntiCensorshipConfig, ExclusiveMaskTarget, TlsFetchConfig, TlsFetchProfile,
+    TlsFingerprintProfile, UnknownSniAction,
 };
 pub use general::GeneralConfig;
 pub use links::{LinksConfig, ShowLink};
@@ -47,5 +48,5 @@ pub use server::{
 };
 
 fn default_quota_state_path() -> PathBuf {
-    PathBuf::from("telemt.limit.json")
+    PathBuf::from("tupoproxy.limit.json")
 }

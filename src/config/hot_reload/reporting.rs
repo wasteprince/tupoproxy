@@ -30,17 +30,17 @@ fn resolve_link_host(
 
 /// Print TG proxy links for a single user — mirrors print_proxy_links() in main.rs.
 fn print_user_links(user: &str, secret: &str, host: &str, port: u16, cfg: &ProxyConfig) {
-    info!(target: "telemt::links", "--- New user: {} ---", user);
+    info!(target: "tupoproxy::links", "--- New user: {} ---", user);
     if cfg.general.modes.classic {
         info!(
-            target: "telemt::links",
+            target: "tupoproxy::links",
             "  Classic: tg://proxy?server={}&port={}&secret={}",
             host, port, secret
         );
     }
     if cfg.general.modes.secure {
         info!(
-            target: "telemt::links",
+            target: "tupoproxy::links",
             "  DD:      tg://proxy?server={}&port={}&secret=dd{}",
             host, port, secret
         );
@@ -54,14 +54,20 @@ fn print_user_links(user: &str, secret: &str, host: &str, port: u16, cfg: &Proxy
         }
         for domain in &domains {
             let domain_hex = hex::encode(domain.as_bytes());
+            let profile = cfg
+                .censorship
+                .tls_fingerprints
+                .get(domain)
+                .map(|value| format!(" [{}]", value.as_str()))
+                .unwrap_or_default();
             info!(
-                target: "telemt::links",
-                "  EE-TLS:  tg://proxy?server={}&port={}&secret=ee{}{}",
-                host, port, secret, domain_hex
+                target: "tupoproxy::links",
+                "  EE-TLS{}: tg://proxy?server={}&port={}&secret=ee{}{}",
+                profile, host, port, secret, domain_hex
             );
         }
     }
-    info!(target: "telemt::links", "--------------------");
+    info!(target: "tupoproxy::links", "--------------------");
 }
 
 /// Log all detected changes and emit TG links for new users.

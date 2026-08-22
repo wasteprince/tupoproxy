@@ -1,4 +1,4 @@
-//! telemt — Telegram MTProto Proxy
+//! tupoproxy — Telegram MTProto Proxy
 
 mod api;
 mod cli;
@@ -61,7 +61,7 @@ fn main() -> std::result::Result<(), Box<dyn std::error::Error>> {
                     // continue
                 }
                 Err(e) => {
-                    eprintln!("[telemt] Daemonization failed: {}", e);
+                    eprintln!("[tupoproxy] Daemonization failed: {}", e);
                     std::process::exit(1);
                 }
             }

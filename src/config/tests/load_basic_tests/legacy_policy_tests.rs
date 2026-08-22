@@ -298,7 +298,7 @@ fn load_with_metadata_collects_include_files() {
         .duration_since(std::time::UNIX_EPOCH)
         .unwrap()
         .as_nanos();
-    let dir = std::env::temp_dir().join(format!("telemt_load_metadata_{nonce}"));
+    let dir = std::env::temp_dir().join(format!("tupoproxy_load_metadata_{nonce}"));
     std::fs::create_dir_all(&dir).unwrap();
     let main_path = dir.join("config.toml");
     let include_path = dir.join("included.toml");
@@ -347,7 +347,7 @@ fn dc_overrides_inject_dc203_default() {
         user = "00000000000000000000000000000000"
     "#;
     let dir = std::env::temp_dir();
-    let path = dir.join("telemt_dc_override_test.toml");
+    let path = dir.join("tupoproxy_dc_override_test.toml");
     std::fs::write(&path, toml).unwrap();
     let cfg = ProxyConfig::load(&path).unwrap();
     assert!(
@@ -374,7 +374,7 @@ fn update_every_overrides_legacy_fields() {
         user = "00000000000000000000000000000000"
     "#;
     let dir = std::env::temp_dir();
-    let path = dir.join("telemt_update_every_override_test.toml");
+    let path = dir.join("tupoproxy_update_every_override_test.toml");
     std::fs::write(&path, toml).unwrap();
     let cfg = ProxyConfig::load(&path).unwrap();
     assert_eq!(cfg.general.effective_update_every_secs(), 123);
@@ -395,7 +395,7 @@ fn update_every_fallback_to_legacy_min() {
         user = "00000000000000000000000000000000"
     "#;
     let dir = std::env::temp_dir();
-    let path = dir.join("telemt_update_every_legacy_min_test.toml");
+    let path = dir.join("tupoproxy_update_every_legacy_min_test.toml");
     std::fs::write(&path, toml).unwrap();
     let cfg = ProxyConfig::load(&path).unwrap();
     assert_eq!(cfg.general.update_every, None);
@@ -416,7 +416,7 @@ fn update_every_zero_is_rejected() {
         user = "00000000000000000000000000000000"
     "#;
     let dir = std::env::temp_dir();
-    let path = dir.join("telemt_update_every_zero_test.toml");
+    let path = dir.join("tupoproxy_update_every_zero_test.toml");
     std::fs::write(&path, toml).unwrap();
     let err = ProxyConfig::load(&path).unwrap_err().to_string();
     assert!(err.contains("general.update_every must be > 0"));

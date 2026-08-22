@@ -1,10 +1,11 @@
+use std::collections::HashMap;
 use std::sync::Arc;
 use std::time::Duration;
 
 use rand::RngExt;
 use tracing::warn;
 
-use crate::config::ProxyConfig;
+use crate::config::{ProxyConfig, TlsFingerprintProfile};
 use crate::error::{ProxyError, Result};
 use crate::startup::{COMPONENT_TLS_FRONT_BOOTSTRAP, StartupTracker};
 use crate::tls_front::TlsFrontCache;
@@ -30,6 +31,7 @@ struct TlsFetchContext {
     tls_fetch_scope: Option<String>,
     upstream_manager: Arc<UpstreamManager>,
     strategy: TlsFetchStrategy,
+    fingerprints: HashMap<String, TlsFingerprintProfile>,
     port: u16,
     proxy_protocol: u8,
 }
@@ -43,7 +45,10 @@ impl TlsFetchContext {
             let unix_sock = self.mask_unix_sock.clone();
             let scope = self.tls_fetch_scope.clone();
             let upstream = self.upstream_manager.clone();
-            let strategy = self.strategy.clone();
+            let strategy = strategy_for_fingerprint(
+                &self.strategy,
+                self.fingerprints.get(&domain).copied(),
+            );
             let port = self.port;
             let proxy_protocol = self.proxy_protocol;
             join.spawn(async move {
@@ -83,6 +88,18 @@ impl TlsFetchContext {
             );
         }
     }
+}
+
+fn strategy_for_fingerprint(
+    base: &TlsFetchStrategy,
+    fingerprint: Option<TlsFingerprintProfile>,
+) -> TlsFetchStrategy {
+    let mut strategy = base.clone();
+    if let Some(fingerprint) = fingerprint {
+        strategy.profiles = vec![fingerprint.fetch_profile()];
+        strategy.profile_cache_ttl = Duration::ZERO;
+    }
+    strategy
 }
 
 fn tls_fetch_host_for_domain(mask_host: &str, primary_tls_domain: &str, domain: &str) -> String {
@@ -134,6 +151,13 @@ pub(crate) async fn bootstrap_tls_front(
         &config.censorship.tls_front_dir,
     ));
     cache.load_from_disk().await;
+    let expected_profiles = config
+        .censorship
+        .tls_fingerprints
+        .iter()
+        .map(|(domain, profile)| (domain.clone(), profile.fetch_profile()))
+        .collect();
+    cache.invalidate_profile_mismatches(&expected_profiles).await;
 
     let tls_fetch = config.censorship.tls_fetch.clone();
     let fetch_context = TlsFetchContext {
@@ -158,6 +182,7 @@ pub(crate) async fn bootstrap_tls_front(
             deterministic: tls_fetch.deterministic,
             profile_cache_ttl: Duration::from_secs(tls_fetch.profile_cache_ttl_secs),
         },
+        fingerprints: config.censorship.tls_fingerprints.clone(),
         port: config.censorship.mask_port,
         proxy_protocol: config.censorship.mask_proxy_protocol,
     };
@@ -224,6 +249,7 @@ mod tests {
     use super::*;
     use crate::startup::StartupComponentStatus;
     use crate::stats::Stats;
+    use crate::config::TlsFetchProfile;
 
     fn test_config(cache_dir: &std::path::Path) -> ProxyConfig {
         let mut config = ProxyConfig::default();
@@ -285,6 +311,26 @@ mod tests {
             readiness_error(&["front.example".to_string()]),
             Some("TLS-front profiles are not ready for domains: front.example".to_string())
         );
+    }
+
+    #[test]
+    fn credential_fingerprint_forces_one_fetch_profile() {
+        let base = TlsFetchStrategy {
+            profiles: vec![
+                TlsFetchProfile::ModernChromeLike,
+                TlsFetchProfile::CompatTls12,
+            ],
+            strict_route: true,
+            attempt_timeout: Duration::from_secs(1),
+            total_budget: Duration::from_secs(2),
+            grease_enabled: true,
+            deterministic: false,
+            profile_cache_ttl: Duration::from_secs(600),
+        };
+
+        let selected = strategy_for_fingerprint(&base, Some(TlsFingerprintProfile::Firefox));
+        assert_eq!(selected.profiles, vec![TlsFetchProfile::ModernFirefoxLike]);
+        assert!(selected.profile_cache_ttl.is_zero());
     }
 
     #[tokio::test]

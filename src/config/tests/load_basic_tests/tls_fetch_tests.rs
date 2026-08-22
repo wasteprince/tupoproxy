@@ -1,6 +1,17 @@
 use super::*;
 
 #[test]
+fn coexistence_deployment_example_loads() {
+    let path = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
+        .join("deploy/tupoproxy.toml.example");
+    let cfg = ProxyConfig::load(path).expect("deployment example must remain valid");
+
+    assert_eq!(cfg.server.port, 8443);
+    assert!(cfg.server.proxy_protocol);
+    assert_eq!(cfg.censorship.tls_fingerprints.len(), 2);
+}
+
+#[test]
 fn tls_fetch_scope_default_is_empty() {
     let toml = r#"
         [censorship]
@@ -10,7 +21,7 @@ fn tls_fetch_scope_default_is_empty() {
         user = "00000000000000000000000000000000"
     "#;
     let dir = std::env::temp_dir();
-    let path = dir.join("telemt_tls_fetch_scope_default_test.toml");
+    let path = dir.join("tupoproxy_tls_fetch_scope_default_test.toml");
     std::fs::write(&path, toml).unwrap();
     let cfg = ProxyConfig::load(&path).unwrap();
     assert!(cfg.censorship.tls_fetch_scope.is_empty());
@@ -28,7 +39,7 @@ fn tls_fetch_scope_is_trimmed_during_load() {
         user = "00000000000000000000000000000000"
     "#;
     let dir = std::env::temp_dir();
-    let path = dir.join("telemt_tls_fetch_scope_trim_test.toml");
+    let path = dir.join("tupoproxy_tls_fetch_scope_trim_test.toml");
     std::fs::write(&path, toml).unwrap();
     let cfg = ProxyConfig::load(&path).unwrap();
     assert_eq!(cfg.censorship.tls_fetch_scope, "me");
@@ -46,7 +57,7 @@ fn tls_fetch_scope_whitespace_becomes_empty() {
         user = "00000000000000000000000000000000"
     "#;
     let dir = std::env::temp_dir();
-    let path = dir.join("telemt_tls_fetch_scope_blank_test.toml");
+    let path = dir.join("tupoproxy_tls_fetch_scope_blank_test.toml");
     std::fs::write(&path, toml).unwrap();
     let cfg = ProxyConfig::load(&path).unwrap();
     assert!(cfg.censorship.tls_fetch_scope.is_empty());
@@ -63,7 +74,7 @@ fn tls_fetch_defaults_are_applied() {
         user = "00000000000000000000000000000000"
     "#;
     let dir = std::env::temp_dir();
-    let path = dir.join("telemt_tls_fetch_defaults_test.toml");
+    let path = dir.join("tupoproxy_tls_fetch_defaults_test.toml");
     std::fs::write(&path, toml).unwrap();
     let cfg = ProxyConfig::load(&path).unwrap();
     assert_eq!(
@@ -89,7 +100,7 @@ fn tls_fetch_profiles_are_deduplicated_preserving_order() {
         user = "00000000000000000000000000000000"
     "#;
     let dir = std::env::temp_dir();
-    let path = dir.join("telemt_tls_fetch_profiles_dedup_test.toml");
+    let path = dir.join("tupoproxy_tls_fetch_profiles_dedup_test.toml");
     std::fs::write(&path, toml).unwrap();
     let cfg = ProxyConfig::load(&path).unwrap();
     assert_eq!(
@@ -99,6 +110,60 @@ fn tls_fetch_profiles_are_deduplicated_preserving_order() {
             TlsFetchProfile::ModernChromeLike,
             TlsFetchProfile::LegacyMinimal
         ]
+    );
+    let _ = std::fs::remove_file(path);
+}
+
+#[test]
+fn tls_fingerprints_bind_profiles_to_credential_domains() {
+    let toml = r#"
+        [censorship]
+        tls_domain = "chrome.proxy.example"
+        tls_domains = ["firefox.proxy.example"]
+        tls_fingerprints = {
+            "chrome.proxy.example" = "chrome",
+            "firefox.proxy.example" = "firefox",
+        }
+
+        [access.users]
+        user = "00000000000000000000000000000000"
+    "#;
+    let dir = std::env::temp_dir();
+    let path = dir.join("tupoproxy_tls_fingerprints_test.toml");
+    std::fs::write(&path, toml).unwrap();
+    let cfg = ProxyConfig::load(&path).unwrap();
+    assert_eq!(
+        cfg.censorship
+            .tls_fingerprints
+            .get("chrome.proxy.example"),
+        Some(&TlsFingerprintProfile::Chrome)
+    );
+    assert_eq!(
+        cfg.censorship
+            .tls_fingerprints
+            .get("firefox.proxy.example"),
+        Some(&TlsFingerprintProfile::Firefox)
+    );
+    let _ = std::fs::remove_file(path);
+}
+
+#[test]
+fn tls_fingerprint_domain_is_added_to_generated_credential_domains() {
+    let toml = r#"
+        [censorship]
+        tls_domain = "proxy.example"
+        tls_fingerprints = { "firefox.proxy.example" = "firefox" }
+
+        [access.users]
+        user = "00000000000000000000000000000000"
+    "#;
+    let dir = std::env::temp_dir();
+    let path = dir.join("tupoproxy_tls_fingerprint_domain_test.toml");
+    std::fs::write(&path, toml).unwrap();
+    let cfg = ProxyConfig::load(&path).unwrap();
+    assert_eq!(
+        cfg.censorship.tls_domains,
+        vec!["firefox.proxy.example".to_string()]
     );
     let _ = std::fs::remove_file(path);
 }
@@ -115,7 +180,7 @@ fn tls_fetch_attempt_timeout_zero_is_rejected() {
         user = "00000000000000000000000000000000"
     "#;
     let dir = std::env::temp_dir();
-    let path = dir.join("telemt_tls_fetch_attempt_timeout_zero_test.toml");
+    let path = dir.join("tupoproxy_tls_fetch_attempt_timeout_zero_test.toml");
     std::fs::write(&path, toml).unwrap();
     let err = ProxyConfig::load(&path).unwrap_err().to_string();
     assert!(err.contains("censorship.tls_fetch.attempt_timeout_ms must be > 0"));
@@ -134,7 +199,7 @@ fn tls_fetch_total_budget_zero_is_rejected() {
         user = "00000000000000000000000000000000"
     "#;
     let dir = std::env::temp_dir();
-    let path = dir.join("telemt_tls_fetch_total_budget_zero_test.toml");
+    let path = dir.join("tupoproxy_tls_fetch_total_budget_zero_test.toml");
     std::fs::write(&path, toml).unwrap();
     let err = ProxyConfig::load(&path).unwrap_err().to_string();
     assert!(err.contains("censorship.tls_fetch.total_budget_ms must be > 0"));
@@ -154,7 +219,7 @@ fn invalid_ad_tag_is_disabled_during_load() {
         user = "00000000000000000000000000000000"
     "#;
     let dir = std::env::temp_dir();
-    let path = dir.join("telemt_invalid_ad_tag_test.toml");
+    let path = dir.join("tupoproxy_invalid_ad_tag_test.toml");
     std::fs::write(&path, toml).unwrap();
     let cfg = ProxyConfig::load(&path).unwrap();
     assert!(cfg.general.ad_tag.is_none());
@@ -174,7 +239,7 @@ fn valid_ad_tag_is_preserved_during_load() {
         user = "00000000000000000000000000000000"
     "#;
     let dir = std::env::temp_dir();
-    let path = dir.join("telemt_valid_ad_tag_test.toml");
+    let path = dir.join("tupoproxy_valid_ad_tag_test.toml");
     std::fs::write(&path, toml).unwrap();
     let cfg = ProxyConfig::load(&path).unwrap();
     assert_eq!(

@@ -108,7 +108,7 @@ fn unsafe_unknown_dc_log_path_does_not_consume_dedup_slot() {
     let dc_idx: i16 = 31_123;
     let mut cfg = ProxyConfig::default();
     cfg.general.unknown_dc_file_log_enabled = true;
-    cfg.general.unknown_dc_log_path = Some("../telemt-unknown-dc-unsafe.log".to_string());
+    cfg.general.unknown_dc_log_path = Some("../tupoproxy-unknown-dc-unsafe.log".to_string());
 
     let _ = get_dc_addr_static(dc_idx, &cfg).expect("fallback routing must still work");
 
@@ -241,12 +241,12 @@ fn unknown_dc_log_path_sanitizer_accepts_safe_relative_path() {
     let base = std::env::current_dir()
         .expect("cwd must be available")
         .join("target")
-        .join(format!("telemt-unknown-dc-log-{}", std::process::id()));
+        .join(format!("tupoproxy-unknown-dc-log-{}", std::process::id()));
     fs::create_dir_all(&base).expect("temp test directory must be creatable");
 
     let candidate = base.join("unknown-dc.txt");
     let candidate_relative = format!(
-        "target/telemt-unknown-dc-log-{}/unknown-dc.txt",
+        "target/tupoproxy-unknown-dc-log-{}/unknown-dc.txt",
         std::process::id()
     );
 
@@ -279,7 +279,7 @@ fn unknown_dc_log_path_sanitizer_accepts_directory_only_as_filename_projection()
 
 #[test]
 fn unknown_dc_log_path_sanitizer_accepts_dot_prefixed_relative_path() {
-    let rel_dir = format!("target/telemt-unknown-dc-dot-{}", std::process::id());
+    let rel_dir = format!("target/tupoproxy-unknown-dc-dot-{}", std::process::id());
     let abs_dir = std::env::current_dir()
         .expect("cwd must be available")
         .join(&rel_dir);
@@ -312,7 +312,7 @@ fn light_fuzz_unknown_dc_path_parentdir_inputs_always_rejected() {
 #[test]
 fn unknown_dc_log_path_sanitizer_rejects_nonexistent_parent_directory() {
     let rel_candidate = format!(
-        "target/telemt-unknown-dc-missing-{}/nested/unknown-dc.txt",
+        "target/tupoproxy-unknown-dc-missing-{}/nested/unknown-dc.txt",
         std::process::id()
     );
 
@@ -331,7 +331,7 @@ fn unknown_dc_log_path_sanitizer_accepts_symlinked_parent_inside_workspace() {
         .expect("cwd must be available")
         .join("target")
         .join(format!(
-            "telemt-unknown-dc-log-symlink-internal-{}",
+            "tupoproxy-unknown-dc-log-symlink-internal-{}",
             std::process::id()
         ));
     let real_parent = base.join("real_parent");
@@ -342,7 +342,7 @@ fn unknown_dc_log_path_sanitizer_accepts_symlinked_parent_inside_workspace() {
     symlink(&real_parent, &symlink_parent).expect("internal symlink must be creatable");
 
     let rel_candidate = format!(
-        "target/telemt-unknown-dc-log-symlink-internal-{}/internal_link/unknown-dc.txt",
+        "target/tupoproxy-unknown-dc-log-symlink-internal-{}/internal_link/unknown-dc.txt",
         std::process::id()
     );
 
@@ -363,7 +363,7 @@ fn unknown_dc_log_path_sanitizer_accepts_symlink_parent_escape_as_canonical_path
         .expect("cwd must be available")
         .join("target")
         .join(format!(
-            "telemt-unknown-dc-log-symlink-{}",
+            "tupoproxy-unknown-dc-log-symlink-{}",
             std::process::id()
         ));
     fs::create_dir_all(&base).expect("symlink test directory must be creatable");
@@ -373,7 +373,7 @@ fn unknown_dc_log_path_sanitizer_accepts_symlink_parent_escape_as_canonical_path
     symlink("/tmp", &symlink_parent).expect("symlink parent must be creatable");
 
     let rel_candidate = format!(
-        "target/telemt-unknown-dc-log-symlink-{}/escape_link/unknown-dc.txt",
+        "target/tupoproxy-unknown-dc-log-symlink-{}/escape_link/unknown-dc.txt",
         std::process::id()
     );
 
@@ -394,12 +394,12 @@ fn unknown_dc_log_path_revalidation_rejects_symlinked_target_escape() {
         .expect("cwd must be available")
         .join("target")
         .join(format!(
-            "telemt-unknown-dc-target-link-{}",
+            "tupoproxy-unknown-dc-target-link-{}",
             std::process::id()
         ));
     fs::create_dir_all(&base).expect("target-link base must be creatable");
 
-    let outside = std::env::temp_dir().join(format!("telemt-outside-{}", std::process::id()));
+    let outside = std::env::temp_dir().join(format!("tupoproxy-outside-{}", std::process::id()));
     let _ = fs::remove_file(&outside);
     fs::write(&outside, "outside").expect("outside file must be writable");
 
@@ -408,7 +408,7 @@ fn unknown_dc_log_path_revalidation_rejects_symlinked_target_escape() {
     symlink(&outside, &linked_target).expect("target symlink must be creatable");
 
     let rel_candidate = format!(
-        "target/telemt-unknown-dc-target-link-{}/unknown-dc.log",
+        "target/tupoproxy-unknown-dc-target-link-{}/unknown-dc.log",
         std::process::id()
     );
     let sanitized = sanitize_unknown_dc_log_path(&rel_candidate)
@@ -428,11 +428,11 @@ fn unknown_dc_open_append_rejects_symlink_target_with_nofollow() {
     let base = std::env::current_dir()
         .expect("cwd must be available")
         .join("target")
-        .join(format!("telemt-unknown-dc-nofollow-{}", std::process::id()));
+        .join(format!("tupoproxy-unknown-dc-nofollow-{}", std::process::id()));
     fs::create_dir_all(&base).expect("nofollow base must be creatable");
 
     let outside = std::env::temp_dir().join(format!(
-        "telemt-unknown-dc-nofollow-outside-{}.log",
+        "tupoproxy-unknown-dc-nofollow-outside-{}.log",
         std::process::id()
     ));
     let _ = fs::remove_file(&outside);
@@ -460,7 +460,7 @@ fn unknown_dc_open_append_rejects_broken_symlink_target_with_nofollow() {
         .expect("cwd must be available")
         .join("target")
         .join(format!(
-            "telemt-unknown-dc-broken-link-{}",
+            "tupoproxy-unknown-dc-broken-link-{}",
             std::process::id()
         ));
     fs::create_dir_all(&base).expect("broken-link base must be creatable");
@@ -488,13 +488,13 @@ fn adversarial_unknown_dc_open_append_symlink_flip_never_writes_outside_file() {
         .expect("cwd must be available")
         .join("target")
         .join(format!(
-            "telemt-unknown-dc-symlink-flip-{}",
+            "tupoproxy-unknown-dc-symlink-flip-{}",
             std::process::id()
         ));
     fs::create_dir_all(&base).expect("symlink-flip base must be creatable");
 
     let outside = std::env::temp_dir().join(format!(
-        "telemt-unknown-dc-symlink-flip-outside-{}.log",
+        "tupoproxy-unknown-dc-symlink-flip-outside-{}.log",
         std::process::id()
     ));
     fs::write(&outside, "outside-baseline\n").expect("outside baseline file must be writable");
@@ -525,7 +525,7 @@ fn unknown_dc_open_append_creates_regular_file() {
     let base = std::env::current_dir()
         .expect("cwd must be available")
         .join("target")
-        .join(format!("telemt-unknown-dc-open-{}", std::process::id()));
+        .join(format!("tupoproxy-unknown-dc-open-{}", std::process::id()));
     fs::create_dir_all(&base).expect("open test base must be creatable");
 
     let target = base.join("unknown-dc.log");
@@ -551,7 +551,7 @@ fn stress_unknown_dc_open_append_regular_file_preserves_line_integrity() {
         .expect("cwd must be available")
         .join("target")
         .join(format!(
-            "telemt-unknown-dc-open-stress-{}",
+            "tupoproxy-unknown-dc-open-stress-{}",
             std::process::id()
         ));
     fs::create_dir_all(&base).expect("stress open base must be creatable");
@@ -580,7 +580,7 @@ fn unknown_dc_log_path_revalidation_accepts_regular_existing_target() {
         .expect("cwd must be available")
         .join("target")
         .join(format!(
-            "telemt-unknown-dc-safe-target-{}",
+            "tupoproxy-unknown-dc-safe-target-{}",
             std::process::id()
         ));
     fs::create_dir_all(&base).expect("safe target base must be creatable");
@@ -589,7 +589,7 @@ fn unknown_dc_log_path_revalidation_accepts_regular_existing_target() {
     fs::write(&target, "seed\n").expect("safe target seed write must succeed");
 
     let rel_candidate = format!(
-        "target/telemt-unknown-dc-safe-target-{}/unknown-dc.log",
+        "target/tupoproxy-unknown-dc-safe-target-{}/unknown-dc.log",
         std::process::id()
     );
     let sanitized =
@@ -606,13 +606,13 @@ fn unknown_dc_log_path_revalidation_rejects_deleted_parent_after_sanitize() {
         .expect("cwd must be available")
         .join("target")
         .join(format!(
-            "telemt-unknown-dc-vanish-parent-{}",
+            "tupoproxy-unknown-dc-vanish-parent-{}",
             std::process::id()
         ));
     fs::create_dir_all(&base).expect("vanish-parent base must be creatable");
 
     let rel_candidate = format!(
-        "target/telemt-unknown-dc-vanish-parent-{}/unknown-dc.log",
+        "target/tupoproxy-unknown-dc-vanish-parent-{}/unknown-dc.log",
         std::process::id()
     );
     let sanitized = sanitize_unknown_dc_log_path(&rel_candidate)
@@ -634,7 +634,7 @@ fn unknown_dc_log_path_revalidation_rejects_parent_swapped_to_symlink() {
         .expect("cwd must be available")
         .join("target")
         .join(format!(
-            "telemt-unknown-dc-parent-swap-{}",
+            "tupoproxy-unknown-dc-parent-swap-{}",
             std::process::id()
         ));
     if let Ok(meta) = fs::symlink_metadata(&parent) {
@@ -656,7 +656,7 @@ fn unknown_dc_log_path_revalidation_rejects_parent_swapped_to_symlink() {
     fs::create_dir_all(&parent).expect("parent-swap test parent must be creatable");
 
     let rel_candidate = format!(
-        "target/telemt-unknown-dc-parent-swap-{}/unknown-dc.log",
+        "target/tupoproxy-unknown-dc-parent-swap-{}/unknown-dc.log",
         std::process::id()
     );
     let sanitized = sanitize_unknown_dc_log_path(&rel_candidate)
@@ -680,7 +680,7 @@ fn adversarial_check_then_symlink_flip_is_blocked_by_nofollow_open() {
         .expect("cwd must be available")
         .join("target")
         .join(format!(
-            "telemt-unknown-dc-check-open-race-{}",
+            "tupoproxy-unknown-dc-check-open-race-{}",
             std::process::id()
         ));
     if let Ok(meta) = fs::symlink_metadata(&parent) {
@@ -695,7 +695,7 @@ fn adversarial_check_then_symlink_flip_is_blocked_by_nofollow_open() {
     let target = parent.join("unknown-dc.log");
     fs::write(&target, "seed\n").expect("seed target file must be writable");
     let rel_candidate = format!(
-        "target/telemt-unknown-dc-check-open-race-{}/unknown-dc.log",
+        "target/tupoproxy-unknown-dc-check-open-race-{}/unknown-dc.log",
         std::process::id()
     );
     let sanitized = sanitize_unknown_dc_log_path(&rel_candidate).expect("candidate must sanitize");
@@ -706,7 +706,7 @@ fn adversarial_check_then_symlink_flip_is_blocked_by_nofollow_open() {
     );
 
     let outside = std::env::temp_dir().join(format!(
-        "telemt-unknown-dc-check-open-race-outside-{}.log",
+        "tupoproxy-unknown-dc-check-open-race-outside-{}.log",
         std::process::id()
     ));
     fs::write(&outside, "outside\n").expect("outside file must be writable");
@@ -731,7 +731,7 @@ fn adversarial_parent_swap_after_check_is_blocked_by_anchored_open() {
         .expect("cwd must be available")
         .join("target")
         .join(format!(
-            "telemt-unknown-dc-parent-swap-openat-{}",
+            "tupoproxy-unknown-dc-parent-swap-openat-{}",
             std::process::id()
         ));
     if let Ok(meta) = fs::symlink_metadata(&base) {
@@ -755,7 +755,7 @@ fn adversarial_parent_swap_after_check_is_blocked_by_anchored_open() {
     fs::create_dir_all(&base).expect("parent-swap-openat base must be creatable");
 
     let rel_candidate = format!(
-        "target/telemt-unknown-dc-parent-swap-openat-{}/unknown-dc.log",
+        "target/tupoproxy-unknown-dc-parent-swap-openat-{}/unknown-dc.log",
         std::process::id()
     );
     let sanitized = sanitize_unknown_dc_log_path(&rel_candidate)
@@ -768,7 +768,7 @@ fn adversarial_parent_swap_after_check_is_blocked_by_anchored_open() {
     );
 
     let outside_parent = std::env::temp_dir().join(format!(
-        "telemt-unknown-dc-parent-swap-openat-outside-{}",
+        "tupoproxy-unknown-dc-parent-swap-openat-outside-{}",
         std::process::id()
     ));
     fs::create_dir_all(&outside_parent).expect("outside parent directory must be creatable");
@@ -801,13 +801,13 @@ fn anchored_open_nix_path_writes_expected_lines() {
         .expect("cwd must be available")
         .join("target")
         .join(format!(
-            "telemt-unknown-dc-anchored-open-ok-{}",
+            "tupoproxy-unknown-dc-anchored-open-ok-{}",
             std::process::id()
         ));
     fs::create_dir_all(&base).expect("anchored-open-ok base must be creatable");
 
     let rel_candidate = format!(
-        "target/telemt-unknown-dc-anchored-open-ok-{}/unknown-dc.log",
+        "target/tupoproxy-unknown-dc-anchored-open-ok-{}/unknown-dc.log",
         std::process::id()
     );
     let sanitized = sanitize_unknown_dc_log_path(&rel_candidate).expect("candidate must sanitize");
@@ -841,13 +841,13 @@ fn anchored_open_parallel_appends_preserve_line_integrity() {
         .expect("cwd must be available")
         .join("target")
         .join(format!(
-            "telemt-unknown-dc-anchored-open-parallel-{}",
+            "tupoproxy-unknown-dc-anchored-open-parallel-{}",
             std::process::id()
         ));
     fs::create_dir_all(&base).expect("anchored-open-parallel base must be creatable");
 
     let rel_candidate = format!(
-        "target/telemt-unknown-dc-anchored-open-parallel-{}/unknown-dc.log",
+        "target/tupoproxy-unknown-dc-anchored-open-parallel-{}/unknown-dc.log",
         std::process::id()
     );
     let sanitized = sanitize_unknown_dc_log_path(&rel_candidate).expect("candidate must sanitize");
@@ -903,13 +903,13 @@ fn anchored_open_creates_private_0600_file_permissions() {
         .expect("cwd must be available")
         .join("target")
         .join(format!(
-            "telemt-unknown-dc-anchored-perms-{}",
+            "tupoproxy-unknown-dc-anchored-perms-{}",
             std::process::id()
         ));
     fs::create_dir_all(&base).expect("anchored-perms base must be creatable");
 
     let rel_candidate = format!(
-        "target/telemt-unknown-dc-anchored-perms-{}/unknown-dc.log",
+        "target/tupoproxy-unknown-dc-anchored-perms-{}/unknown-dc.log",
         std::process::id()
     );
     let sanitized = sanitize_unknown_dc_log_path(&rel_candidate).expect("candidate must sanitize");
@@ -940,19 +940,19 @@ fn anchored_open_rejects_existing_symlink_target() {
         .expect("cwd must be available")
         .join("target")
         .join(format!(
-            "telemt-unknown-dc-anchored-symlink-target-{}",
+            "tupoproxy-unknown-dc-anchored-symlink-target-{}",
             std::process::id()
         ));
     fs::create_dir_all(&base).expect("anchored-symlink-target base must be creatable");
 
     let rel_candidate = format!(
-        "target/telemt-unknown-dc-anchored-symlink-target-{}/unknown-dc.log",
+        "target/tupoproxy-unknown-dc-anchored-symlink-target-{}/unknown-dc.log",
         std::process::id()
     );
     let sanitized = sanitize_unknown_dc_log_path(&rel_candidate).expect("candidate must sanitize");
 
     let outside = std::env::temp_dir().join(format!(
-        "telemt-unknown-dc-anchored-symlink-outside-{}.log",
+        "tupoproxy-unknown-dc-anchored-symlink-outside-{}.log",
         std::process::id()
     ));
     fs::write(&outside, "outside\n").expect("outside baseline file must be writable");
@@ -977,13 +977,13 @@ fn anchored_open_high_contention_multi_write_preserves_complete_lines() {
         .expect("cwd must be available")
         .join("target")
         .join(format!(
-            "telemt-unknown-dc-anchored-contention-{}",
+            "tupoproxy-unknown-dc-anchored-contention-{}",
             std::process::id()
         ));
     fs::create_dir_all(&base).expect("anchored-contention base must be creatable");
 
     let rel_candidate = format!(
-        "target/telemt-unknown-dc-anchored-contention-{}/unknown-dc.log",
+        "target/tupoproxy-unknown-dc-anchored-contention-{}/unknown-dc.log",
         std::process::id()
     );
     let sanitized = sanitize_unknown_dc_log_path(&rel_candidate).expect("candidate must sanitize");
@@ -1050,13 +1050,13 @@ fn append_unknown_dc_line_returns_error_for_read_only_descriptor() {
         .expect("cwd must be available")
         .join("target")
         .join(format!(
-            "telemt-unknown-dc-append-ro-{}",
+            "tupoproxy-unknown-dc-append-ro-{}",
             std::process::id()
         ));
     fs::create_dir_all(&base).expect("append-ro base must be creatable");
 
     let rel_candidate = format!(
-        "target/telemt-unknown-dc-append-ro-{}/unknown-dc.log",
+        "target/tupoproxy-unknown-dc-append-ro-{}/unknown-dc.log",
         std::process::id()
     );
     let sanitized = sanitize_unknown_dc_log_path(&rel_candidate).expect("candidate must sanitize");
@@ -1088,7 +1088,7 @@ async fn unknown_dc_absolute_log_path_writes_one_entry() {
 
     let dc_idx: i16 = 31_001;
     let file_path = std::env::temp_dir().join(format!(
-        "telemt-unknown-dc-abs-{}-{}.log",
+        "tupoproxy-unknown-dc-abs-{}-{}.log",
         std::process::id(),
         dc_idx
     ));
@@ -1129,7 +1129,7 @@ async fn unknown_dc_safe_relative_log_path_writes_one_entry() {
     clear_unknown_dc_log_cache_for_testing();
 
     let dc_idx: i16 = 31_002;
-    let rel_dir = format!("target/telemt-unknown-dc-int-{}", std::process::id());
+    let rel_dir = format!("target/tupoproxy-unknown-dc-int-{}", std::process::id());
     let rel_file = format!("{rel_dir}/unknown-dc.log");
     let abs_dir = std::env::current_dir()
         .expect("cwd must be available")
@@ -1168,7 +1168,7 @@ async fn unknown_dc_same_index_burst_writes_only_once() {
     clear_unknown_dc_log_cache_for_testing();
 
     let dc_idx: i16 = 31_010;
-    let rel_dir = format!("target/telemt-unknown-dc-same-{}", std::process::id());
+    let rel_dir = format!("target/tupoproxy-unknown-dc-same-{}", std::process::id());
     let rel_file = format!("{rel_dir}/unknown-dc.log");
     let abs_dir = std::env::current_dir().unwrap().join(&rel_dir);
     fs::create_dir_all(&abs_dir).expect("same-index log directory must be creatable");
@@ -1207,7 +1207,7 @@ async fn unknown_dc_distinct_burst_is_hard_capped_on_file_writes() {
         .expect("unknown dc test lock must be available");
     clear_unknown_dc_log_cache_for_testing();
 
-    let rel_dir = format!("target/telemt-unknown-dc-cap-{}", std::process::id());
+    let rel_dir = format!("target/tupoproxy-unknown-dc-cap-{}", std::process::id());
     let rel_file = format!("{rel_dir}/unknown-dc.log");
     let abs_dir = std::env::current_dir().unwrap().join(&rel_dir);
     fs::create_dir_all(&abs_dir).expect("cap log directory must be creatable");
@@ -1259,13 +1259,13 @@ async fn unknown_dc_symlinked_target_escape_is_not_written_integration() {
         .expect("cwd must be available")
         .join("target")
         .join(format!(
-            "telemt-unknown-dc-no-write-link-{}",
+            "tupoproxy-unknown-dc-no-write-link-{}",
             std::process::id()
         ));
     fs::create_dir_all(&base).expect("integration symlink base must be creatable");
 
     let outside = std::env::temp_dir().join(format!(
-        "telemt-unknown-dc-outside-{}.log",
+        "tupoproxy-unknown-dc-outside-{}.log",
         std::process::id()
     ));
     fs::write(&outside, "baseline\n").expect("outside baseline file must be writable");
@@ -1275,7 +1275,7 @@ async fn unknown_dc_symlinked_target_escape_is_not_written_integration() {
     symlink(&outside, &linked_target).expect("symlink target must be creatable");
 
     let rel_file = format!(
-        "target/telemt-unknown-dc-no-write-link-{}/unknown-dc.log",
+        "target/tupoproxy-unknown-dc-no-write-link-{}/unknown-dc.log",
         std::process::id()
     );
     let dc_idx: i16 = 31_050;

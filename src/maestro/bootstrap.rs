@@ -52,7 +52,7 @@ pub(super) async fn bootstrap(
     let startup_cwd = match std::env::current_dir() {
         Ok(cwd) => cwd,
         Err(e) => {
-            eprintln!("[telemt] Can't read current_dir: {}", e);
+            eprintln!("[tupoproxy] Can't read current_dir: {}", e);
             std::process::exit(1);
         }
     };
@@ -60,7 +60,7 @@ pub(super) async fn bootstrap(
         && !data_path.is_absolute()
     {
         eprintln!(
-            "[telemt] data_path must be absolute: {}",
+            "[tupoproxy] data_path must be absolute: {}",
             data_path.display()
         );
         std::process::exit(1);
@@ -78,7 +78,7 @@ pub(super) async fn bootstrap(
         && let Err(e) = std::fs::create_dir_all(&runtime_base_dir)
     {
         eprintln!(
-            "[telemt] Can't create runtime directory {}: {}",
+            "[tupoproxy] Can't create runtime directory {}: {}",
             runtime_base_dir.display(),
             e
         );
@@ -87,7 +87,7 @@ pub(super) async fn bootstrap(
 
     if !runtime_base_dir.is_dir() {
         eprintln!(
-            "[telemt] Runtime path exists but is not a directory: {}",
+            "[tupoproxy] Runtime path exists but is not a directory: {}",
             runtime_base_dir.display()
         );
         std::process::exit(1);
@@ -95,7 +95,7 @@ pub(super) async fn bootstrap(
 
     if let Err(e) = std::env::set_current_dir(&runtime_base_dir) {
         eprintln!(
-            "[telemt] Can't use runtime directory {}: {}",
+            "[tupoproxy] Can't use runtime directory {}: {}",
             runtime_base_dir.display(),
             e
         );
@@ -106,7 +106,7 @@ pub(super) async fn bootstrap(
         Ok(c) => c,
         Err(e) => {
             if config_path.exists() {
-                eprintln!("[telemt] Error: {}", e);
+                eprintln!("[tupoproxy] Error: {}", e);
                 std::process::exit(1);
             } else {
                 let default = ProxyConfig::default();
@@ -116,7 +116,7 @@ pub(super) async fn bootstrap(
                         Ok(value) => Some(value),
                         Err(serialize_error) => {
                             eprintln!(
-                                "[telemt] Warning: failed to serialize default config: {}",
+                                "[tupoproxy] Warning: failed to serialize default config: {}",
                                 serialize_error
                             );
                             None
@@ -127,23 +127,23 @@ pub(super) async fn bootstrap(
                     if let Some(serialized) = serialized.as_ref() {
                         if let Err(write_error) = std::fs::write(&config_path, serialized) {
                             eprintln!(
-                                "[telemt] Error: failed to create explicit config at {}: {}",
+                                "[tupoproxy] Error: failed to create explicit config at {}: {}",
                                 config_path.display(),
                                 write_error
                             );
                             std::process::exit(1);
                         }
                         eprintln!(
-                            "[telemt] Created default config at {}",
+                            "[tupoproxy] Created default config at {}",
                             config_path.display()
                         );
                     } else {
                         eprintln!(
-                            "[telemt] Warning: running with in-memory default config without writing to disk"
+                            "[tupoproxy] Warning: running with in-memory default config without writing to disk"
                         );
                     }
                 } else {
-                    let runtime_config_path = runtime_base_dir.join("telemt.toml");
+                    let runtime_config_path = runtime_base_dir.join("tupoproxy.toml");
                     let fallback_config_path = runtime_base_dir.join("config.toml");
                     let mut persisted = false;
 
@@ -153,14 +153,14 @@ pub(super) async fn bootstrap(
                                 Ok(()) => {
                                     config_path = runtime_config_path;
                                     eprintln!(
-                                        "[telemt] Created default config at {}",
+                                        "[tupoproxy] Created default config at {}",
                                         config_path.display()
                                     );
                                     persisted = true;
                                 }
                                 Err(write_error) => {
                                     eprintln!(
-                                        "[telemt] Warning: failed to write default config at {}: {}",
+                                        "[tupoproxy] Warning: failed to write default config at {}: {}",
                                         runtime_config_path.display(),
                                         write_error
                                     );
@@ -168,7 +168,7 @@ pub(super) async fn bootstrap(
                             },
                             Err(create_error) => {
                                 eprintln!(
-                                    "[telemt] Warning: failed to create {}: {}",
+                                    "[tupoproxy] Warning: failed to create {}: {}",
                                     runtime_base_dir.display(),
                                     create_error
                                 );
@@ -180,14 +180,14 @@ pub(super) async fn bootstrap(
                                 Ok(()) => {
                                     config_path = fallback_config_path;
                                     eprintln!(
-                                        "[telemt] Created default config at {}",
+                                        "[tupoproxy] Created default config at {}",
                                         config_path.display()
                                     );
                                     persisted = true;
                                 }
                                 Err(write_error) => {
                                     eprintln!(
-                                        "[telemt] Warning: failed to write default config at {}: {}",
+                                        "[tupoproxy] Warning: failed to write default config at {}: {}",
                                         fallback_config_path.display(),
                                         write_error
                                     );
@@ -198,7 +198,7 @@ pub(super) async fn bootstrap(
 
                     if !persisted {
                         eprintln!(
-                            "[telemt] Warning: running with in-memory default config without writing to disk"
+                            "[tupoproxy] Warning: running with in-memory default config without writing to disk"
                         );
                     }
                 }
@@ -208,7 +208,7 @@ pub(super) async fn bootstrap(
     };
 
     if let Err(e) = config.validate() {
-        eprintln!("[telemt] Invalid config: {}", e);
+        eprintln!("[tupoproxy] Invalid config: {}", e);
         std::process::exit(1);
     }
     validate_synlimit_privilege_drop(&config, privilege_drop_requested)?;
@@ -220,7 +220,7 @@ pub(super) async fn bootstrap(
     if let Some(ref data_path) = config.general.data_path {
         if !data_path.is_absolute() {
             eprintln!(
-                "[telemt] data_path must be absolute: {}",
+                "[tupoproxy] data_path must be absolute: {}",
                 data_path.display()
             );
             std::process::exit(1);
@@ -229,14 +229,14 @@ pub(super) async fn bootstrap(
         if data_path.exists() {
             if !data_path.is_dir() {
                 eprintln!(
-                    "[telemt] data_path exists but is not a directory: {}",
+                    "[tupoproxy] data_path exists but is not a directory: {}",
                     data_path.display()
                 );
                 std::process::exit(1);
             }
         } else if let Err(e) = std::fs::create_dir_all(data_path) {
             eprintln!(
-                "[telemt] Can't create data_path {}: {}",
+                "[tupoproxy] Can't create data_path {}: {}",
                 data_path.display(),
                 e
             );
@@ -245,7 +245,7 @@ pub(super) async fn bootstrap(
 
         if let Err(e) = std::env::set_current_dir(data_path) {
             eprintln!(
-                "[telemt] Can't use data_path {}: {}",
+                "[tupoproxy] Can't use data_path {}: {}",
                 data_path.display(),
                 e
             );
@@ -254,7 +254,7 @@ pub(super) async fn bootstrap(
     }
 
     if let Err(e) = crate::network::dns_overrides::install_entries(&config.network.dns_overrides) {
-        eprintln!("[telemt] Invalid network.dns_overrides: {}", e);
+        eprintln!("[tupoproxy] Invalid network.dns_overrides: {}", e);
         std::process::exit(1);
     }
     set_maestro_colors_enabled(!config.general.disable_colors);
@@ -276,7 +276,7 @@ pub(super) async fn bootstrap(
         match crate::logging::resolve_log_destination(&config.logging, &log_cli_options) {
             Ok(destination) => destination,
             Err(error) => {
-                eprintln!("[telemt] {error}");
+                eprintln!("[tupoproxy] {error}");
                 std::process::exit(1);
             }
         };
@@ -330,7 +330,7 @@ pub(super) async fn bootstrap(
         )
         .await;
 
-    print_maestro_line(format!("Telemt MTProxy v{}", env!("CARGO_PKG_VERSION")));
+    print_maestro_line(format!("tupoproxy MTProxy v{}", env!("CARGO_PKG_VERSION")));
     info!("Log level: {}", effective_log_level);
     if config.general.disable_colors {
         info!("Colors: disabled");

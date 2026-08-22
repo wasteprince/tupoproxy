@@ -1,4 +1,4 @@
-# Telemt Config Parameters Reference
+# tupoproxy Config Parameters Reference
 
 This document lists all configuration keys accepted by `config.toml`.
 
@@ -104,7 +104,7 @@ This document lists all configuration keys accepted by `config.toml`.
     ```toml
     [logging]
     destination = "file"
-    path = "/var/log/telemt.log"
+    path = "/var/log/tupoproxy.log"
     ```
 ## logging.path
   - **Constraints / validation**: Required when `logging.destination = "file"`; must not be empty.
@@ -114,7 +114,7 @@ This document lists all configuration keys accepted by `config.toml`.
     ```toml
     [logging]
     destination = "file"
-    path = "/var/log/telemt.log"
+    path = "/var/log/tupoproxy.log"
     ```
 ## logging.rotation
   - **Constraints / validation**: Must be `never`, `minutely`, `hourly`, `daily`, or `weekly`.
@@ -124,7 +124,7 @@ This document lists all configuration keys accepted by `config.toml`.
     ```toml
     [logging]
     destination = "file"
-    path = "/var/log/telemt.log"
+    path = "/var/log/tupoproxy.log"
     rotation = "daily"
     ```
 ## logging.max_size_bytes
@@ -135,7 +135,7 @@ This document lists all configuration keys accepted by `config.toml`.
     ```toml
     [logging]
     destination = "file"
-    path = "/var/log/telemt.log"
+    path = "/var/log/tupoproxy.log"
     max_size_bytes = 104857600
     ```
 ## logging.max_files
@@ -146,7 +146,7 @@ This document lists all configuration keys accepted by `config.toml`.
     ```toml
     [logging]
     destination = "file"
-    path = "/var/log/telemt.log"
+    path = "/var/log/tupoproxy.log"
     rotation = "daily"
     max_files = 14
     ```
@@ -158,7 +158,7 @@ This document lists all configuration keys accepted by `config.toml`.
     ```toml
     [logging]
     destination = "file"
-    path = "/var/log/telemt.log"
+    path = "/var/log/tupoproxy.log"
     rotation = "daily"
     max_age_secs = 1209600
     ```
@@ -169,7 +169,7 @@ This document lists all configuration keys accepted by `config.toml`.
 | Key | Type | Default | Hot-Reload |
 | --- | ---- | ------- | ---------- |
 | [`data_path`](#data_path) | `String` | — | `✘` |
-| [`quota_state_path`](#quota_state_path) | `Path` | `"telemt.limit.json"` | `✘` |
+| [`quota_state_path`](#quota_state_path) | `Path` | `"tupoproxy.limit.json"` | `✘` |
 | [`config_strict`](#config_strict) | `bool` | `false` | `✘` |
 | [`prefer_ipv6`](#prefer_ipv6) | `bool` | `false` | `✘` |
 | [`fast_mode`](#fast_mode) | `bool` | `true` | `✘` |
@@ -319,7 +319,7 @@ This document lists all configuration keys accepted by `config.toml`.
 
     ```toml
     [general]
-    data_path = "/var/lib/telemt"
+    data_path = "/var/lib/tupoproxy"
     ```
 ## quota_state_path
   - **Constraints / validation**: `Path`. Relative paths are resolved from the process working directory.
@@ -328,7 +328,7 @@ This document lists all configuration keys accepted by `config.toml`.
 
     ```toml
     [general]
-    quota_state_path = "telemt.limit.json"
+    quota_state_path = "tupoproxy.limit.json"
     ```
 ## config_strict
   - **Constraints / validation**: `bool`.
@@ -368,7 +368,7 @@ This document lists all configuration keys accepted by `config.toml`.
     ```
 ## proxy_secret_path
   - **Constraints / validation**: `String`. When omitted, the default path is `"proxy-secret"`. Empty values are accepted by TOML/serde but will likely fail at runtime (invalid file path).
-  - **Description**: Path to Telegram infrastructure `proxy-secret` cache file used by ME handshake/RPC auth. Telemt always tries a fresh download from `https://core.telegram.org/getProxySecret` first (unless `proxy_secret_url` is set) , caches it to this path on success, and falls back to reading the cached file (any age) on download failure.
+  - **Description**: Path to Telegram infrastructure `proxy-secret` cache file used by ME handshake/RPC auth. tupoproxy always tries a fresh download from `https://core.telegram.org/getProxySecret` first (unless `proxy_secret_url` is set) , caches it to this path on success, and falls back to reading the cached file (any age) on download failure.
   - **Example**:
 
     ```toml
@@ -377,7 +377,7 @@ This document lists all configuration keys accepted by `config.toml`.
     ```
 ## proxy_secret_url
   - **Constraints / validation**: `String`. When omitted, the `"https://core.telegram.org/getProxySecret"` is used.
-  - **Description**: Optional URL to obtain `proxy-secret` file used by ME handshake/RPC auth. Telemt always tries a fresh download from this URL first (with fallback to `https://core.telegram.org/getProxySecret` if absent).
+  - **Description**: Optional URL to obtain `proxy-secret` file used by ME handshake/RPC auth. tupoproxy always tries a fresh download from this URL first (with fallback to `https://core.telegram.org/getProxySecret` if absent).
   - **Example**:
 
     ```toml
@@ -386,7 +386,7 @@ This document lists all configuration keys accepted by `config.toml`.
     ```
 ## proxy_config_v4_cache_path
   - **Constraints / validation**: `String`. When set, must not be empty/whitespace-only.
-  - **Description**: Optional disk cache path for raw `getProxyConfig` (IPv4) snapshot. At startup Telemt tries to fetch a fresh snapshot first; on fetch failure or empty snapshot it falls back to this cache file when present and non-empty.
+  - **Description**: Optional disk cache path for raw `getProxyConfig` (IPv4) snapshot. At startup tupoproxy tries to fetch a fresh snapshot first; on fetch failure or empty snapshot it falls back to this cache file when present and non-empty.
   - **Example**:
 
     ```toml
@@ -395,7 +395,7 @@ This document lists all configuration keys accepted by `config.toml`.
     ```
 ## proxy_config_v4_url
 - **Constraints / validation**: `String`. When omitted, the `"https://core.telegram.org/getProxyConfig"` is used.
-- **Description**: Optional URL to obtain raw `getProxyConfig` (IPv4). Telemt always tries a fresh download from this URL first (with fallback to `https://core.telegram.org/getProxyConfig` if absent).
+- **Description**: Optional URL to obtain raw `getProxyConfig` (IPv4). tupoproxy always tries a fresh download from this URL first (with fallback to `https://core.telegram.org/getProxyConfig` if absent).
 - **Example**:
 
   ```toml
@@ -404,7 +404,7 @@ This document lists all configuration keys accepted by `config.toml`.
   ```
 ## proxy_config_v6_cache_path
   - **Constraints / validation**: `String`. When set, must not be empty/whitespace-only.
-  - **Description**: Optional disk cache path for raw `getProxyConfigV6` (IPv6) snapshot. At startup Telemt tries to fetch a fresh snapshot first; on fetch failure or empty snapshot it falls back to this cache file when present and non-empty.
+  - **Description**: Optional disk cache path for raw `getProxyConfigV6` (IPv6) snapshot. At startup tupoproxy tries to fetch a fresh snapshot first; on fetch failure or empty snapshot it falls back to this cache file when present and non-empty.
   - **Example**:
 
     ```toml
@@ -413,7 +413,7 @@ This document lists all configuration keys accepted by `config.toml`.
     ```
 ## proxy_config_v6_url
 - **Constraints / validation**: `String`. When omitted, the `"https://core.telegram.org/getProxyConfigV6"` is used.
-- **Description**: Optional URL to obtain raw `getProxyConfigV6` (IPv6). Telemt always tries a fresh download from this URL first (with fallback to `https://core.telegram.org/getProxyConfigV6` if absent).
+- **Description**: Optional URL to obtain raw `getProxyConfigV6` (IPv6). tupoproxy always tries a fresh download from this URL first (with fallback to `https://core.telegram.org/getProxyConfigV6` if absent).
 - **Example**:
 
   ```toml
@@ -1374,7 +1374,7 @@ This document lists all configuration keys accepted by `config.toml`.
 
     ```toml
     [general]
-    # NOTE: when use_middle_proxy=true, Telemt will auto-enable this during load
+    # NOTE: when use_middle_proxy=true, tupoproxy will auto-enable this during load
     me_secret_atomic_snapshot = false
     ```
 ## proxy_secret_len_max
@@ -1792,7 +1792,7 @@ This document lists all configuration keys accepted by `config.toml`.
     # ipv6 = false
     ```
 ## prefer
-  - **Constraints / validation**: Must be `4` or `6`. If `prefer = 4` while `ipv4 = false`, Telemt forces `prefer = 6`. If `prefer = 6` while `ipv6 = false`, Telemt forces `prefer = 4`.
+  - **Constraints / validation**: Must be `4` or `6`. If `prefer = 4` while `ipv4 = false`, tupoproxy forces `prefer = 6`. If `prefer = 6` while `ipv6 = false`, tupoproxy forces `prefer = 4`.
   - **Description**: Preferred IP family for selection when both families are available.
   - **Example**:
 
@@ -1819,7 +1819,7 @@ This document lists all configuration keys accepted by `config.toml`.
     stun_use = false
     ```
 ## stun_servers
-  - **Constraints / validation**: `String[]`. Values are trimmed; empty values are removed; list is deduplicated. If this key is **not** explicitly set, Telemt keeps the built-in default STUN list.
+  - **Constraints / validation**: `String[]`. Values are trimmed; empty values are removed; list is deduplicated. If this key is **not** explicitly set, tupoproxy keeps the built-in default STUN list.
   - **Description**: STUN servers list for public IP discovery.
   - **Example**:
 
@@ -1944,7 +1944,7 @@ This document lists all configuration keys accepted by `config.toml`.
 
     ```toml
     [server]
-    listen_unix_sock = "/run/telemt.sock"
+    listen_unix_sock = "/run/tupoproxy.sock"
     ```
 ## listen_unix_sock_perm
   - **Constraints / validation**: `String` (optional). When set, should be an octal permission string like `"0666"` or `"0777"`.
@@ -1953,11 +1953,11 @@ This document lists all configuration keys accepted by `config.toml`.
 
     ```toml
     [server]
-    listen_unix_sock = "/run/telemt.sock"
+    listen_unix_sock = "/run/tupoproxy.sock"
     listen_unix_sock_perm = "0666"
     ```
 ## listen_tcp
-  - **Constraints / validation**: `bool` (optional). When omitted, Telemt auto-detects:
+  - **Constraints / validation**: `bool` (optional). When omitted, tupoproxy auto-detects:
     - `true` when `listen_unix_sock` is not set
     - `false` when `listen_unix_sock` is set
   - **Description**: Explicit TCP listener enable/disable override.
@@ -1966,13 +1966,13 @@ This document lists all configuration keys accepted by `config.toml`.
     ```toml
     [server]
     # force-enable TCP even when also binding a unix socket
-    listen_unix_sock = "/run/telemt.sock"
+    listen_unix_sock = "/run/tupoproxy.sock"
     listen_tcp = true
     ```
 ## client_mss
   - **Constraints / validation**: `String`. Empty or omitted means do not change kernel MSS. Presets: `"extreme-low"` = `88`, `"tspu"` = `92`, `"2in8"` = `256`. Custom decimal strings must be within `88..=4096`.
-  - **Description**: Controls the segment size used for client connections. By default, this value is applied to the TCP listener and remains active for the whole connection. When `client_mss_bulk` is also set on Linux, the accepted socket is temporarily clamped to `client_mss` while Telemt sends the initial authenticated FakeTLS response (`ServerHello`), then restored to the connection's bulk MSS on success, write error, or cancellation. This setting does not affect API, metrics, Unix sockets, Telegram upstreams, ME sockets, or mask backend connections. Changes require a listener restart/rebind.
-  - **Operator note**: The two-tier `synlimit` profile does not require Telemt to disable MSS automatically. Operators that follow external host-tuning recipes should decide explicitly whether to leave MSS shaping enabled for handshake fragmentation or disable it for higher media throughput.
+  - **Description**: Controls the segment size used for client connections. By default, this value is applied to the TCP listener and remains active for the whole connection. When `client_mss_bulk` is also set on Linux, the accepted socket is temporarily clamped to `client_mss` while tupoproxy sends the initial authenticated FakeTLS response (`ServerHello`), then restored to the connection's bulk MSS on success, write error, or cancellation. This setting does not affect API, metrics, Unix sockets, Telegram upstreams, ME sockets, or mask backend connections. Changes require a listener restart/rebind.
+  - **Operator note**: The two-tier `synlimit` profile does not require tupoproxy to disable MSS automatically. Operators that follow external host-tuning recipes should decide explicitly whether to leave MSS shaping enabled for handshake fragmentation or disable it for higher media throughput.
   - **Performance note**: Low MSS increases packet count predictably. Approximate segment multiplier is `ceil(1460 / client_mss)`.
   - **Example**:
 
@@ -1982,7 +1982,7 @@ This document lists all configuration keys accepted by `config.toml`.
     ```
 ## client_mss_bulk
   - **Constraints / validation**: Linux-only `String`. Same grammar as [`client_mss`](#client_mss) (empty/omitted, presets `"extreme-low"`/`"tspu"`/`"2in8"`, or a decimal in `88..=4096`). A non-empty value requires at least one listener with an effective `client_mss`, and it must be greater than every participating listener's handshake value. A listener may use `client_mss = ""` as an explicit opt-out.
-  - **Description**: Enables an experimental two-size profile. The listener uses `client_mss_bulk` from the start of the connection, including when the client sends `ClientHello`. Telemt temporarily clamps the accepted socket's `TCP_MAXSEG` to `client_mss` and sends the initial authenticated FakeTLS response (`ServerHello`) in writes no larger than that value, then restores the prior socket MSS before normal MTProto traffic. Restoration is attempted on success, write error, and task cancellation. TCP is a byte stream: `MSG_EOR`, TCP offloads, loss, and retransmission can still change observable capture boundaries, so the release packet-capture gate remains authoritative. When this option is empty or omitted, `client_mss` remains the kernel MSS for the whole connection. Changes require listener restart/rebind.
+  - **Description**: Enables an experimental two-size profile. The listener uses `client_mss_bulk` from the start of the connection, including when the client sends `ClientHello`. tupoproxy temporarily clamps the accepted socket's `TCP_MAXSEG` to `client_mss` and sends the initial authenticated FakeTLS response (`ServerHello`) in writes no larger than that value, then restores the prior socket MSS before normal MTProto traffic. Restoration is attempted on success, write error, and task cancellation. TCP is a byte stream: `MSG_EOR`, TCP offloads, loss, and retransmission can still change observable capture boundaries, so the release packet-capture gate remains authoritative. When this option is empty or omitted, `client_mss` remains the kernel MSS for the whole connection. Changes require listener restart/rebind.
   - **Example**:
 
     ```toml
@@ -2099,7 +2099,7 @@ Note: The conntrack-control worker runs **only on Linux**. On other operating sy
     ```
 ## mode
   - **Constraints / validation**: One of `tracked`, `notrack`, `hybrid` (case-insensitive; serialized lowercase).
-  - **Description**: **`tracked`**: do not install telemt notrack rules (connections stay in conntrack). **`notrack`**: mark matching ingress TCP to `server.port` as notrack — targets are derived from `[[server.listeners]]` if any, otherwise from `server.listen_addr_ipv4` / `server.listen_addr_ipv6` (unspecified addresses mean “any” for that family). **`hybrid`**: notrack only for addresses listed in `hybrid_listener_ips` (must be non-empty; validated at load).
+  - **Description**: **`tracked`**: do not install tupoproxy notrack rules (connections stay in conntrack). **`notrack`**: mark matching ingress TCP to `server.port` as notrack — targets are derived from `[[server.listeners]]` if any, otherwise from `server.listen_addr_ipv4` / `server.listen_addr_ipv6` (unspecified addresses mean “any” for that family). **`hybrid`**: notrack only for addresses listed in `hybrid_listener_ips` (must be non-empty; validated at load).
   - **Example**:
 
     ```toml
@@ -2108,7 +2108,7 @@ Note: The conntrack-control worker runs **only on Linux**. On other operating sy
     ```
 ## backend
   - **Constraints / validation**: One of `auto`, `nftables`, `iptables` (case-insensitive; serialized lowercase).
-  - **Description**: Which command set applies notrack rules. **`auto`**: use `nft` if present on `PATH`, else `iptables`/`ip6tables` if present. **`nftables`** / **`iptables`**: force that backend; missing binary means rules cannot be applied. The nft path uses table `inet telemt_conntrack` and a prerouting raw hook; iptables uses chain `TELEMT_NOTRACK` in the `raw` table.
+  - **Description**: Which command set applies notrack rules. **`auto`**: use `nft` if present on `PATH`, else `iptables`/`ip6tables` if present. **`nftables`** / **`iptables`**: force that backend; missing binary means rules cannot be applied. The nft path uses table `inet tupoproxy_conntrack` and a prerouting raw hook; iptables uses chain `TUPOPROXY_NOTRACK` in the `raw` table.
   - **Example**:
 
     ```toml
@@ -2357,8 +2357,8 @@ Note: This section also accepts the legacy alias `[server.admin_api]` (same sche
     ```
 ## synlimit (server.listeners)
   - **Constraints / validation**: `false`, `"iptables"`, `"nftables"`, or `"pf"`. Omitted or `false` disables SYN limiting for this listener.
-  - **Description**: Installs startup-owned per-listener firewall rules for the listener port. Linux accepts only `"iptables"` or `"nftables"`; FreeBSD accepts only `"pf"`; other platforms accept only `false`. Linux netfilter rules accept under-limit SYN packets and reject excess packets with TCP RST. PF renders explicit `inet`/`inet6` rules and uses native `max-src-conn-rate`; excess state-creating packets are silently dropped. Startup fails before accept loops if privileges, backend validation, stale-candidate cleanup, or rule application fails. Every `synlimit*` change requires process restart. Combining enabled SYN limiting with `--run-as-user` or `--run-as-group` is rejected until a separate privileged firewall helper exists. Rules are removed during graceful shutdown; `SIGKILL` cannot be cleaned up by the process. Linux requires CAP_NET_ADMIN. FreeBSD requires root and a main PF ruleset hook such as `anchor "telemt_synlimit/*"`.
-  - **Operator note**: Telemt does not persist rules with `iptables-persistent`, write `/etc/sysctl.d`, edit systemd limits, or modify `client_mss`. Apply host-level tuning manually if your deployment policy requires it.
+  - **Description**: Installs startup-owned per-listener firewall rules for the listener port. Linux accepts only `"iptables"` or `"nftables"`; FreeBSD accepts only `"pf"`; other platforms accept only `false`. Linux netfilter rules accept under-limit SYN packets and reject excess packets with TCP RST. PF renders explicit `inet`/`inet6` rules and uses native `max-src-conn-rate`; excess state-creating packets are silently dropped. Startup fails before accept loops if privileges, backend validation, stale-candidate cleanup, or rule application fails. Every `synlimit*` change requires process restart. Combining enabled SYN limiting with `--run-as-user` or `--run-as-group` is rejected until a separate privileged firewall helper exists. Rules are removed during graceful shutdown; `SIGKILL` cannot be cleaned up by the process. Linux requires CAP_NET_ADMIN. FreeBSD requires root and a main PF ruleset hook such as `anchor "tupoproxy_synlimit/*"`.
+  - **Operator note**: tupoproxy does not persist rules with `iptables-persistent`, write `/etc/sysctl.d`, edit systemd limits, or modify `client_mss`. Apply host-level tuning manually if your deployment policy requires it.
   - **Example**:
 
     ```toml
@@ -2508,7 +2508,7 @@ Note: This section also accepts the legacy alias `[server.admin_api]` (same sche
     ```
 ## reuse_allow
   - **Constraints / validation**: `bool`.
-  - **Description**: Enables `SO_REUSEPORT` for multi-instance bind sharing (allows multiple telemt instances to listen on the same `ip:port`).
+  - **Description**: Enables `SO_REUSEPORT` for multi-instance bind sharing (allows multiple tupoproxy instances to listen on the same `ip:port`).
   - **Example**:
 
     ```toml
@@ -2633,6 +2633,7 @@ Note: This section also accepts the legacy alias `[server.admin_api]` (same sche
 | --- | ---- | ------- | ---------- |
 | [`tls_domain`](#tls_domain) | `String` | `"petrovich.ru"` | `✘` |
 | [`tls_domains`](#tls_domains) | `String[]` | `[]` | `✘` |
+| [`tls_fingerprints`](#tls_fingerprints) | `Table<String, String>` | `{}` | `✘` |
 | [`unknown_sni_action`](#unknown_sni_action) | `"drop"`, `"mask"`, `"accept"`, `"reject_handshake"` | `"drop"` | `✘` |
 | [`tls_fetch_scope`](#tls_fetch_scope) | `String` | `""` | `✘` |
 | [`tls_fetch`](#tls_fetch) | `Table` | built-in defaults | `✘` |
@@ -2684,6 +2685,18 @@ Note: This section also accepts the legacy alias `[server.admin_api]` (same sche
     tls_domain = "example.com"
     tls_domains = ["example.net", "example.org"]
     ```
+## tls_fingerprints
+  - **Constraints / validation**: each key must be a valid SNI DNS name; each value must be `"chrome"`, `"firefox"`, `"compat"`, or `"legacy"`. Map domains are automatically added to generated `ee` links. A change requires restart.
+  - **Description**: Binds the domain embedded in a standard `ee` credential to the cover-origin probe profile and downstream TLS record shape. This is server-side only and cannot modify the inbound ClientHello JA3/JA4 produced by Telegram.
+  - **Example**:
+
+    ```toml
+    [censorship]
+    tls_fingerprints = {
+      "chrome.proxy.example.com" = "chrome",
+      "firefox.proxy.example.com" = "firefox"
+    }
+    ```
 ## unknown_sni_action
   - **Constraints / validation**: `"drop"`, `"mask"`, `"accept"` or `"reject_handshake"`.
   - **Description**: Action for TLS ClientHello with unknown / non-configured SNI.
@@ -2729,7 +2742,7 @@ Note: This section also accepts the legacy alias `[server.admin_api]` (same sche
 ## mask_host
   - **Constraints / validation**: `String` (optional).
     - If `mask_unix_sock` is set, `mask_host` must be omitted (mutually exclusive).
-    - If `mask_host` is not set and `mask_unix_sock` is not set, Telemt defaults `mask_host` to `tls_domain`.
+    - If `mask_host` is not set and `mask_unix_sock` is not set, tupoproxy defaults `mask_host` to `tls_domain`.
   - **Description**: Upstream mask host for TLS fronting relay.
   - **Example**:
 
@@ -2748,7 +2761,7 @@ Note: This section also accepts the legacy alias `[server.admin_api]` (same sche
     ```
 ## exclusive_mask
   - **Constraints / validation**: TOML map. Keys must be SNI domain names. Values must be `host:port` with `port > 0`; IPv6 literals must be bracketed.
-  - **Description**: Per-SNI TCP mask targets for fallback traffic. When a TLS ClientHello SNI matches a key, Telemt relays that unauthenticated connection to the mapped target. Other fallback traffic keeps using the existing `mask_host`/`mask_port` or SNI-aware default masking behavior.
+  - **Description**: Per-SNI TCP mask targets for fallback traffic. When a TLS ClientHello SNI matches a key, tupoproxy relays that unauthenticated connection to the mapped target. Other fallback traffic keeps using the existing `mask_host`/`mask_port` or SNI-aware default masking behavior.
   - **Example**:
 
     ```toml
@@ -2769,10 +2782,10 @@ Note: This section also accepts the legacy alias `[server.admin_api]` (same sche
 
     ```toml
     [censorship]
-    mask_unix_sock = "/run/telemt/mask.sock"
+    mask_unix_sock = "/run/tupoproxy/mask.sock"
     ```
 ## fake_cert_len
-  - **Constraints / validation**: `usize`. When `tls_emulation = false` and the default value is in use, Telemt may randomize this at startup for variability.
+  - **Constraints / validation**: `usize`. When `tls_emulation = false` and the default value is in use, tupoproxy may randomize this at startup for variability.
   - **Description**: Length of synthetic certificate payload when emulation data is unavailable.
   - **Example**:
 
@@ -2991,7 +3004,7 @@ These parameters are designed to reduce one specific fingerprint source during m
 
 Without hardening, a censor can often correlate probe input length with backend-observed length very precisely (for example: `5 + body_sent` on early TLS reject paths). That creates a length-based classifier signal.
 
-When `mask_shape_hardening = true`, Telemt pads the **client->mask** stream tail to a bucket boundary at relay shutdown:
+When `mask_shape_hardening = true`, tupoproxy pads the **client->mask** stream tail to a bucket boundary at relay shutdown:
 
 - Total bytes sent to mask are first measured.
 - A bucket is selected using powers of two starting from `mask_shape_bucket_floor_bytes`.
@@ -3011,7 +3024,7 @@ What each parameter changes in practice:
   Example: with floor `512`, a malformed probe that would otherwise forward `37` bytes can be expanded to `512` bytes on clean EOF.
   Larger floor values hide very small probes better, but increase egress cost.
 - `mask_shape_bucket_cap_bytes`
-  Sets the largest bucket Telemt will pad up to with bucket logic.
+  Sets the largest bucket tupoproxy will pad up to with bucket logic.
   Example: with cap `4096`, a forwarded total of `1800` bytes may be padded to `2048` or `4096` depending on the bucket ladder, but a total already above `4096` will not be bucket-padded further.
   Larger cap values increase the range over which size classes are collapsed, but also increase worst-case overhead.
 - Clean EOF matters in conservative mode
@@ -3043,7 +3056,7 @@ What changes when aggressive mode is enabled:
 
 - Backend-silent timeout paths can be shaped
   In default mode, a client that keeps the socket half-open and times out will usually not receive shape padding on that path.
-  In aggressive mode, Telemt may still shape that backend-silent session if no backend bytes were returned.
+  In aggressive mode, tupoproxy may still shape that backend-silent session if no backend bytes were returned.
   This is specifically aimed at active probes that try to avoid EOF in order to preserve an exact backend-observed length.
 - Above-cap blur always adds at least one byte
   In default mode, above-cap blur may choose `0`, so some oversized probes still land on their exact base forwarded length.
@@ -3437,7 +3450,7 @@ If your backend or network is very bandwidth-constrained, reduce cap first. If p
     ```
 ## ipv4 (upstreams)
   - **Constraints / validation**: `bool` (optional).
-  - **Description**: Allows IPv4 DC targets for this upstream. When omitted, Telemt auto-detects support from runtime connectivity state.
+  - **Description**: Allows IPv4 DC targets for this upstream. When omitted, tupoproxy auto-detects support from runtime connectivity state.
   - **Example**:
 
     ```toml
@@ -3447,7 +3460,7 @@ If your backend or network is very bandwidth-constrained, reduce cap first. If p
     ```
 ## ipv6 (upstreams)
   - **Constraints / validation**: `bool` (optional).
-  - **Description**: Allows IPv6 DC targets for this upstream. When omitted, Telemt auto-detects support from runtime connectivity state. Set this to `true` when the upstream proxy is reachable from the local host over IPv4 but the proxy itself can connect to Telegram DCs over IPv6.
+  - **Description**: Allows IPv6 DC targets for this upstream. When omitted, tupoproxy auto-detects support from runtime connectivity state. Set this to `true` when the upstream proxy is reachable from the local host over IPv4 but the proxy itself can connect to Telegram DCs over IPv6.
   - **Example**:
 
     ```toml
@@ -3457,7 +3470,7 @@ If your backend or network is very bandwidth-constrained, reduce cap first. If p
     ```
 ## prefer (upstreams)
   - **Constraints / validation**: Optional integer. Must be `4` or `6`.
-  - **Description**: Overrides the IP family preference for Telegram DC targets selected through this upstream. When omitted, the upstream inherits the effective global `[network].prefer` decision. Use `prefer = 6` together with `ipv6 = true` for a SOCKS or Shadowsocks upstream that can egress over IPv6 even when the local Telemt host is IPv4-only.
+  - **Description**: Overrides the IP family preference for Telegram DC targets selected through this upstream. When omitted, the upstream inherits the effective global `[network].prefer` decision. Use `prefer = 6` together with `ipv6 = true` for a SOCKS or Shadowsocks upstream that can egress over IPv6 even when the local tupoproxy host is IPv4-only.
   - **Example**:
 
     ```toml
@@ -3488,7 +3501,7 @@ If your backend or network is very bandwidth-constrained, reduce cap first. If p
 ## bind_addresses
   - **Constraints / validation**: `String[]` (optional). Applies only to `type = "direct"`.
     - Each entry should be an IP address string.
-    - At runtime, Telemt selects an address that matches the target family (IPv4 vs IPv6). If `bind_addresses` is set and none match the target family, the connect attempt fails.
+    - At runtime, tupoproxy selects an address that matches the target family (IPv4 vs IPv6). If `bind_addresses` is set and none match the target family, the connect attempt fails.
   - **Description**: Explicit local source addresses for outgoing direct TCP connects. When multiple addresses are provided, selection is round-robin.
   - **Example**:
 
@@ -3545,18 +3558,18 @@ If your backend or network is very bandwidth-constrained, reduce cap first. If p
     ```
 ## user_id
   - **Constraints / validation**: `String` (optional). Only for `type = "socks4"`.
-  - **Description**: SOCKS4 CONNECT user ID. Note: when a request scope is selected, Telemt may override this with the selected scope value.
+  - **Description**: SOCKS4 CONNECT user ID. Note: when a request scope is selected, tupoproxy may override this with the selected scope value.
   - **Example**:
 
     ```toml
     [[upstreams]]
     type = "socks4"
     address = "127.0.0.1:1080"
-    user_id = "telemt"
+    user_id = "tupoproxy"
     ```
 ## username
   - **Constraints / validation**: `String` (optional). Only for `type = "socks5"`.
-  - **Description**: SOCKS5 username (for username/password authentication). Note: when a request scope is selected, Telemt may override this with the selected scope value.
+  - **Description**: SOCKS5 username (for username/password authentication). Note: when a request scope is selected, tupoproxy may override this with the selected scope value.
   - **Example**:
 
     ```toml
@@ -3567,7 +3580,7 @@ If your backend or network is very bandwidth-constrained, reduce cap first. If p
     ```
 ## password
   - **Constraints / validation**: `String` (optional). Only for `type = "socks5"`.
-  - **Description**: SOCKS5 password (for username/password authentication). Note: when a request scope is selected, Telemt may override this with the selected scope value.
+  - **Description**: SOCKS5 password (for username/password authentication). Note: when a request scope is selected, tupoproxy may override this with the selected scope value.
   - **Example**:
 
     ```toml

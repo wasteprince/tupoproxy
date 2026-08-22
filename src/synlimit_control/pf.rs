@@ -3,7 +3,7 @@ use std::net::IpAddr;
 use super::command::{run_command, run_command_stdout};
 use super::model::{SynLimitNamespace, SynLimitRule, SynLimitTargets};
 
-const PF_ANCHOR_ROOT: &str = "telemt_synlimit";
+const PF_ANCHOR_ROOT: &str = "tupoproxy_synlimit";
 
 #[derive(Clone, Copy)]
 enum PfFamily {
@@ -45,7 +45,7 @@ async fn has_pf_anchor_hook() -> Result<bool, String> {
 }
 
 fn is_pf_anchor_hook_line(line: &str) -> bool {
-    line.trim().contains("anchor \"telemt_synlimit/*\"")
+    line.trim().contains("anchor \"tupoproxy_synlimit/*\"")
 }
 
 fn pf_synlimit_script(targets: &SynLimitTargets) -> String {
@@ -128,8 +128,8 @@ mod tests {
 
     #[test]
     fn pf_anchor_hook_detection_requires_wildcard_hook() {
-        assert!(is_pf_anchor_hook_line("anchor \"telemt_synlimit/*\" all"));
-        assert!(!is_pf_anchor_hook_line("anchor \"telemt_synlimit\" all"));
+        assert!(is_pf_anchor_hook_line("anchor \"tupoproxy_synlimit/*\" all"));
+        assert!(!is_pf_anchor_hook_line("anchor \"tupoproxy_synlimit\" all"));
         assert!(!is_pf_anchor_hook_line("anchor \"other\" all"));
     }
 }

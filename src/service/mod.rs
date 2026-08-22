@@ -1,4 +1,4 @@
-//! Service manager integration for telemt.
+//! Service manager integration for tupoproxy.
 //!
 //! Supports generating service files for:
 //! - systemd (Linux)
@@ -59,16 +59,16 @@ pub fn detect_init_system() -> InitSystem {
 /// Returns the default service file path for the given init system.
 pub fn service_file_path(init_system: InitSystem) -> &'static str {
     match init_system {
-        InitSystem::Systemd => "/etc/systemd/system/telemt.service",
-        InitSystem::OpenRC => "/etc/init.d/telemt",
-        InitSystem::FreeBSDRc => "/usr/local/etc/rc.d/telemt",
-        InitSystem::Unknown => "/etc/init.d/telemt",
+        InitSystem::Systemd => "/etc/systemd/system/tupoproxy.service",
+        InitSystem::OpenRC => "/etc/init.d/tupoproxy",
+        InitSystem::FreeBSDRc => "/usr/local/etc/rc.d/tupoproxy",
+        InitSystem::Unknown => "/etc/init.d/tupoproxy",
     }
 }
 
 /// Options for generating service files.
 pub struct ServiceOptions<'a> {
-    /// Path to the telemt executable
+    /// Path to the tupoproxy executable
     pub exe_path: &'a Path,
     /// Path to the configuration file
     pub config_path: &'a Path,
@@ -87,13 +87,13 @@ pub struct ServiceOptions<'a> {
 impl<'a> Default for ServiceOptions<'a> {
     fn default() -> Self {
         Self {
-            exe_path: Path::new("/usr/local/bin/telemt"),
-            config_path: Path::new("/etc/telemt/config.toml"),
-            user: Some("telemt"),
-            group: Some("telemt"),
-            pid_file: "/var/run/telemt.pid",
-            working_dir: Some("/var/lib/telemt"),
-            description: "Telemt MTProxy - Telegram MTProto Proxy",
+            exe_path: Path::new("/usr/local/bin/tupoproxy"),
+            config_path: Path::new("/etc/tupoproxy/config.toml"),
+            user: Some("tupoproxy"),
+            group: Some("tupoproxy"),
+            pid_file: "/var/run/tupoproxy.pid",
+            working_dir: Some("/var/lib/tupoproxy"),
+            description: "tupoproxy - Telegram MTProto Proxy",
         }
     }
 }
@@ -123,7 +123,7 @@ fn generate_systemd_unit(opts: &ServiceOptions) -> String {
     format!(
         r#"[Unit]
 Description={description}
-Documentation=https://github.com/telemt/telemt
+Documentation=https://github.com/wasteprince/tupoproxy
 After=network-online.target
 Wants=network-online.target
 
@@ -161,7 +161,7 @@ LockPersonality=true
 # Allow binding to privileged ports and writing to specific paths
 AmbientCapabilities=CAP_NET_BIND_SERVICE CAP_NET_ADMIN
 CapabilityBoundingSet=CAP_NET_BIND_SERVICE CAP_NET_ADMIN
-ReadWritePaths=/etc/telemt /var/run /var/lib/telemt
+ReadWritePaths=/etc/tupoproxy /var/run /var/lib/tupoproxy
 
 [Install]
 WantedBy=multi-user.target
@@ -183,7 +183,7 @@ fn generate_openrc_script(opts: &ServiceOptions) -> String {
 
     format!(
         r#"#!/sbin/openrc-run
-# OpenRC init script for telemt
+# OpenRC init script for tupoproxy
 
 description="{description}"
 command="{exe}"
@@ -199,8 +199,8 @@ depend() {{
 
 start_pre() {{
     checkpath --directory --owner {user}:{group} --mode 0755 /var/run
-    checkpath --directory --owner {user}:{group} --mode 0755 /var/lib/telemt
-    checkpath --directory --owner {user}:{group} --mode 0755 /var/log/telemt
+    checkpath --directory --owner {user}:{group} --mode 0755 /var/lib/tupoproxy
+    checkpath --directory --owner {user}:{group} --mode 0755 /var/log/tupoproxy
 }}
 
 reload() {{
@@ -226,46 +226,46 @@ fn generate_freebsd_rc_script(opts: &ServiceOptions) -> String {
     format!(
         r#"#!/bin/sh
 #
-# PROVIDE: telemt
+# PROVIDE: tupoproxy
 # REQUIRE: LOGIN NETWORKING
 # KEYWORD: shutdown
 #
-# Add the following lines to /etc/rc.conf to enable telemt:
+# Add the following lines to /etc/rc.conf to enable tupoproxy:
 #
-# telemt_enable="YES"
-# telemt_config="/etc/telemt/config.toml"  # optional
-# telemt_user="telemt"                      # optional
-# telemt_group="telemt"                     # optional
+# tupoproxy_enable="YES"
+# tupoproxy_config="/etc/tupoproxy/config.toml"  # optional
+# tupoproxy_user="tupoproxy"                      # optional
+# tupoproxy_group="tupoproxy"                     # optional
 #
 
 . /etc/rc.subr
 
-name="telemt"
-rcvar="telemt_enable"
+name="tupoproxy"
+rcvar="tupoproxy_enable"
 desc="{description}"
 
 load_rc_config $name
 
-: ${{telemt_enable:="NO"}}
-: ${{telemt_config:="{config}"}}
-: ${{telemt_user:="{user}"}}
-: ${{telemt_group:="{group}"}}
-: ${{telemt_pidfile:="{pid_file}"}}
+: ${{tupoproxy_enable:="NO"}}
+: ${{tupoproxy_config:="{config}"}}
+: ${{tupoproxy_user:="{user}"}}
+: ${{tupoproxy_group:="{group}"}}
+: ${{tupoproxy_pidfile:="{pid_file}"}}
 
-pidfile="${{telemt_pidfile}}"
+pidfile="${{tupoproxy_pidfile}}"
 command="{exe}"
-command_args="--daemon --syslog --pid-file ${{telemt_pidfile}} ${{telemt_config}}"
+command_args="--daemon --syslog --pid-file ${{tupoproxy_pidfile}} ${{tupoproxy_config}}"
 
-start_precmd="telemt_prestart"
-reload_cmd="telemt_reload"
+start_precmd="tupoproxy_prestart"
+reload_cmd="tupoproxy_reload"
 extra_commands="reload"
 
-telemt_prestart() {{
-    install -d -o ${{telemt_user}} -g ${{telemt_group}} -m 755 /var/run
-    install -d -o ${{telemt_user}} -g ${{telemt_group}} -m 755 /var/lib/telemt
+tupoproxy_prestart() {{
+    install -d -o ${{tupoproxy_user}} -g ${{tupoproxy_group}} -m 755 /var/run
+    install -d -o ${{tupoproxy_user}} -g ${{tupoproxy_group}} -m 755 /var/lib/tupoproxy
 }}
 
-telemt_reload() {{
+tupoproxy_reload() {{
     if [ -f "${{pidfile}}" ]; then
         echo "Reloading ${{name}} configuration."
         kill -HUP $(cat ${{pidfile}})
@@ -292,49 +292,49 @@ pub fn installation_instructions(init_system: InitSystem) -> &'static str {
         InitSystem::Systemd => {
             r#"To install and enable the service:
   sudo systemctl daemon-reload
-  sudo systemctl enable telemt
-  sudo systemctl start telemt
+  sudo systemctl enable tupoproxy
+  sudo systemctl start tupoproxy
 
 To check status:
-  sudo systemctl status telemt
+  sudo systemctl status tupoproxy
 
 To view logs:
-  journalctl -u telemt -f
+  journalctl -u tupoproxy -f
 
 To reload configuration:
-  sudo systemctl reload telemt
+  sudo systemctl reload tupoproxy
 "#
         }
         InitSystem::OpenRC => {
             r#"To install and enable the service:
-  sudo chmod +x /etc/init.d/telemt
-  sudo rc-update add telemt default
-  sudo rc-service telemt start
+  sudo chmod +x /etc/init.d/tupoproxy
+  sudo rc-update add tupoproxy default
+  sudo rc-service tupoproxy start
 
 To check status:
-  sudo rc-service telemt status
+  sudo rc-service tupoproxy status
 
 To reload configuration:
-  sudo rc-service telemt reload
+  sudo rc-service tupoproxy reload
 "#
         }
         InitSystem::FreeBSDRc => {
             r#"To install and enable the service:
-  sudo chmod +x /usr/local/etc/rc.d/telemt
-  sudo sysrc telemt_enable="YES"
-  sudo service telemt start
+  sudo chmod +x /usr/local/etc/rc.d/tupoproxy
+  sudo sysrc tupoproxy_enable="YES"
+  sudo service tupoproxy start
 
 To check status:
-  sudo service telemt status
+  sudo service tupoproxy status
 
 To reload configuration:
-  sudo service telemt reload
+  sudo service tupoproxy reload
 "#
         }
         InitSystem::Unknown => {
             r#"No supported init system detected.
-You may need to create a service file manually or run telemt directly:
-  telemt start /etc/telemt/config.toml
+You may need to create a service file manually or run tupoproxy directly:
+  tupoproxy start /etc/tupoproxy/config.toml
 "#
         }
     }
@@ -369,7 +369,7 @@ mod tests {
         let opts = ServiceOptions::default();
         let script = generate_freebsd_rc_script(&opts);
         assert!(script.contains("#!/bin/sh"));
-        assert!(script.contains("PROVIDE: telemt"));
+        assert!(script.contains("PROVIDE: tupoproxy"));
         assert!(script.contains("run_rc_command"));
     }
 
@@ -377,12 +377,12 @@ mod tests {
     fn test_service_file_paths() {
         assert_eq!(
             service_file_path(InitSystem::Systemd),
-            "/etc/systemd/system/telemt.service"
+            "/etc/systemd/system/tupoproxy.service"
         );
-        assert_eq!(service_file_path(InitSystem::OpenRC), "/etc/init.d/telemt");
+        assert_eq!(service_file_path(InitSystem::OpenRC), "/etc/init.d/tupoproxy");
         assert_eq!(
             service_file_path(InitSystem::FreeBSDRc),
-            "/usr/local/etc/rc.d/telemt"
+            "/usr/local/etc/rc.d/tupoproxy"
         );
     }
 }

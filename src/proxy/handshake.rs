@@ -20,14 +20,16 @@ use tokio::io::{AsyncRead, AsyncWrite, AsyncWriteExt};
 use tracing::{debug, info, trace, warn};
 use zeroize::{Zeroize, Zeroizing};
 
-use crate::config::{ProxyConfig, UnknownSniAction};
+use crate::config::{ProxyConfig, TlsFingerprintProfile, UnknownSniAction};
 use crate::crypto::{AesCtr, SecureRandom, sha256};
 use crate::error::{HandshakeResult, ProxyError};
 use crate::protocol::constants::*;
 use crate::protocol::tls;
 use crate::proxy::shared_state::ProxySharedState;
 use crate::stats::ReplayChecker;
-use crate::stream::{CryptoReader, CryptoWriter, FakeTlsReader, FakeTlsWriter};
+use crate::stream::{
+    CryptoReader, CryptoWriter, FakeTlsReader, FakeTlsWriter, TlsRecordProfile,
+};
 use crate::tls_front::{TlsFrontCache, emulator};
 #[cfg(test)]
 use rand::RngExt;

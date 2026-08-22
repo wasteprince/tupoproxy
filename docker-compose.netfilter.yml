@@ -1,5 +1,5 @@
 services:
-  telemt:
+  tupoproxy:
     build:
       context: .
       target: prod-netfilter

@@ -1,7 +1,13 @@
 [package]
-name = "telemt"
+name = "tupoproxy"
 version = "3.5.0"
 edition = "2024"
+description = "MTProto proxy with selectable TLS camouflage and real HTTPS fallback"
+repository = "https://github.com/wasteprince/tupoproxy"
+readme = "README.md"
+license-file = "LICENSE"
+keywords = ["telegram", "mtproto", "proxy", "tls"]
+categories = ["network-programming"]
 
 [features]
 redteam_offline_expected_fail = []

@@ -29,7 +29,7 @@
             "title": "Official GitHub repository",
             "tooltip": "Official GitHub repository",
             "type": "link",
-            "url": "https://github.com/telemt/telemt"
+            "url": "https://github.com/wasteprince/tupoproxy"
         }
     ],
     "panels": [
@@ -51,7 +51,7 @@
                 "type": "prometheus",
                 "uid": "${datasource}"
             },
-            "description": "Build version reported by telemt.",
+            "description": "Build version reported by tupoproxy.",
             "fieldConfig": {
                 "defaults": {
                     "mappings": [],
@@ -104,7 +104,7 @@
             "targets": [
                 {
                     "editorMode": "code",
-                    "expr": "max by (version) (telemt_build_info{job=~\"$job\"})",
+                    "expr": "max by (version) (tupoproxy_build_info{job=~\"$job\"})",
                     "instant": true,
                     "legendFormat": "{{version}}",
                     "refId": "A"
@@ -118,7 +118,7 @@
                 "type": "prometheus",
                 "uid": "${datasource}"
             },
-            "description": "telemt process uptime in seconds.",
+            "description": "tupoproxy process uptime in seconds.",
             "fieldConfig": {
                 "defaults": {
                     "decimals": 1,
@@ -164,7 +164,7 @@
             "targets": [
                 {
                     "editorMode": "code",
-                    "expr": "max(telemt_uptime_seconds{job=~\"$job\"})",
+                    "expr": "max(tupoproxy_uptime_seconds{job=~\"$job\"})",
                     "refId": "A"
                 }
             ],
@@ -221,7 +221,7 @@
             "targets": [
                 {
                     "editorMode": "code",
-                    "expr": "count(telemt_user_unique_ips_limit{job=~\"$job\"})",
+                    "expr": "count(tupoproxy_user_unique_ips_limit{job=~\"$job\"})",
                     "instant": true,
                     "refId": "A"
                 }
@@ -310,14 +310,14 @@
             "targets": [
                 {
                     "editorMode": "code",
-                    "expr": "sum(telemt_user_octets_from_client{job=~\"$job\"})",
+                    "expr": "sum(tupoproxy_user_octets_from_client{job=~\"$job\"})",
                     "instant": true,
                     "legendFormat": "In total",
                     "refId": "A"
                 },
                 {
                     "editorMode": "code",
-                    "expr": "sum(telemt_user_octets_to_client{job=~\"$job\"})",
+                    "expr": "sum(tupoproxy_user_octets_to_client{job=~\"$job\"})",
                     "instant": true,
                     "legendFormat": "Out total",
                     "refId": "B"
@@ -380,7 +380,7 @@
             "targets": [
                 {
                     "editorMode": "code",
-                    "expr": "max(telemt_buffer_pool_buffers_total{kind=\"in_use\",job=~\"$job\"})",
+                    "expr": "max(tupoproxy_buffer_pool_buffers_total{kind=\"in_use\",job=~\"$job\"})",
                     "legendFormat": "in use",
                     "refId": "A"
                 }
@@ -444,7 +444,7 @@
             "targets": [
                 {
                     "editorMode": "code",
-                    "expr": "max(1 - telemt_telemetry_user_series_suppressed{job=~\"$job\"})",
+                    "expr": "max(1 - tupoproxy_telemetry_user_series_suppressed{job=~\"$job\"})",
                     "instant": true,
                     "refId": "A"
                 }
@@ -506,7 +506,7 @@
             "targets": [
                 {
                     "editorMode": "code",
-                    "expr": "sum(increase(telemt_connections_total{job=~\"$job\"}[$__range]))",
+                    "expr": "sum(increase(tupoproxy_connections_total{job=~\"$job\"}[$__range]))",
                     "refId": "A"
                 }
             ],
@@ -567,7 +567,7 @@
             "targets": [
                 {
                     "editorMode": "code",
-                    "expr": "sum(increase(telemt_connections_bad_total{job=~\"$job\"}[$__range]))",
+                    "expr": "sum(increase(tupoproxy_connections_bad_total{job=~\"$job\"}[$__range]))",
                     "refId": "A"
                 }
             ],
@@ -634,7 +634,7 @@
             "targets": [
                 {
                     "editorMode": "code",
-                    "expr": "100 * sum(rate(telemt_connections_bad_total{job=~\"$job\"}[$__rate_interval])) / clamp_min(sum(rate(telemt_connections_total{job=~\"$job\"}[$__rate_interval])), 1e-9)",
+                    "expr": "100 * sum(rate(tupoproxy_connections_bad_total{job=~\"$job\"}[$__rate_interval])) / clamp_min(sum(rate(tupoproxy_connections_total{job=~\"$job\"}[$__rate_interval])), 1e-9)",
                     "refId": "A"
                 }
             ],
@@ -789,25 +789,25 @@
             "targets": [
                 {
                     "editorMode": "code",
-                    "expr": "sum(rate(telemt_connections_total{job=~\"$job\"}[$__rate_interval]))",
+                    "expr": "sum(rate(tupoproxy_connections_total{job=~\"$job\"}[$__rate_interval]))",
                     "legendFormat": "Connections/s",
                     "refId": "A"
                 },
                 {
                     "editorMode": "code",
-                    "expr": "sum(rate(telemt_connections_bad_total{job=~\"$job\"}[$__rate_interval]))",
+                    "expr": "sum(rate(tupoproxy_connections_bad_total{job=~\"$job\"}[$__rate_interval]))",
                     "legendFormat": "Bad/s",
                     "refId": "B"
                 },
                 {
                     "editorMode": "code",
-                    "expr": "sum(rate(telemt_handshake_timeouts_total{job=~\"$job\"}[$__rate_interval]))",
+                    "expr": "sum(rate(tupoproxy_handshake_timeouts_total{job=~\"$job\"}[$__rate_interval]))",
                     "legendFormat": "Timeouts/s",
                     "refId": "C"
                 },
                 {
                     "editorMode": "code",
-                    "expr": "sum(rate(telemt_accept_permit_timeout_total{job=~\"$job\"}[$__rate_interval]))",
+                    "expr": "sum(rate(tupoproxy_accept_permit_timeout_total{job=~\"$job\"}[$__rate_interval]))",
                     "legendFormat": "Permit waits/s",
                     "refId": "D"
                 }
@@ -873,7 +873,7 @@
             "targets": [
                 {
                     "editorMode": "code",
-                    "expr": "sum(increase(telemt_accept_permit_timeout_total{job=~\"$job\"}[$__range]))",
+                    "expr": "sum(increase(tupoproxy_accept_permit_timeout_total{job=~\"$job\"}[$__range]))",
                     "refId": "A"
                 }
             ],
@@ -938,7 +938,7 @@
             "targets": [
                 {
                     "editorMode": "code",
-                    "expr": "sum(increase(telemt_auth_budget_exhausted_total{job=~\"$job\"}[$__range]))",
+                    "expr": "sum(increase(tupoproxy_auth_budget_exhausted_total{job=~\"$job\"}[$__range]))",
                     "refId": "A"
                 }
             ],
@@ -999,7 +999,7 @@
             "targets": [
                 {
                     "editorMode": "code",
-                    "expr": "sum(increase(telemt_handshake_timeouts_total{job=~\"$job\"}[$__range]))",
+                    "expr": "sum(increase(tupoproxy_handshake_timeouts_total{job=~\"$job\"}[$__range]))",
                     "refId": "A"
                 }
             ],
@@ -1093,7 +1093,7 @@
             "targets": [
                 {
                     "editorMode": "code",
-                    "expr": "sum by (class) (rate(telemt_connections_bad_by_class_total{job=~\"$job\"}[$__rate_interval]))",
+                    "expr": "sum by (class) (rate(tupoproxy_connections_bad_by_class_total{job=~\"$job\"}[$__rate_interval]))",
                     "legendFormat": "{{class}}/s",
                     "refId": "A"
                 }
@@ -1188,7 +1188,7 @@
             "targets": [
                 {
                     "editorMode": "code",
-                    "expr": "sum by (class) (rate(telemt_handshake_failures_by_class_total{job=~\"$job\"}[$__rate_interval]))",
+                    "expr": "sum by (class) (rate(tupoproxy_handshake_failures_by_class_total{job=~\"$job\"}[$__rate_interval]))",
                     "legendFormat": "{{class}}/s",
                     "refId": "A"
                 }
@@ -1342,19 +1342,19 @@
             "targets": [
                 {
                     "editorMode": "code",
-                    "expr": "sum(rate(telemt_upstream_connect_attempt_total{job=~\"$job\"}[$__rate_interval]))",
+                    "expr": "sum(rate(tupoproxy_upstream_connect_attempt_total{job=~\"$job\"}[$__rate_interval]))",
                     "legendFormat": "Attempt/s",
                     "refId": "A"
                 },
                 {
                     "editorMode": "code",
-                    "expr": "sum(rate(telemt_upstream_connect_success_total{job=~\"$job\"}[$__rate_interval]))",
+                    "expr": "sum(rate(tupoproxy_upstream_connect_success_total{job=~\"$job\"}[$__rate_interval]))",
                     "legendFormat": "Success/s",
                     "refId": "B"
                 },
                 {
                     "editorMode": "code",
-                    "expr": "sum(rate(telemt_upstream_connect_fail_total{job=~\"$job\"}[$__rate_interval]))",
+                    "expr": "sum(rate(tupoproxy_upstream_connect_fail_total{job=~\"$job\"}[$__rate_interval]))",
                     "legendFormat": "Fail/s",
                     "refId": "C"
                 }
@@ -1510,25 +1510,25 @@
             "targets": [
                 {
                     "editorMode": "code",
-                    "expr": "sum(rate(telemt_upstream_connect_attempts_per_request{bucket=\"1\",job=~\"$job\"}[$__rate_interval]))",
+                    "expr": "sum(rate(tupoproxy_upstream_connect_attempts_per_request{bucket=\"1\",job=~\"$job\"}[$__rate_interval]))",
                     "legendFormat": "1 attempt/s",
                     "refId": "A"
                 },
                 {
                     "editorMode": "code",
-                    "expr": "sum(rate(telemt_upstream_connect_attempts_per_request{bucket=\"2\",job=~\"$job\"}[$__rate_interval]))",
+                    "expr": "sum(rate(tupoproxy_upstream_connect_attempts_per_request{bucket=\"2\",job=~\"$job\"}[$__rate_interval]))",
                     "legendFormat": "2 attempts/s",
                     "refId": "B"
                 },
                 {
                     "editorMode": "code",
-                    "expr": "sum(rate(telemt_upstream_connect_attempts_per_request{bucket=\"3_4\",job=~\"$job\"}[$__rate_interval]))",
+                    "expr": "sum(rate(tupoproxy_upstream_connect_attempts_per_request{bucket=\"3_4\",job=~\"$job\"}[$__rate_interval]))",
                     "legendFormat": "3-4 attempts/s",
                     "refId": "C"
                 },
                 {
                     "editorMode": "code",
-                    "expr": "sum(rate(telemt_upstream_connect_attempts_per_request{bucket=\"gt_4\",job=~\"$job\"}[$__rate_interval]))",
+                    "expr": "sum(rate(tupoproxy_upstream_connect_attempts_per_request{bucket=\"gt_4\",job=~\"$job\"}[$__rate_interval]))",
                     "legendFormat": ">4 attempts/s",
                     "refId": "D"
                 }
@@ -1669,19 +1669,19 @@
             "targets": [
                 {
                     "editorMode": "code",
-                    "expr": "sum(rate(telemt_upstream_connect_duration_success_total{bucket=\"gt_1000ms\",job=~\"$job\"}[$__rate_interval]))",
+                    "expr": "sum(rate(tupoproxy_upstream_connect_duration_success_total{bucket=\"gt_1000ms\",job=~\"$job\"}[$__rate_interval]))",
                     "legendFormat": "success >1s/s",
                     "refId": "A"
                 },
                 {
                     "editorMode": "code",
-                    "expr": "sum(rate(telemt_upstream_connect_duration_fail_total{bucket=\"gt_1000ms\",job=~\"$job\"}[$__rate_interval]))",
+                    "expr": "sum(rate(tupoproxy_upstream_connect_duration_fail_total{bucket=\"gt_1000ms\",job=~\"$job\"}[$__rate_interval]))",
                     "legendFormat": "fail >1s/s",
                     "refId": "B"
                 },
                 {
                     "editorMode": "code",
-                    "expr": "sum(rate(telemt_upstream_connect_failfast_hard_error_total{job=~\"$job\"}[$__rate_interval]))",
+                    "expr": "sum(rate(tupoproxy_upstream_connect_failfast_hard_error_total{job=~\"$job\"}[$__rate_interval]))",
                     "legendFormat": "failfast hard/s",
                     "refId": "C"
                 }
@@ -1820,13 +1820,13 @@
             "targets": [
                 {
                     "editorMode": "code",
-                    "expr": "sum(rate(telemt_auth_expensive_checks_total{job=~\"$job\"}[$__rate_interval]))",
+                    "expr": "sum(rate(tupoproxy_auth_expensive_checks_total{job=~\"$job\"}[$__rate_interval]))",
                     "legendFormat": "Expensive checks/s",
                     "refId": "A"
                 },
                 {
                     "editorMode": "code",
-                    "expr": "sum(rate(telemt_auth_budget_exhausted_total{job=~\"$job\"}[$__rate_interval]))",
+                    "expr": "sum(rate(tupoproxy_auth_budget_exhausted_total{job=~\"$job\"}[$__rate_interval]))",
                     "legendFormat": "Budget exhausted/s",
                     "refId": "B"
                 }
@@ -1952,13 +1952,13 @@
             "targets": [
                 {
                     "editorMode": "code",
-                    "expr": "sum(rate(telemt_secure_padding_invalid_total{job=~\"$job\"}[$__rate_interval]))",
+                    "expr": "sum(rate(tupoproxy_secure_padding_invalid_total{job=~\"$job\"}[$__rate_interval]))",
                     "legendFormat": "secure padding invalid/s",
                     "refId": "A"
                 },
                 {
                     "editorMode": "code",
-                    "expr": "sum(rate(telemt_accept_permit_timeout_total{job=~\"$job\"}[$__rate_interval]))",
+                    "expr": "sum(rate(tupoproxy_accept_permit_timeout_total{job=~\"$job\"}[$__rate_interval]))",
                     "legendFormat": "permit wait timeout/s",
                     "refId": "B"
                 }
@@ -2060,28 +2060,28 @@
             "targets": [
                 {
                     "editorMode": "code",
-                    "expr": "max(telemt_conntrack_control_state{flag=\"enabled\",job=~\"$job\"})",
+                    "expr": "max(tupoproxy_conntrack_control_state{flag=\"enabled\",job=~\"$job\"})",
                     "instant": true,
                     "legendFormat": "enabled",
                     "refId": "A"
                 },
                 {
                     "editorMode": "code",
-                    "expr": "max(telemt_conntrack_control_state{flag=\"available\",job=~\"$job\"})",
+                    "expr": "max(tupoproxy_conntrack_control_state{flag=\"available\",job=~\"$job\"})",
                     "instant": true,
                     "legendFormat": "available",
                     "refId": "B"
                 },
                 {
                     "editorMode": "code",
-                    "expr": "max(telemt_conntrack_control_state{flag=\"pressure_active\",job=~\"$job\"})",
+                    "expr": "max(tupoproxy_conntrack_control_state{flag=\"pressure_active\",job=~\"$job\"})",
                     "instant": true,
                     "legendFormat": "pressure_active",
                     "refId": "C"
                 },
                 {
                     "editorMode": "code",
-                    "expr": "max(telemt_conntrack_control_state{flag=\"rule_apply_ok\",job=~\"$job\"})",
+                    "expr": "max(tupoproxy_conntrack_control_state{flag=\"rule_apply_ok\",job=~\"$job\"})",
                     "instant": true,
                     "legendFormat": "rule_apply_ok",
                     "refId": "D"
@@ -2253,31 +2253,31 @@
             "targets": [
                 {
                     "editorMode": "code",
-                    "expr": "sum(rate(telemt_conntrack_delete_total{result=\"attempt\",job=~\"$job\"}[$__rate_interval]))",
+                    "expr": "sum(rate(tupoproxy_conntrack_delete_total{result=\"attempt\",job=~\"$job\"}[$__rate_interval]))",
                     "legendFormat": "Delete attempt/s",
                     "refId": "A"
                 },
                 {
                     "editorMode": "code",
-                    "expr": "sum(rate(telemt_conntrack_delete_total{result=\"success\",job=~\"$job\"}[$__rate_interval]))",
+                    "expr": "sum(rate(tupoproxy_conntrack_delete_total{result=\"success\",job=~\"$job\"}[$__rate_interval]))",
                     "legendFormat": "Delete success/s",
                     "refId": "B"
                 },
                 {
                     "editorMode": "code",
-                    "expr": "sum(rate(telemt_conntrack_delete_total{result=\"not_found\",job=~\"$job\"}[$__rate_interval]))",
+                    "expr": "sum(rate(tupoproxy_conntrack_delete_total{result=\"not_found\",job=~\"$job\"}[$__rate_interval]))",
                     "legendFormat": "Delete not_found/s",
                     "refId": "C"
                 },
                 {
                     "editorMode": "code",
-                    "expr": "sum(rate(telemt_conntrack_delete_total{result=\"error\",job=~\"$job\"}[$__rate_interval]))",
+                    "expr": "sum(rate(tupoproxy_conntrack_delete_total{result=\"error\",job=~\"$job\"}[$__rate_interval]))",
                     "legendFormat": "Delete error/s",
                     "refId": "D"
                 },
                 {
                     "editorMode": "code",
-                    "expr": "sum(rate(telemt_conntrack_close_event_drop_total{job=~\"$job\"}[$__rate_interval]))",
+                    "expr": "sum(rate(tupoproxy_conntrack_close_event_drop_total{job=~\"$job\"}[$__rate_interval]))",
                     "legendFormat": "Close-event drop/s",
                     "refId": "E"
                 }
@@ -2376,7 +2376,7 @@
             "targets": [
                 {
                     "editorMode": "code",
-                    "expr": "max(telemt_conntrack_event_queue_depth{job=~\"$job\"})",
+                    "expr": "max(tupoproxy_conntrack_event_queue_depth{job=~\"$job\"})",
                     "legendFormat": "Queue depth",
                     "refId": "A"
                 }
@@ -2473,7 +2473,7 @@
             "targets": [
                 {
                     "editorMode": "code",
-                    "expr": "max(telemt_telemetry_me_level{level=\"normal\",job=~\"$job\"}) + 2 * max(telemt_telemetry_me_level{level=\"debug\",job=~\"$job\"})",
+                    "expr": "max(tupoproxy_telemetry_me_level{level=\"normal\",job=~\"$job\"}) + 2 * max(tupoproxy_telemetry_me_level{level=\"debug\",job=~\"$job\"})",
                     "instant": true,
                     "refId": "A"
                 }
@@ -2539,7 +2539,7 @@
             "targets": [
                 {
                     "editorMode": "code",
-                    "expr": "sum(increase(telemt_me_handshake_reject_total{job=~\"$job\"}[$__range]))",
+                    "expr": "sum(increase(tupoproxy_me_handshake_reject_total{job=~\"$job\"}[$__range]))",
                     "refId": "A"
                 }
             ],
@@ -2679,19 +2679,19 @@
             "targets": [
                 {
                     "editorMode": "code",
-                    "expr": "sum(rate(telemt_me_reconnect_attempts_total{job=~\"$job\"}[$__rate_interval]))",
+                    "expr": "sum(rate(tupoproxy_me_reconnect_attempts_total{job=~\"$job\"}[$__rate_interval]))",
                     "legendFormat": "Reconnect attempt/s",
                     "refId": "A"
                 },
                 {
                     "editorMode": "code",
-                    "expr": "sum(rate(telemt_me_reconnect_success_total{job=~\"$job\"}[$__rate_interval]))",
+                    "expr": "sum(rate(tupoproxy_me_reconnect_success_total{job=~\"$job\"}[$__rate_interval]))",
                     "legendFormat": "Reconnect success/s",
                     "refId": "B"
                 },
                 {
                     "editorMode": "code",
-                    "expr": "sum(rate(telemt_me_reader_eof_total{job=~\"$job\"}[$__rate_interval]))",
+                    "expr": "sum(rate(tupoproxy_me_reader_eof_total{job=~\"$job\"}[$__rate_interval]))",
                     "legendFormat": "Reader EOF/s",
                     "refId": "C"
                 }
@@ -2847,25 +2847,25 @@
             "targets": [
                 {
                     "editorMode": "code",
-                    "expr": "sum(rate(telemt_me_route_drop_no_conn_total{job=~\"$job\"}[$__rate_interval]))",
+                    "expr": "sum(rate(tupoproxy_me_route_drop_no_conn_total{job=~\"$job\"}[$__rate_interval]))",
                     "legendFormat": "Drop no_conn/s",
                     "refId": "A"
                 },
                 {
                     "editorMode": "code",
-                    "expr": "sum(rate(telemt_me_route_drop_channel_closed_total{job=~\"$job\"}[$__rate_interval]))",
+                    "expr": "sum(rate(tupoproxy_me_route_drop_channel_closed_total{job=~\"$job\"}[$__rate_interval]))",
                     "legendFormat": "Drop channel_closed/s",
                     "refId": "B"
                 },
                 {
                     "editorMode": "code",
-                    "expr": "sum(rate(telemt_me_route_drop_queue_full_total{job=~\"$job\"}[$__rate_interval]))",
+                    "expr": "sum(rate(tupoproxy_me_route_drop_queue_full_total{job=~\"$job\"}[$__rate_interval]))",
                     "legendFormat": "Drop queue_full/s",
                     "refId": "C"
                 },
                 {
                     "editorMode": "code",
-                    "expr": "sum(rate(telemt_desync_total{job=~\"$job\"}[$__rate_interval]))",
+                    "expr": "sum(rate(tupoproxy_desync_total{job=~\"$job\"}[$__rate_interval]))",
                     "legendFormat": "Desync/s",
                     "refId": "D"
                 }
@@ -2976,13 +2976,13 @@
             "targets": [
                 {
                     "editorMode": "code",
-                    "expr": "sum(rate(telemt_me_handshake_reject_total{job=~\"$job\"}[$__rate_interval]))",
+                    "expr": "sum(rate(tupoproxy_me_handshake_reject_total{job=~\"$job\"}[$__rate_interval]))",
                     "legendFormat": "reject total/s",
                     "refId": "A"
                 },
                 {
                     "editorMode": "code",
-                    "expr": "sum by (error_code) (rate(telemt_me_handshake_error_code_total{job=~\"$job\"}[$__rate_interval]))",
+                    "expr": "sum by (error_code) (rate(tupoproxy_me_handshake_error_code_total{job=~\"$job\"}[$__rate_interval]))",
                     "legendFormat": "Code {{error_code}}/s",
                     "refId": "B"
                 }
@@ -3108,13 +3108,13 @@
             "targets": [
                 {
                     "editorMode": "code",
-                    "expr": "sum(telemt_me_writers_active_current{job=~\"$job\"})",
+                    "expr": "sum(tupoproxy_me_writers_active_current{job=~\"$job\"})",
                     "legendFormat": "Active",
                     "refId": "A"
                 },
                 {
                     "editorMode": "code",
-                    "expr": "sum(telemt_me_writers_warm_current{job=~\"$job\"})",
+                    "expr": "sum(tupoproxy_me_writers_warm_current{job=~\"$job\"})",
                     "legendFormat": "Warm",
                     "refId": "B"
                 }
@@ -3270,25 +3270,25 @@
             "targets": [
                 {
                     "editorMode": "code",
-                    "expr": "sum(rate(telemt_me_keepalive_sent_total{job=~\"$job\"}[$__rate_interval]))",
+                    "expr": "sum(rate(tupoproxy_me_keepalive_sent_total{job=~\"$job\"}[$__rate_interval]))",
                     "legendFormat": "sent/s",
                     "refId": "A"
                 },
                 {
                     "editorMode": "code",
-                    "expr": "sum(rate(telemt_me_keepalive_pong_total{job=~\"$job\"}[$__rate_interval]))",
+                    "expr": "sum(rate(tupoproxy_me_keepalive_pong_total{job=~\"$job\"}[$__rate_interval]))",
                     "legendFormat": "pong/s",
                     "refId": "B"
                 },
                 {
                     "editorMode": "code",
-                    "expr": "sum(rate(telemt_me_keepalive_failed_total{job=~\"$job\"}[$__rate_interval]))",
+                    "expr": "sum(rate(tupoproxy_me_keepalive_failed_total{job=~\"$job\"}[$__rate_interval]))",
                     "legendFormat": "failed/s",
                     "refId": "C"
                 },
                 {
                     "editorMode": "code",
-                    "expr": "sum(rate(telemt_me_keepalive_timeout_total{job=~\"$job\"}[$__rate_interval]))",
+                    "expr": "sum(rate(tupoproxy_me_keepalive_timeout_total{job=~\"$job\"}[$__rate_interval]))",
                     "legendFormat": "timeout/s",
                     "refId": "D"
                 }
@@ -3429,19 +3429,19 @@
             "targets": [
                 {
                     "editorMode": "code",
-                    "expr": "sum(rate(telemt_pool_force_close_total{job=~\"$job\"}[$__rate_interval]))",
+                    "expr": "sum(rate(tupoproxy_pool_force_close_total{job=~\"$job\"}[$__rate_interval]))",
                     "legendFormat": "forced close/s",
                     "refId": "A"
                 },
                 {
                     "editorMode": "code",
-                    "expr": "sum(rate(telemt_me_refill_triggered_total{job=~\"$job\"}[$__rate_interval]))",
+                    "expr": "sum(rate(tupoproxy_me_refill_triggered_total{job=~\"$job\"}[$__rate_interval]))",
                     "legendFormat": "refill triggered/s",
                     "refId": "B"
                 },
                 {
                     "editorMode": "code",
-                    "expr": "sum(rate(telemt_me_refill_failed_total{job=~\"$job\"}[$__rate_interval]))",
+                    "expr": "sum(rate(tupoproxy_me_refill_failed_total{job=~\"$job\"}[$__rate_interval]))",
                     "legendFormat": "refill failed/s",
                     "refId": "C"
                 }
@@ -3582,19 +3582,19 @@
             "targets": [
                 {
                     "editorMode": "code",
-                    "expr": "max(telemt_me_adaptive_floor_target_writers_total{job=~\"$job\"})",
+                    "expr": "max(tupoproxy_me_adaptive_floor_target_writers_total{job=~\"$job\"})",
                     "legendFormat": "target writers",
                     "refId": "A"
                 },
                 {
                     "editorMode": "code",
-                    "expr": "sum(telemt_me_writers_active_current{job=~\"$job\"})",
+                    "expr": "sum(tupoproxy_me_writers_active_current{job=~\"$job\"})",
                     "legendFormat": "active writers",
                     "refId": "B"
                 },
                 {
                     "editorMode": "code",
-                    "expr": "sum(telemt_me_writers_warm_current{job=~\"$job\"})",
+                    "expr": "sum(tupoproxy_me_writers_warm_current{job=~\"$job\"})",
                     "legendFormat": "warm writers",
                     "refId": "C"
                 }
@@ -3793,37 +3793,37 @@
             "targets": [
                 {
                     "editorMode": "code",
-                    "expr": "sum(rate(telemt_me_d2c_batch_bytes_bucket_total{bucket=\"0_1k\",job=~\"$job\"}[$__rate_interval]))",
+                    "expr": "sum(rate(tupoproxy_me_d2c_batch_bytes_bucket_total{bucket=\"0_1k\",job=~\"$job\"}[$__rate_interval]))",
                     "legendFormat": "0-1 KiB/s",
                     "refId": "A"
                 },
                 {
                     "editorMode": "code",
-                    "expr": "sum(rate(telemt_me_d2c_batch_bytes_bucket_total{bucket=\"1k_4k\",job=~\"$job\"}[$__rate_interval]))",
+                    "expr": "sum(rate(tupoproxy_me_d2c_batch_bytes_bucket_total{bucket=\"1k_4k\",job=~\"$job\"}[$__rate_interval]))",
                     "legendFormat": "1-4 KiB/s",
                     "refId": "B"
                 },
                 {
                     "editorMode": "code",
-                    "expr": "sum(rate(telemt_me_d2c_batch_bytes_bucket_total{bucket=\"4k_16k\",job=~\"$job\"}[$__rate_interval]))",
+                    "expr": "sum(rate(tupoproxy_me_d2c_batch_bytes_bucket_total{bucket=\"4k_16k\",job=~\"$job\"}[$__rate_interval]))",
                     "legendFormat": "4-16 KiB/s",
                     "refId": "C"
                 },
                 {
                     "editorMode": "code",
-                    "expr": "sum(rate(telemt_me_d2c_batch_bytes_bucket_total{bucket=\"16k_64k\",job=~\"$job\"}[$__rate_interval]))",
+                    "expr": "sum(rate(tupoproxy_me_d2c_batch_bytes_bucket_total{bucket=\"16k_64k\",job=~\"$job\"}[$__rate_interval]))",
                     "legendFormat": "16-64 KiB/s",
                     "refId": "D"
                 },
                 {
                     "editorMode": "code",
-                    "expr": "sum(rate(telemt_me_d2c_batch_bytes_bucket_total{bucket=\"64k_128k\",job=~\"$job\"}[$__rate_interval]))",
+                    "expr": "sum(rate(tupoproxy_me_d2c_batch_bytes_bucket_total{bucket=\"64k_128k\",job=~\"$job\"}[$__rate_interval]))",
                     "legendFormat": "64-128 KiB/s",
                     "refId": "E"
                 },
                 {
                     "editorMode": "code",
-                    "expr": "sum(rate(telemt_me_d2c_batch_bytes_bucket_total{bucket=\"gt_128k\",job=~\"$job\"}[$__rate_interval]))",
+                    "expr": "sum(rate(tupoproxy_me_d2c_batch_bytes_bucket_total{bucket=\"gt_128k\",job=~\"$job\"}[$__rate_interval]))",
                     "legendFormat": ">128 KiB/s",
                     "refId": "F"
                 }
@@ -4009,37 +4009,37 @@
             "targets": [
                 {
                     "editorMode": "code",
-                    "expr": "sum(rate(telemt_me_d2c_batch_frames_bucket_total{bucket=\"1\",job=~\"$job\"}[$__rate_interval]))",
+                    "expr": "sum(rate(tupoproxy_me_d2c_batch_frames_bucket_total{bucket=\"1\",job=~\"$job\"}[$__rate_interval]))",
                     "legendFormat": "1 frame/s",
                     "refId": "A"
                 },
                 {
                     "editorMode": "code",
-                    "expr": "sum(rate(telemt_me_d2c_batch_frames_bucket_total{bucket=\"2_4\",job=~\"$job\"}[$__rate_interval]))",
+                    "expr": "sum(rate(tupoproxy_me_d2c_batch_frames_bucket_total{bucket=\"2_4\",job=~\"$job\"}[$__rate_interval]))",
                     "legendFormat": "2-4 frames/s",
                     "refId": "B"
                 },
                 {
                     "editorMode": "code",
-                    "expr": "sum(rate(telemt_me_d2c_batch_frames_bucket_total{bucket=\"5_8\",job=~\"$job\"}[$__rate_interval]))",
+                    "expr": "sum(rate(tupoproxy_me_d2c_batch_frames_bucket_total{bucket=\"5_8\",job=~\"$job\"}[$__rate_interval]))",
                     "legendFormat": "5-8 frames/s",
                     "refId": "C"
                 },
                 {
                     "editorMode": "code",
-                    "expr": "sum(rate(telemt_me_d2c_batch_frames_bucket_total{bucket=\"9_16\",job=~\"$job\"}[$__rate_interval]))",
+                    "expr": "sum(rate(tupoproxy_me_d2c_batch_frames_bucket_total{bucket=\"9_16\",job=~\"$job\"}[$__rate_interval]))",
                     "legendFormat": "9-16 frames/s",
                     "refId": "D"
                 },
                 {
                     "editorMode": "code",
-                    "expr": "sum(rate(telemt_me_d2c_batch_frames_bucket_total{bucket=\"17_32\",job=~\"$job\"}[$__rate_interval]))",
+                    "expr": "sum(rate(tupoproxy_me_d2c_batch_frames_bucket_total{bucket=\"17_32\",job=~\"$job\"}[$__rate_interval]))",
                     "legendFormat": "17-32 frames/s",
                     "refId": "E"
                 },
                 {
                     "editorMode": "code",
-                    "expr": "sum(rate(telemt_me_d2c_batch_frames_bucket_total{bucket=\"gt_32\",job=~\"$job\"}[$__rate_interval]))",
+                    "expr": "sum(rate(tupoproxy_me_d2c_batch_frames_bucket_total{bucket=\"gt_32\",job=~\"$job\"}[$__rate_interval]))",
                     "legendFormat": ">32 frames/s",
                     "refId": "F"
                 }
@@ -4225,37 +4225,37 @@
             "targets": [
                 {
                     "editorMode": "code",
-                    "expr": "sum(rate(telemt_me_d2c_flush_duration_us_bucket_total{bucket=\"0_50\",job=~\"$job\"}[$__rate_interval]))",
+                    "expr": "sum(rate(tupoproxy_me_d2c_flush_duration_us_bucket_total{bucket=\"0_50\",job=~\"$job\"}[$__rate_interval]))",
                     "legendFormat": "0-50 us/s",
                     "refId": "A"
                 },
                 {
                     "editorMode": "code",
-                    "expr": "sum(rate(telemt_me_d2c_flush_duration_us_bucket_total{bucket=\"51_200\",job=~\"$job\"}[$__rate_interval]))",
+                    "expr": "sum(rate(tupoproxy_me_d2c_flush_duration_us_bucket_total{bucket=\"51_200\",job=~\"$job\"}[$__rate_interval]))",
                     "legendFormat": "51-200 us/s",
                     "refId": "B"
                 },
                 {
                     "editorMode": "code",
-                    "expr": "sum(rate(telemt_me_d2c_flush_duration_us_bucket_total{bucket=\"201_1000\",job=~\"$job\"}[$__rate_interval]))",
+                    "expr": "sum(rate(tupoproxy_me_d2c_flush_duration_us_bucket_total{bucket=\"201_1000\",job=~\"$job\"}[$__rate_interval]))",
                     "legendFormat": "201-1000 us/s",
                     "refId": "C"
                 },
                 {
                     "editorMode": "code",
-                    "expr": "sum(rate(telemt_me_d2c_flush_duration_us_bucket_total{bucket=\"1001_5000\",job=~\"$job\"}[$__rate_interval]))",
+                    "expr": "sum(rate(tupoproxy_me_d2c_flush_duration_us_bucket_total{bucket=\"1001_5000\",job=~\"$job\"}[$__rate_interval]))",
                     "legendFormat": "1-5 ms/s",
                     "refId": "D"
                 },
                 {
                     "editorMode": "code",
-                    "expr": "sum(rate(telemt_me_d2c_flush_duration_us_bucket_total{bucket=\"5001_20000\",job=~\"$job\"}[$__rate_interval]))",
+                    "expr": "sum(rate(tupoproxy_me_d2c_flush_duration_us_bucket_total{bucket=\"5001_20000\",job=~\"$job\"}[$__rate_interval]))",
                     "legendFormat": "5-20 ms/s",
                     "refId": "E"
                 },
                 {
                     "editorMode": "code",
-                    "expr": "sum(rate(telemt_me_d2c_flush_duration_us_bucket_total{bucket=\"gt_20000\",job=~\"$job\"}[$__rate_interval]))",
+                    "expr": "sum(rate(tupoproxy_me_d2c_flush_duration_us_bucket_total{bucket=\"gt_20000\",job=~\"$job\"}[$__rate_interval]))",
                     "legendFormat": ">20 ms/s",
                     "refId": "F"
                 }
@@ -4439,31 +4439,31 @@
             "targets": [
                 {
                     "editorMode": "code",
-                    "expr": "max(telemt_ip_tracker_users{scope=\"active\",job=~\"$job\"})",
+                    "expr": "max(tupoproxy_ip_tracker_users{scope=\"active\",job=~\"$job\"})",
                     "legendFormat": "users active",
                     "refId": "A"
                 },
                 {
                     "editorMode": "code",
-                    "expr": "max(telemt_ip_tracker_users{scope=\"recent\",job=~\"$job\"})",
+                    "expr": "max(tupoproxy_ip_tracker_users{scope=\"recent\",job=~\"$job\"})",
                     "legendFormat": "users recent",
                     "refId": "B"
                 },
                 {
                     "editorMode": "code",
-                    "expr": "max(telemt_ip_tracker_entries{scope=\"active\",job=~\"$job\"})",
+                    "expr": "max(tupoproxy_ip_tracker_entries{scope=\"active\",job=~\"$job\"})",
                     "legendFormat": "IPs active",
                     "refId": "C"
                 },
                 {
                     "editorMode": "code",
-                    "expr": "max(telemt_ip_tracker_entries{scope=\"recent\",job=~\"$job\"})",
+                    "expr": "max(tupoproxy_ip_tracker_entries{scope=\"recent\",job=~\"$job\"})",
                     "legendFormat": "IPs recent",
                     "refId": "D"
                 },
                 {
                     "editorMode": "code",
-                    "expr": "max(telemt_ip_tracker_cleanup_queue_len{job=~\"$job\"})",
+                    "expr": "max(tupoproxy_ip_tracker_cleanup_queue_len{job=~\"$job\"})",
                     "legendFormat": "cleanup queue",
                     "refId": "E"
                 }
@@ -4521,7 +4521,7 @@
             "targets": [
                 {
                     "editorMode": "code",
-                    "expr": "sum(increase(telemt_ip_reservation_rollback_total{job=~\"$job\"}[$__range]))",
+                    "expr": "sum(increase(tupoproxy_ip_reservation_rollback_total{job=~\"$job\"}[$__range]))",
                     "refId": "A"
                 }
             ],
@@ -4646,13 +4646,13 @@
             "targets": [
                 {
                     "editorMode": "code",
-                    "expr": "sum(rate(telemt_ip_reservation_rollback_total{reason=\"tcp_limit\",job=~\"$job\"}[$__rate_interval]))",
+                    "expr": "sum(rate(tupoproxy_ip_reservation_rollback_total{reason=\"tcp_limit\",job=~\"$job\"}[$__rate_interval]))",
                     "legendFormat": "tcp_limit/s",
                     "refId": "A"
                 },
                 {
                     "editorMode": "code",
-                    "expr": "sum(rate(telemt_ip_reservation_rollback_total{reason=\"quota_limit\",job=~\"$job\"}[$__rate_interval]))",
+                    "expr": "sum(rate(tupoproxy_ip_reservation_rollback_total{reason=\"quota_limit\",job=~\"$job\"}[$__rate_interval]))",
                     "legendFormat": "quota_limit/s",
                     "refId": "B"
                 }
@@ -4727,7 +4727,7 @@
             "targets": [
                 {
                     "editorMode": "code",
-                    "expr": "sort_desc(100 * max by (user) (telemt_user_unique_ips_utilization{job=~\"$job\",user=~\"$user\"}))",
+                    "expr": "sort_desc(100 * max by (user) (tupoproxy_user_unique_ips_utilization{job=~\"$job\",user=~\"$user\"}))",
                     "instant": true,
                     "legendFormat": "{{user}}",
                     "refId": "A"
@@ -4787,7 +4787,7 @@
             "targets": [
                 {
                     "editorMode": "code",
-                    "expr": "sum by (user) (telemt_user_unique_ips_current{job=~\"$job\",user=~\"$user\"})",
+                    "expr": "sum by (user) (tupoproxy_user_unique_ips_current{job=~\"$job\",user=~\"$user\"})",
                     "format": "table",
                     "instant": true,
                     "refId": "A"
@@ -4963,49 +4963,49 @@
             "targets": [
                 {
                     "editorMode": "code",
-                    "expr": "sum by (user) (telemt_user_connections_current{job=~\"$job\",user=~\"$user\"})",
+                    "expr": "sum by (user) (tupoproxy_user_connections_current{job=~\"$job\",user=~\"$user\"})",
                     "format": "table",
                     "instant": true,
                     "refId": "A"
                 },
                 {
                     "editorMode": "code",
-                    "expr": "sum by (user) (telemt_user_octets_from_client{job=~\"$job\",user=~\"$user\"})",
+                    "expr": "sum by (user) (tupoproxy_user_octets_from_client{job=~\"$job\",user=~\"$user\"})",
                     "format": "table",
                     "instant": true,
                     "refId": "B"
                 },
                 {
                     "editorMode": "code",
-                    "expr": "sum by (user) (telemt_user_octets_to_client{job=~\"$job\",user=~\"$user\"})",
+                    "expr": "sum by (user) (tupoproxy_user_octets_to_client{job=~\"$job\",user=~\"$user\"})",
                     "format": "table",
                     "instant": true,
                     "refId": "C"
                 },
                 {
                     "editorMode": "code",
-                    "expr": "sum by (user) (rate(telemt_user_msgs_from_client{job=~\"$job\",user=~\"$user\"}[$__rate_interval]))",
+                    "expr": "sum by (user) (rate(tupoproxy_user_msgs_from_client{job=~\"$job\",user=~\"$user\"}[$__rate_interval]))",
                     "format": "table",
                     "instant": true,
                     "refId": "D"
                 },
                 {
                     "editorMode": "code",
-                    "expr": "sum by (user) (rate(telemt_user_msgs_to_client{job=~\"$job\",user=~\"$user\"}[$__rate_interval]))",
+                    "expr": "sum by (user) (rate(tupoproxy_user_msgs_to_client{job=~\"$job\",user=~\"$user\"}[$__rate_interval]))",
                     "format": "table",
                     "instant": true,
                     "refId": "E"
                 },
                 {
                     "editorMode": "code",
-                    "expr": "sum by (user) (rate(telemt_user_octets_from_client{job=~\"$job\",user=~\"$user\"}[$__rate_interval]))",
+                    "expr": "sum by (user) (rate(tupoproxy_user_octets_from_client{job=~\"$job\",user=~\"$user\"}[$__rate_interval]))",
                     "format": "table",
                     "instant": true,
                     "refId": "F"
                 },
                 {
                     "editorMode": "code",
-                    "expr": "sum by (user) (rate(telemt_user_octets_to_client{job=~\"$job\",user=~\"$user\"}[$__rate_interval]))",
+                    "expr": "sum by (user) (rate(tupoproxy_user_octets_to_client{job=~\"$job\",user=~\"$user\"}[$__rate_interval]))",
                     "format": "table",
                     "instant": true,
                     "refId": "G"
@@ -5138,14 +5138,14 @@
             "targets": [
                 {
                     "editorMode": "code",
-                    "expr": "sum(telemt_rate_limiter_active_leases{scope=\"user\",job=~\"$job\"})",
+                    "expr": "sum(tupoproxy_rate_limiter_active_leases{scope=\"user\",job=~\"$job\"})",
                     "instant": true,
                     "legendFormat": "user leases",
                     "refId": "A"
                 },
                 {
                     "editorMode": "code",
-                    "expr": "sum(telemt_rate_limiter_active_leases{scope=\"cidr\",job=~\"$job\"})",
+                    "expr": "sum(tupoproxy_rate_limiter_active_leases{scope=\"cidr\",job=~\"$job\"})",
                     "instant": true,
                     "legendFormat": "cidr leases",
                     "refId": "B"
@@ -5204,14 +5204,14 @@
             "targets": [
                 {
                     "editorMode": "code",
-                    "expr": "sum(telemt_rate_limiter_policy_entries{scope=\"user\",job=~\"$job\"})",
+                    "expr": "sum(tupoproxy_rate_limiter_policy_entries{scope=\"user\",job=~\"$job\"})",
                     "instant": true,
                     "legendFormat": "user policies",
                     "refId": "A"
                 },
                 {
                     "editorMode": "code",
-                    "expr": "sum(telemt_rate_limiter_policy_entries{scope=\"cidr\",job=~\"$job\"})",
+                    "expr": "sum(tupoproxy_rate_limiter_policy_entries{scope=\"cidr\",job=~\"$job\"})",
                     "instant": true,
                     "legendFormat": "cidr policies",
                     "refId": "B"
@@ -5307,25 +5307,25 @@
             "targets": [
                 {
                     "editorMode": "code",
-                    "expr": "sum(rate(telemt_rate_limiter_throttle_total{scope=\"user\",direction=\"up\",job=~\"$job\"}[$__rate_interval]))",
+                    "expr": "sum(rate(tupoproxy_rate_limiter_throttle_total{scope=\"user\",direction=\"up\",job=~\"$job\"}[$__rate_interval]))",
                     "legendFormat": "user up/s",
                     "refId": "A"
                 },
                 {
                     "editorMode": "code",
-                    "expr": "sum(rate(telemt_rate_limiter_throttle_total{scope=\"user\",direction=\"down\",job=~\"$job\"}[$__rate_interval]))",
+                    "expr": "sum(rate(tupoproxy_rate_limiter_throttle_total{scope=\"user\",direction=\"down\",job=~\"$job\"}[$__rate_interval]))",
                     "legendFormat": "user down/s",
                     "refId": "B"
                 },
                 {
                     "editorMode": "code",
-                    "expr": "sum(rate(telemt_rate_limiter_throttle_total{scope=\"cidr\",direction=\"up\",job=~\"$job\"}[$__rate_interval]))",
+                    "expr": "sum(rate(tupoproxy_rate_limiter_throttle_total{scope=\"cidr\",direction=\"up\",job=~\"$job\"}[$__rate_interval]))",
                     "legendFormat": "cidr up/s",
                     "refId": "C"
                 },
                 {
                     "editorMode": "code",
-                    "expr": "sum(rate(telemt_rate_limiter_throttle_total{scope=\"cidr\",direction=\"down\",job=~\"$job\"}[$__rate_interval]))",
+                    "expr": "sum(rate(tupoproxy_rate_limiter_throttle_total{scope=\"cidr\",direction=\"down\",job=~\"$job\"}[$__rate_interval]))",
                     "legendFormat": "cidr down/s",
                     "refId": "D"
                 }
@@ -5420,25 +5420,25 @@
             "targets": [
                 {
                     "editorMode": "code",
-                    "expr": "sum(rate(telemt_rate_limiter_wait_ms_total{scope=\"user\",direction=\"up\",job=~\"$job\"}[$__rate_interval]))",
+                    "expr": "sum(rate(tupoproxy_rate_limiter_wait_ms_total{scope=\"user\",direction=\"up\",job=~\"$job\"}[$__rate_interval]))",
                     "legendFormat": "user up ms/s",
                     "refId": "A"
                 },
                 {
                     "editorMode": "code",
-                    "expr": "sum(rate(telemt_rate_limiter_wait_ms_total{scope=\"user\",direction=\"down\",job=~\"$job\"}[$__rate_interval]))",
+                    "expr": "sum(rate(tupoproxy_rate_limiter_wait_ms_total{scope=\"user\",direction=\"down\",job=~\"$job\"}[$__rate_interval]))",
                     "legendFormat": "user down ms/s",
                     "refId": "B"
                 },
                 {
                     "editorMode": "code",
-                    "expr": "sum(rate(telemt_rate_limiter_wait_ms_total{scope=\"cidr\",direction=\"up\",job=~\"$job\"}[$__rate_interval]))",
+                    "expr": "sum(rate(tupoproxy_rate_limiter_wait_ms_total{scope=\"cidr\",direction=\"up\",job=~\"$job\"}[$__rate_interval]))",
                     "legendFormat": "cidr up ms/s",
                     "refId": "C"
                 },
                 {
                     "editorMode": "code",
-                    "expr": "sum(rate(telemt_rate_limiter_wait_ms_total{scope=\"cidr\",direction=\"down\",job=~\"$job\"}[$__rate_interval]))",
+                    "expr": "sum(rate(tupoproxy_rate_limiter_wait_ms_total{scope=\"cidr\",direction=\"down\",job=~\"$job\"}[$__rate_interval]))",
                     "legendFormat": "cidr down ms/s",
                     "refId": "D"
                 }
@@ -5513,7 +5513,7 @@
             "targets": [
                 {
                     "editorMode": "code",
-                    "expr": "max(telemt_me_fair_pressure_state{job=~\"$job\"})",
+                    "expr": "max(tupoproxy_me_fair_pressure_state{job=~\"$job\"})",
                     "instant": true,
                     "refId": "A"
                 }
@@ -5571,7 +5571,7 @@
             "targets": [
                 {
                     "editorMode": "code",
-                    "expr": "max(telemt_me_fair_active_flows{job=~\"$job\"})",
+                    "expr": "max(tupoproxy_me_fair_active_flows{job=~\"$job\"})",
                     "instant": true,
                     "refId": "A"
                 }
@@ -5629,7 +5629,7 @@
             "targets": [
                 {
                     "editorMode": "code",
-                    "expr": "max(telemt_me_fair_queued_bytes{job=~\"$job\"})",
+                    "expr": "max(tupoproxy_me_fair_queued_bytes{job=~\"$job\"})",
                     "instant": true,
                     "refId": "A"
                 }
@@ -5687,14 +5687,14 @@
             "targets": [
                 {
                     "editorMode": "code",
-                    "expr": "max(telemt_me_fair_flow_state_gauge{class=\"standing\",job=~\"$job\"})",
+                    "expr": "max(tupoproxy_me_fair_flow_state_gauge{class=\"standing\",job=~\"$job\"})",
                     "instant": true,
                     "legendFormat": "standing",
                     "refId": "A"
                 },
                 {
                     "editorMode": "code",
-                    "expr": "max(telemt_me_fair_flow_state_gauge{class=\"backpressured\",job=~\"$job\"})",
+                    "expr": "max(tupoproxy_me_fair_flow_state_gauge{class=\"backpressured\",job=~\"$job\"})",
                     "instant": true,
                     "legendFormat": "backpressured",
                     "refId": "B"
@@ -5790,25 +5790,25 @@
             "targets": [
                 {
                     "editorMode": "code",
-                    "expr": "sum(rate(telemt_me_fair_events_total{event=\"enqueue_reject\",job=~\"$job\"}[$__rate_interval]))",
+                    "expr": "sum(rate(tupoproxy_me_fair_events_total{event=\"enqueue_reject\",job=~\"$job\"}[$__rate_interval]))",
                     "legendFormat": "enqueue reject/s",
                     "refId": "A"
                 },
                 {
                     "editorMode": "code",
-                    "expr": "sum(rate(telemt_me_fair_events_total{event=\"shed_drop\",job=~\"$job\"}[$__rate_interval]))",
+                    "expr": "sum(rate(tupoproxy_me_fair_events_total{event=\"shed_drop\",job=~\"$job\"}[$__rate_interval]))",
                     "legendFormat": "shed drop/s",
                     "refId": "B"
                 },
                 {
                     "editorMode": "code",
-                    "expr": "sum(rate(telemt_me_fair_events_total{event=\"downstream_stall\",job=~\"$job\"}[$__rate_interval]))",
+                    "expr": "sum(rate(tupoproxy_me_fair_events_total{event=\"downstream_stall\",job=~\"$job\"}[$__rate_interval]))",
                     "legendFormat": "downstream stall/s",
                     "refId": "C"
                 },
                 {
                     "editorMode": "code",
-                    "expr": "sum(rate(telemt_me_fair_events_total{event=\"penalty\",job=~\"$job\"}[$__rate_interval]))",
+                    "expr": "sum(rate(tupoproxy_me_fair_events_total{event=\"penalty\",job=~\"$job\"}[$__rate_interval]))",
                     "legendFormat": "penalty/s",
                     "refId": "D"
                 }
@@ -5903,25 +5903,25 @@
             "targets": [
                 {
                     "editorMode": "code",
-                    "expr": "sum(rate(telemt_relay_idle_soft_mark_total{job=~\"$job\"}[$__rate_interval]))",
+                    "expr": "sum(rate(tupoproxy_relay_idle_soft_mark_total{job=~\"$job\"}[$__rate_interval]))",
                     "legendFormat": "soft mark/s",
                     "refId": "A"
                 },
                 {
                     "editorMode": "code",
-                    "expr": "sum(rate(telemt_relay_idle_hard_close_total{job=~\"$job\"}[$__rate_interval]))",
+                    "expr": "sum(rate(tupoproxy_relay_idle_hard_close_total{job=~\"$job\"}[$__rate_interval]))",
                     "legendFormat": "hard close/s",
                     "refId": "B"
                 },
                 {
                     "editorMode": "code",
-                    "expr": "sum(rate(telemt_relay_pressure_evict_total{job=~\"$job\"}[$__rate_interval]))",
+                    "expr": "sum(rate(tupoproxy_relay_pressure_evict_total{job=~\"$job\"}[$__rate_interval]))",
                     "legendFormat": "pressure evict/s",
                     "refId": "C"
                 },
                 {
                     "editorMode": "code",
-                    "expr": "sum(rate(telemt_relay_protocol_desync_close_total{job=~\"$job\"}[$__rate_interval]))",
+                    "expr": "sum(rate(tupoproxy_relay_protocol_desync_close_total{job=~\"$job\"}[$__rate_interval]))",
                     "legendFormat": "desync close/s",
                     "refId": "D"
                 }
@@ -6029,13 +6029,13 @@
             "targets": [
                 {
                     "editorMode": "code",
-                    "expr": "sum(rate(telemt_ip_tracker_cap_rejects_total{scope=\"active\",job=~\"$job\"}[$__rate_interval]))",
+                    "expr": "sum(rate(tupoproxy_ip_tracker_cap_rejects_total{scope=\"active\",job=~\"$job\"}[$__rate_interval]))",
                     "legendFormat": "active cap reject/s",
                     "refId": "A"
                 },
                 {
                     "editorMode": "code",
-                    "expr": "sum(rate(telemt_ip_tracker_cap_rejects_total{scope=\"recent\",job=~\"$job\"}[$__rate_interval]))",
+                    "expr": "sum(rate(tupoproxy_ip_tracker_cap_rejects_total{scope=\"recent\",job=~\"$job\"}[$__rate_interval]))",
                     "legendFormat": "recent cap reject/s",
                     "refId": "B"
                 }
@@ -6130,7 +6130,7 @@
             "targets": [
                 {
                     "editorMode": "code",
-                    "expr": "sum(rate(telemt_ip_tracker_cleanup_total{path=\"deferred\",job=~\"$job\"}[$__rate_interval]))",
+                    "expr": "sum(rate(tupoproxy_ip_tracker_cleanup_total{path=\"deferred\",job=~\"$job\"}[$__rate_interval]))",
                     "legendFormat": "deferred cleanup/s",
                     "refId": "A"
                 }
@@ -6201,7 +6201,7 @@
             "targets": [
                 {
                     "editorMode": "code",
-                    "expr": "sum(telemt_tls_fetch_profile_cache_entries{job=~\"$job\"})",
+                    "expr": "sum(tupoproxy_tls_fetch_profile_cache_entries{job=~\"$job\"})",
                     "instant": true,
                     "refId": "A"
                 }
@@ -6259,7 +6259,7 @@
             "targets": [
                 {
                     "editorMode": "code",
-                    "expr": "sum(telemt_tls_front_full_cert_budget_ips{job=~\"$job\"})",
+                    "expr": "sum(tupoproxy_tls_front_full_cert_budget_ips{job=~\"$job\"})",
                     "instant": true,
                     "refId": "A"
                 }
@@ -6317,7 +6317,7 @@
             "targets": [
                 {
                     "editorMode": "code",
-                    "expr": "sum(telemt_stats_user_entries{job=~\"$job\"})",
+                    "expr": "sum(tupoproxy_stats_user_entries{job=~\"$job\"})",
                     "instant": true,
                     "refId": "A"
                 }
@@ -6330,7 +6330,7 @@
                 "type": "prometheus",
                 "uid": "${datasource}"
             },
-            "description": "Runtime core and per-user telemetry switches exported by telemt.",
+            "description": "Runtime core and per-user telemetry switches exported by tupoproxy.",
             "fieldConfig": {
                 "defaults": {
                     "mappings": [],
@@ -6381,14 +6381,14 @@
             "targets": [
                 {
                     "editorMode": "code",
-                    "expr": "min(telemt_telemetry_core_enabled{job=~\"$job\"})",
+                    "expr": "min(tupoproxy_telemetry_core_enabled{job=~\"$job\"})",
                     "instant": true,
                     "legendFormat": "core enabled",
                     "refId": "A"
                 },
                 {
                     "editorMode": "code",
-                    "expr": "min(telemt_telemetry_user_enabled{job=~\"$job\"})",
+                    "expr": "min(tupoproxy_telemetry_user_enabled{job=~\"$job\"})",
                     "instant": true,
                     "legendFormat": "user enabled",
                     "refId": "B"
@@ -6447,28 +6447,28 @@
             "targets": [
                 {
                     "editorMode": "code",
-                    "expr": "sum(telemt_telemetry_user_series_users{family=\"stats\",status=\"emitted\",job=~\"$job\"})",
+                    "expr": "sum(tupoproxy_telemetry_user_series_users{family=\"stats\",status=\"emitted\",job=~\"$job\"})",
                     "instant": true,
                     "legendFormat": "stats emitted",
                     "refId": "A"
                 },
                 {
                     "editorMode": "code",
-                    "expr": "sum(telemt_telemetry_user_series_users{family=\"stats\",status=\"suppressed\",job=~\"$job\"})",
+                    "expr": "sum(tupoproxy_telemetry_user_series_users{family=\"stats\",status=\"suppressed\",job=~\"$job\"})",
                     "instant": true,
                     "legendFormat": "stats suppressed",
                     "refId": "B"
                 },
                 {
                     "editorMode": "code",
-                    "expr": "sum(telemt_telemetry_user_series_users{family=\"unique_ip\",status=\"emitted\",job=~\"$job\"})",
+                    "expr": "sum(tupoproxy_telemetry_user_series_users{family=\"unique_ip\",status=\"emitted\",job=~\"$job\"})",
                     "instant": true,
                     "legendFormat": "IP emitted",
                     "refId": "C"
                 },
                 {
                     "editorMode": "code",
-                    "expr": "sum(telemt_telemetry_user_series_users{family=\"unique_ip\",status=\"suppressed\",job=~\"$job\"})",
+                    "expr": "sum(tupoproxy_telemetry_user_series_users{family=\"unique_ip\",status=\"suppressed\",job=~\"$job\"})",
                     "instant": true,
                     "legendFormat": "IP suppressed",
                     "refId": "D"
@@ -6564,13 +6564,13 @@
             "targets": [
                 {
                     "editorMode": "code",
-                    "expr": "sum(rate(telemt_tls_fetch_profile_cache_cap_drops_total{job=~\"$job\"}[$__rate_interval]))",
+                    "expr": "sum(rate(tupoproxy_tls_fetch_profile_cache_cap_drops_total{job=~\"$job\"}[$__rate_interval]))",
                     "legendFormat": "profile cache cap drop/s",
                     "refId": "A"
                 },
                 {
                     "editorMode": "code",
-                    "expr": "sum(rate(telemt_tls_front_full_cert_budget_cap_drops_total{job=~\"$job\"}[$__rate_interval]))",
+                    "expr": "sum(rate(tupoproxy_tls_front_full_cert_budget_cap_drops_total{job=~\"$job\"}[$__rate_interval]))",
                     "legendFormat": "full-cert budget cap drop/s",
                     "refId": "B"
                 }
@@ -6583,7 +6583,7 @@
     "refresh": "30s",
     "schemaVersion": 42,
     "tags": [
-        "telemt",
+        "tupoproxy",
         "mtproto",
         "telegram"
     ],
@@ -6603,14 +6603,14 @@
                     "type": "prometheus",
                     "uid": "${datasource}"
                 },
-                "definition": "label_values(telemt_build_info, job)",
+                "definition": "label_values(tupoproxy_build_info, job)",
                 "includeAll": true,
                 "label": "Job",
                 "multi": true,
                 "name": "job",
                 "options": [],
                 "query": {
-                    "query": "label_values(telemt_build_info, job)",
+                    "query": "label_values(tupoproxy_build_info, job)",
                     "refId": "VarJob"
                 },
                 "refresh": 1,
@@ -6623,14 +6623,14 @@
                     "type": "prometheus",
                     "uid": "${datasource}"
                 },
-                "definition": "label_values(telemt_user_connections_total{job=~\"$job\"}, user)",
+                "definition": "label_values(tupoproxy_user_connections_total{job=~\"$job\"}, user)",
                 "includeAll": true,
                 "label": "User",
                 "multi": true,
                 "name": "user",
                 "options": [],
                 "query": {
-                    "query": "label_values(telemt_user_connections_total{job=~\"$job\"}, user)",
+                    "query": "label_values(tupoproxy_user_connections_total{job=~\"$job\"}, user)",
                     "refId": "VarUser"
                 },
                 "refresh": 1,
@@ -6645,6 +6645,6 @@
     },
     "timepicker": {},
     "timezone": "browser",
-    "title": "Telemt MtProto proxy",
+    "title": "tupoproxy MtProto proxy",
     "weekStart": ""
 }

@@ -15,7 +15,7 @@ fn api_minimal_runtime_cache_ttl_out_of_range_is_rejected() {
         user = "00000000000000000000000000000000"
     "#;
     let dir = std::env::temp_dir();
-    let path = dir.join("telemt_api_minimal_runtime_cache_ttl_invalid_test.toml");
+    let path = dir.join("tupoproxy_api_minimal_runtime_cache_ttl_invalid_test.toml");
     std::fs::write(&path, toml).unwrap();
     let err = ProxyConfig::load(&path).unwrap_err().to_string();
     assert!(err.contains("server.api.minimal_runtime_cache_ttl_ms must be within [0, 60000]"));
@@ -37,7 +37,7 @@ fn api_runtime_edge_cache_ttl_out_of_range_is_rejected() {
         user = "00000000000000000000000000000000"
     "#;
     let dir = std::env::temp_dir();
-    let path = dir.join("telemt_api_runtime_edge_cache_ttl_invalid_test.toml");
+    let path = dir.join("tupoproxy_api_runtime_edge_cache_ttl_invalid_test.toml");
     std::fs::write(&path, toml).unwrap();
     let err = ProxyConfig::load(&path).unwrap_err().to_string();
     assert!(err.contains("server.api.runtime_edge_cache_ttl_ms must be within [0, 60000]"));
@@ -59,7 +59,7 @@ fn api_runtime_edge_top_n_out_of_range_is_rejected() {
         user = "00000000000000000000000000000000"
     "#;
     let dir = std::env::temp_dir();
-    let path = dir.join("telemt_api_runtime_edge_top_n_invalid_test.toml");
+    let path = dir.join("tupoproxy_api_runtime_edge_top_n_invalid_test.toml");
     std::fs::write(&path, toml).unwrap();
     let err = ProxyConfig::load(&path).unwrap_err().to_string();
     assert!(err.contains("server.api.runtime_edge_top_n must be within [1, 1000]"));
@@ -81,7 +81,7 @@ fn api_runtime_edge_events_capacity_out_of_range_is_rejected() {
         user = "00000000000000000000000000000000"
     "#;
     let dir = std::env::temp_dir();
-    let path = dir.join("telemt_api_runtime_edge_events_capacity_invalid_test.toml");
+    let path = dir.join("tupoproxy_api_runtime_edge_events_capacity_invalid_test.toml");
     std::fs::write(&path, toml).unwrap();
     let err = ProxyConfig::load(&path).unwrap_err().to_string();
     assert!(err.contains("server.api.runtime_edge_events_capacity must be within [16, 4096]"));

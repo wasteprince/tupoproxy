@@ -393,7 +393,7 @@ pub(crate) fn log_filter_spec(has_rust_log: bool, effective_log_level: &LogLevel
         std::env::var("RUST_LOG")
             .unwrap_or_else(|_| effective_log_level.to_filter_str().to_string())
     } else if matches!(effective_log_level, LogLevel::Silent) {
-        "warn,telemt::links=info".to_string()
+        "warn,tupoproxy::links=info".to_string()
     } else {
         effective_log_level.to_filter_str().to_string()
     }

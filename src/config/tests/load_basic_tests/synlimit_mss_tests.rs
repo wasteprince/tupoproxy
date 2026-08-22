@@ -65,7 +65,7 @@ fn synlimit_pf_mode_is_rejected_off_freebsd() {
         synlimit = "pf"
     "#;
     let dir = std::env::temp_dir();
-    let path = dir.join("telemt_synlimit_pf_unsupported_test.toml");
+    let path = dir.join("tupoproxy_synlimit_pf_unsupported_test.toml");
     std::fs::write(&path, toml).unwrap();
     let err = ProxyConfig::load(&path).unwrap_err().to_string();
 
@@ -149,7 +149,7 @@ fn client_mss_presets_and_listener_override_are_resolved() {
         user = "00000000000000000000000000000000"
     "#;
     let dir = std::env::temp_dir();
-    let path = dir.join("telemt_client_mss_valid_test.toml");
+    let path = dir.join("tupoproxy_client_mss_valid_test.toml");
     std::fs::write(&path, toml).unwrap();
     let cfg = ProxyConfig::load(&path).unwrap();
 
@@ -188,7 +188,7 @@ fn client_mss_custom_value_is_accepted() {
         user = "00000000000000000000000000000000"
     "#;
     let dir = std::env::temp_dir();
-    let path = dir.join("telemt_client_mss_custom_valid_test.toml");
+    let path = dir.join("tupoproxy_client_mss_custom_valid_test.toml");
     std::fs::write(&path, toml).unwrap();
     let cfg = ProxyConfig::load(&path).unwrap();
 
@@ -221,7 +221,7 @@ fn client_mss_bulk_requires_a_larger_bulk_profile_and_handshake_participant() {
             "[server]\n{server}\n\n[censorship]\ntls_domain = \"example.com\"\n\n[access.users]\nuser = \"00000000000000000000000000000000\"\n"
         );
         let dir = std::env::temp_dir();
-        let path = dir.join(format!("telemt_client_mss_bulk_{name}_test.toml"));
+        let path = dir.join(format!("tupoproxy_client_mss_bulk_{name}_test.toml"));
         std::fs::write(&path, toml).unwrap();
         let err = ProxyConfig::load(&path).unwrap_err().to_string();
 
@@ -254,7 +254,7 @@ fn client_mss_bulk_allows_explicit_listener_opt_out() {
         user = "00000000000000000000000000000000"
     "#;
     let dir = std::env::temp_dir();
-    let path = dir.join("telemt_client_mss_bulk_listener_opt_out_test.toml");
+    let path = dir.join("tupoproxy_client_mss_bulk_listener_opt_out_test.toml");
     std::fs::write(&path, toml).unwrap();
     let cfg = ProxyConfig::load(&path).unwrap();
 
@@ -285,7 +285,7 @@ fn client_mss_out_of_range_is_rejected() {
         "#
         );
         let dir = std::env::temp_dir();
-        let path = dir.join(format!("telemt_client_mss_out_of_range_{value}_test.toml"));
+        let path = dir.join(format!("tupoproxy_client_mss_out_of_range_{value}_test.toml"));
         std::fs::write(&path, toml).unwrap();
         let err = ProxyConfig::load(&path).unwrap_err().to_string();
 
@@ -311,7 +311,7 @@ fn client_mss_bulk_out_of_range_is_rejected() {
         );
         let dir = std::env::temp_dir();
         let path = dir.join(format!(
-            "telemt_client_mss_bulk_out_of_range_{value}_test.toml"
+            "tupoproxy_client_mss_bulk_out_of_range_{value}_test.toml"
         ));
         std::fs::write(&path, toml).unwrap();
         let err = ProxyConfig::load(&path).unwrap_err().to_string();
@@ -334,7 +334,7 @@ fn client_mss_unquoted_number_is_rejected() {
         user = "00000000000000000000000000000000"
     "#;
     let dir = std::env::temp_dir();
-    let path = dir.join("telemt_client_mss_unquoted_number_test.toml");
+    let path = dir.join("tupoproxy_client_mss_unquoted_number_test.toml");
     std::fs::write(&path, toml).unwrap();
     let err = ProxyConfig::load(&path).unwrap_err().to_string();
 
@@ -357,7 +357,7 @@ fn listener_client_mss_invalid_preset_is_rejected() {
         user = "00000000000000000000000000000000"
     "#;
     let dir = std::env::temp_dir();
-    let path = dir.join("telemt_listener_client_mss_invalid_test.toml");
+    let path = dir.join("tupoproxy_listener_client_mss_invalid_test.toml");
     std::fs::write(&path, toml).unwrap();
     let err = ProxyConfig::load(&path).unwrap_err().to_string();
 

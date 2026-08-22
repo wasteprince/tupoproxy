@@ -473,6 +473,8 @@ pub(super) struct UserLinks {
 #[derive(Serialize)]
 pub(super) struct TlsDomainLink {
     pub(super) domain: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub(super) fingerprint: Option<&'static str>,
     pub(super) link: String,
 }
 

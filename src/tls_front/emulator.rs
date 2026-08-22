@@ -646,6 +646,7 @@ mod tests {
             app_data_records_sizes: vec![64],
             total_app_data_len: 64,
             behavior_profile: TlsBehaviorProfile::default(),
+            selected_fetch_profile: None,
             fetched_at: SystemTime::now(),
             domain: "example.com".to_string(),
         }

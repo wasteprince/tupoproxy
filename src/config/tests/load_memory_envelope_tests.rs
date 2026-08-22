@@ -8,7 +8,7 @@ fn write_temp_config(contents: &str) -> PathBuf {
         .duration_since(UNIX_EPOCH)
         .expect("system time must be after unix epoch")
         .as_nanos();
-    let path = std::env::temp_dir().join(format!("telemt-load-memory-envelope-{nonce}.toml"));
+    let path = std::env::temp_dir().join(format!("tupoproxy-load-memory-envelope-{nonce}.toml"));
     fs::write(&path, contents).expect("temp config write must succeed");
     path
 }

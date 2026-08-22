@@ -33,6 +33,7 @@ fn make_cached(cert_payload: Option<crate::tls_front::types::TlsCertPayload>) ->
             source: TlsProfileSource::Default,
             ..TlsBehaviorProfile::default()
         },
+        selected_fetch_profile: None,
         fetched_at: SystemTime::now(),
         domain: "example.com".to_string(),
     }

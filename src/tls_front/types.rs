@@ -1,6 +1,8 @@
 use serde::{Deserialize, Serialize};
 use std::time::SystemTime;
 
+use crate::config::TlsFetchProfile;
+
 const EXT_ALPN: u16 = 0x0010;
 const EXT_SUPPORTED_VERSIONS: u16 = 0x002b;
 const EXT_KEY_SHARE: u16 = 0x0033;
@@ -264,6 +266,9 @@ pub struct CachedTlsData {
     pub total_app_data_len: usize,
     #[serde(default)]
     pub behavior_profile: TlsBehaviorProfile,
+    /// ClientHello profile used while probing the cover origin.
+    #[serde(default)]
+    pub selected_fetch_profile: Option<TlsFetchProfile>,
     #[serde(default = "now_system_time", skip_serializing, skip_deserializing)]
     pub fetched_at: SystemTime,
     pub domain: String,
@@ -281,6 +286,8 @@ pub struct TlsFetchResult {
     pub total_app_data_len: usize,
     #[serde(default)]
     pub behavior_profile: TlsBehaviorProfile,
+    #[serde(default)]
+    pub selected_fetch_profile: Option<TlsFetchProfile>,
     pub cert_info: Option<ParsedCertificateInfo>,
     pub cert_payload: Option<TlsCertPayload>,
 }

@@ -146,7 +146,7 @@ fn push_nft_v4_rules(script: &mut String, target: &SynLimitRule, idx: usize) {
     let ios_rate = synlimit_rate_arg(target.ios_seconds, target.ios_hitcount);
     let generic_rate = synlimit_rate_arg(target.generic_seconds, target.generic_hitcount);
     script.push_str(&format!(
-        "    tcp flags & (fin|syn|rst|ack) == syn{daddr} meta length {IPV4_IOS_PACKET_LENGTH} ip ttl < {IOS_TTL_LIMIT} tcp dport {port} meter telemt_synfix_ios_v4_{idx} {{ ip saddr limit rate over {ios_rate} burst {ios_burst} packets }} reject with tcp reset\n",
+        "    tcp flags & (fin|syn|rst|ack) == syn{daddr} meta length {IPV4_IOS_PACKET_LENGTH} ip ttl < {IOS_TTL_LIMIT} tcp dport {port} meter tupoproxy_synfix_ios_v4_{idx} {{ ip saddr limit rate over {ios_rate} burst {ios_burst} packets }} reject with tcp reset\n",
         port = target.port,
         ios_burst = target.ios_burst,
     ));
@@ -155,7 +155,7 @@ fn push_nft_v4_rules(script: &mut String, target: &SynLimitRule, idx: usize) {
         port = target.port,
     ));
     script.push_str(&format!(
-        "    tcp flags & (fin|syn|rst|ack) == syn{daddr} tcp dport {port} meter telemt_synfix_v4_{idx} {{ ip saddr limit rate over {generic_rate} burst {generic_burst} packets }} reject with tcp reset\n",
+        "    tcp flags & (fin|syn|rst|ack) == syn{daddr} tcp dport {port} meter tupoproxy_synfix_v4_{idx} {{ ip saddr limit rate over {generic_rate} burst {generic_burst} packets }} reject with tcp reset\n",
         port = target.port,
         generic_burst = target.generic_burst,
     ));
@@ -173,7 +173,7 @@ fn push_nft_v6_rules(script: &mut String, target: &SynLimitRule, idx: usize) {
     let ios_rate = synlimit_rate_arg(target.ios_seconds, target.ios_hitcount);
     let generic_rate = synlimit_rate_arg(target.generic_seconds, target.generic_hitcount);
     script.push_str(&format!(
-        "    tcp flags & (fin|syn|rst|ack) == syn{daddr} meta length {IPV6_IOS_PACKET_LENGTH} ip6 hoplimit < {IOS_TTL_LIMIT} tcp dport {port} meter telemt_synfix_ios_v6_{idx} {{ ip6 saddr limit rate over {ios_rate} burst {ios_burst} packets }} reject with tcp reset\n",
+        "    tcp flags & (fin|syn|rst|ack) == syn{daddr} meta length {IPV6_IOS_PACKET_LENGTH} ip6 hoplimit < {IOS_TTL_LIMIT} tcp dport {port} meter tupoproxy_synfix_ios_v6_{idx} {{ ip6 saddr limit rate over {ios_rate} burst {ios_burst} packets }} reject with tcp reset\n",
         port = target.port,
         ios_burst = target.ios_burst,
     ));
@@ -182,7 +182,7 @@ fn push_nft_v6_rules(script: &mut String, target: &SynLimitRule, idx: usize) {
         port = target.port,
     ));
     script.push_str(&format!(
-        "    tcp flags & (fin|syn|rst|ack) == syn{daddr} tcp dport {port} meter telemt_synfix_v6_{idx} {{ ip6 saddr limit rate over {generic_rate} burst {generic_burst} packets }} reject with tcp reset\n",
+        "    tcp flags & (fin|syn|rst|ack) == syn{daddr} tcp dport {port} meter tupoproxy_synfix_v6_{idx} {{ ip6 saddr limit rate over {generic_rate} burst {generic_burst} packets }} reject with tcp reset\n",
         port = target.port,
         generic_burst = target.generic_burst,
     ));
@@ -236,14 +236,14 @@ mod tests {
             nft_table: table.to_string(),
             iptables_chain: "TMT_SYN_TEST".to_string(),
             iptables_hashlimit_prefix: "TMTTEST".to_string(),
-            pf_anchor: "telemt_synlimit/test".to_string(),
+            pf_anchor: "tupoproxy_synlimit/test".to_string(),
         }
     }
 
     #[test]
     fn nft_script_uses_synfix_v4_rules_and_early_priority() {
         let rule = test_rule(Some(IpAddr::V4(Ipv4Addr::new(203, 0, 113, 7))), 443);
-        let namespace = test_namespace("telemt_synlimit_test_a");
+        let namespace = test_namespace("tupoproxy_synlimit_test_a");
         let script = nft_synlimit_script(
             NftApplyPlan {
                 family: NftFamily::Inet,
@@ -253,7 +253,7 @@ mod tests {
             &namespace,
         );
 
-        assert!(script.contains("table inet telemt_synlimit_test_a"));
+        assert!(script.contains("table inet tupoproxy_synlimit_test_a"));
         assert!(script.contains("type filter hook input priority -5; policy accept;"));
         assert!(script.contains("ip daddr 203.0.113.7"));
         assert!(script.contains("meta length 64 ip ttl < 65"));
@@ -265,7 +265,7 @@ mod tests {
     #[test]
     fn nft_script_uses_ipv6_hoplimit_classifier() {
         let rule = test_rule(Some(IpAddr::V6(Ipv6Addr::LOCALHOST)), 443);
-        let namespace = test_namespace("telemt_synlimit_test_b");
+        let namespace = test_namespace("tupoproxy_synlimit_test_b");
         let script = nft_synlimit_script(
             NftApplyPlan {
                 family: NftFamily::Inet,
@@ -275,7 +275,7 @@ mod tests {
             &namespace,
         );
 
-        assert!(script.contains("table inet telemt_synlimit_test_b"));
+        assert!(script.contains("table inet tupoproxy_synlimit_test_b"));
         assert!(script.contains("ip6 daddr ::1"));
         assert!(script.contains("meta length 84 ip6 hoplimit < 65"));
         assert!(script.contains("ip6 saddr limit rate over 12/second burst 24 packets"));

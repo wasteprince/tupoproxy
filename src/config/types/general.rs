@@ -171,7 +171,7 @@ pub struct GeneralConfig {
     #[serde(default = "default_beobachten_file")]
     pub beobachten_file: String,
     /// Enable C-like hard-swap for ME pool generations.
-    /// When true, Telemt prewarms a new generation and switches once full coverage is reached.
+    /// When true, tupoproxy prewarms a new generation and switches once full coverage is reached.
     #[serde(default = "default_hardswap")]
     pub hardswap: bool,
     /// Enable staggered warmup of extra ME writers.

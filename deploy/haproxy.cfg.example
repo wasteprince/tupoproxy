@@ -1,0 +1,27 @@
+global
+    log stdout format raw local0
+
+defaults
+    log global
+    mode tcp
+    timeout connect 5s
+    timeout client 2m
+    timeout server 2m
+
+# HAProxy exclusively owns public TCP/443. It does not terminate TLS.
+frontend public_tls
+    bind :443
+    tcp-request inspect-delay 5s
+    tcp-request content accept if { req.ssl_hello_type 1 }
+
+    acl tupoproxy_sni req.ssl_sni -i chrome.proxy.example.com firefox.proxy.example.com
+    use_backend tupoproxy if tupoproxy_sni
+    default_backend existing_https
+
+backend tupoproxy
+    # PROXY v2 preserves the real client IP for replay/rate-limit logic.
+    server tupoproxy 127.0.0.1:8443 send-proxy-v2 check
+
+backend existing_https
+    # Existing nginx/Caddy HTTPS virtual hosts move from :443 to loopback :9443.
+    server existing_web 127.0.0.1:9443 check

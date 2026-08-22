@@ -26,22 +26,47 @@ pub(super) fn apply(config: &mut ProxyConfig) -> Result<()> {
         ));
     }
 
-    // Merge primary + extra TLS domains, deduplicate (primary always first).
-    if !config.censorship.tls_domains.is_empty() {
-        let mut all = Vec::with_capacity(1 + config.censorship.tls_domains.len());
-        all.push(config.censorship.tls_domain.clone());
-        for d in std::mem::take(&mut config.censorship.tls_domains) {
-            if !d.is_empty() {
-                let domain = normalize_domain_to_ascii(&d, "censorship.tls_domains entry")?;
-                if !all.contains(&domain) {
-                    all.push(domain);
-                }
+    let mut tls_fingerprints = HashMap::with_capacity(config.censorship.tls_fingerprints.len());
+    for (domain, profile) in std::mem::take(&mut config.censorship.tls_fingerprints) {
+        let domain = normalize_domain_to_ascii(&domain, "censorship.tls_fingerprints domain")?;
+        if let Some(previous) = tls_fingerprints.insert(domain.clone(), profile)
+            && previous != profile
+        {
+            return Err(ProxyError::Config(format!(
+                "censorship.tls_fingerprints contains conflicting profiles for normalized domain '{domain}'"
+            )));
+        }
+    }
+    config.censorship.tls_fingerprints = tls_fingerprints;
+
+    // Merge primary, explicit, and credential-profile domains. Fingerprint
+    // domains are added automatically so every selectable profile gets a link.
+    let mut all = Vec::with_capacity(
+        1 + config.censorship.tls_domains.len() + config.censorship.tls_fingerprints.len(),
+    );
+    all.push(config.censorship.tls_domain.clone());
+    for d in std::mem::take(&mut config.censorship.tls_domains) {
+        if !d.is_empty() {
+            let domain = normalize_domain_to_ascii(&d, "censorship.tls_domains entry")?;
+            if !all.contains(&domain) {
+                all.push(domain);
             }
         }
-        // keep primary as tls_domain; store remaining back to tls_domains
-        if all.len() > 1 {
-            config.censorship.tls_domains = all[1..].to_vec();
+    }
+    let mut fingerprint_domains = config
+        .censorship
+        .tls_fingerprints
+        .keys()
+        .cloned()
+        .collect::<Vec<_>>();
+    fingerprint_domains.sort_unstable();
+    for domain in fingerprint_domains {
+        if !all.contains(&domain) {
+            all.push(domain);
         }
+    }
+    if all.len() > 1 {
+        config.censorship.tls_domains = all[1..].to_vec();
     }
 
     let mut exclusive_mask = HashMap::with_capacity(config.censorship.exclusive_mask.len());

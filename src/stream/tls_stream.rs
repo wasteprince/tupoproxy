@@ -62,6 +62,15 @@ const MAX_PENDING_WRITE: usize = 64 * 1024;
 /// Maximum record buffer capacity retained between writes.
 const MAX_RETAINED_RECORD_CAPACITY: usize = 2 * (TLS_HEADER_SIZE + MAX_TLS_PAYLOAD);
 
+/// Downstream TLS record sizing selected by an authenticated `ee` credential.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum TlsRecordProfile {
+    Chrome,
+    Firefox,
+    Compat,
+    Legacy,
+}
+
 // ============= TLS Record Types =============
 
 /// Parsed TLS record header (5 bytes)
@@ -680,14 +689,25 @@ pub struct FakeTlsWriter<W> {
     upstream: W,
     state: TlsWriterState,
     record_buffer: BytesMut,
+    record_profile: TlsRecordProfile,
+    record_index: u32,
+    jitter_state: u64,
 }
 
 impl<W> FakeTlsWriter<W> {
     pub fn new(upstream: W) -> Self {
+        Self::with_profile(upstream, TlsRecordProfile::Legacy, 1)
+    }
+
+    /// Creates a writer whose record boundaries follow a selected web profile.
+    pub fn with_profile(upstream: W, record_profile: TlsRecordProfile, seed: u64) -> Self {
         Self {
             upstream,
             state: TlsWriterState::Idle,
             record_buffer: BytesMut::new(),
+            record_profile,
+            record_index: 0,
+            jitter_state: if seed == 0 { 1 } else { seed },
         }
     }
 
@@ -742,6 +762,32 @@ impl<W> FakeTlsWriter<W> {
         self.record_buffer.extend_from_slice(&header.to_bytes());
         self.record_buffer.extend_from_slice(data);
         debug_assert!(self.record_buffer.len() <= MAX_PENDING_WRITE);
+    }
+
+    fn next_jitter(&mut self, radius: usize) -> isize {
+        self.jitter_state ^= self.jitter_state << 13;
+        self.jitter_state ^= self.jitter_state >> 7;
+        self.jitter_state ^= self.jitter_state << 17;
+        let span = radius.saturating_mul(2).saturating_add(1) as u64;
+        (self.jitter_state % span) as isize - radius as isize
+    }
+
+    fn next_record_payload_limit(&mut self) -> usize {
+        let index = self.record_index;
+        self.record_index = self.record_index.saturating_add(1);
+        let (base, jitter): (usize, usize) = match self.record_profile {
+            TlsRecordProfile::Chrome if index < 32 => (1_450, 120),
+            TlsRecordProfile::Chrome if index < 48 => (4_096, 384),
+            TlsRecordProfile::Chrome => (15_600, 640),
+            TlsRecordProfile::Firefox if index < 16 => (1_300, 160),
+            TlsRecordProfile::Firefox if index < 48 => (8_192, 512),
+            TlsRecordProfile::Firefox => (16_000, 320),
+            TlsRecordProfile::Compat if index < 24 => (1_400, 96),
+            TlsRecordProfile::Compat => (8_192, 256),
+            TlsRecordProfile::Legacy => return MAX_TLS_PAYLOAD,
+        };
+        base.saturating_add_signed(self.next_jitter(jitter))
+            .clamp(512, MAX_TLS_PAYLOAD)
     }
 
     fn recycle_record_buffer(&mut self) {
@@ -839,8 +885,9 @@ impl<W: AsyncWrite + Unpin> AsyncWrite for FakeTlsWriter<W> {
             return Poll::Ready(Ok(0));
         }
 
-        // Chunk to maximum TLS payload size
-        let chunk_size = buf.len().min(MAX_TLS_PAYLOAD);
+        // Browser profiles use a slow-start-like record ramp with bounded
+        // per-connection jitter instead of one stable MTProxy record size.
+        let chunk_size = buf.len().min(this.next_record_payload_limit());
         let chunk = &buf[..chunk_size];
 
         // Build the complete record (header + payload)
@@ -996,6 +1043,38 @@ mod tests {
         ];
         record.extend_from_slice(data);
         record
+    }
+
+    #[test]
+    fn selected_record_profiles_have_distinct_bounded_phases() {
+        let mut chrome = FakeTlsWriter::with_profile(
+            tokio::io::sink(),
+            TlsRecordProfile::Chrome,
+            0x1234_5678,
+        );
+        let chrome_start = chrome.next_record_payload_limit();
+        for _ in 1..32 {
+            let _ = chrome.next_record_payload_limit();
+        }
+        let chrome_ramp = chrome.next_record_payload_limit();
+        for _ in 33..48 {
+            let _ = chrome.next_record_payload_limit();
+        }
+        let chrome_bulk = chrome.next_record_payload_limit();
+
+        assert!((1_330..=1_570).contains(&chrome_start));
+        assert!((3_712..=4_480).contains(&chrome_ramp));
+        assert!((14_960..=16_240).contains(&chrome_bulk));
+        assert_ne!(chrome_start, chrome_ramp);
+        assert_ne!(chrome_ramp, chrome_bulk);
+
+        let mut legacy = FakeTlsWriter::with_profile(
+            tokio::io::sink(),
+            TlsRecordProfile::Legacy,
+            0,
+        );
+        assert_eq!(legacy.next_record_payload_limit(), MAX_TLS_PAYLOAD);
+        assert_eq!(legacy.next_record_payload_limit(), MAX_TLS_PAYLOAD);
     }
 
     /// Build a Change Cipher Spec record

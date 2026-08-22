@@ -9,7 +9,7 @@ fn load_config_from_temp_toml(toml: &str) -> ProxyConfig {
         .duration_since(std::time::UNIX_EPOCH)
         .unwrap()
         .as_nanos();
-    let dir = std::env::temp_dir().join(format!("telemt_load_cfg_{nonce}"));
+    let dir = std::env::temp_dir().join(format!("tupoproxy_load_cfg_{nonce}"));
     std::fs::create_dir_all(&dir).unwrap();
     let path = dir.join("config.toml");
     std::fs::write(&path, toml).unwrap();
@@ -24,7 +24,7 @@ fn load_config_error_from_temp_toml(toml: &str) -> String {
         .duration_since(std::time::UNIX_EPOCH)
         .unwrap()
         .as_nanos();
-    let dir = std::env::temp_dir().join(format!("telemt_load_cfg_error_{nonce}"));
+    let dir = std::env::temp_dir().join(format!("tupoproxy_load_cfg_error_{nonce}"));
     std::fs::create_dir_all(&dir).unwrap();
     let path = dir.join("config.toml");
     std::fs::write(&path, toml).unwrap();

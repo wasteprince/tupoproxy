@@ -131,7 +131,7 @@ pub(crate) async fn https_get(
         .method(Method::GET)
         .uri(path_and_query)
         .header(HOST, host_header)
-        .header(USER_AGENT, "telemt-middle-proxy/1")
+        .header(USER_AGENT, "tupoproxy-middle-proxy/1")
         .header(CONNECTION, "close")
         .body(Empty::<bytes::Bytes>::new())
         .map_err(|e| ProxyError::Proxy(format!("build HTTP request failed for {url}: {e}")))?;

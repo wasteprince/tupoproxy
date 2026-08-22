@@ -57,12 +57,12 @@ pub(crate) fn resolve_runtime_config_path(
         return absolute.canonicalize().unwrap_or(absolute);
     }
 
-    let etc_telemt = std::path::Path::new("/etc/telemt");
+    let etc_tupoproxy = std::path::Path::new("/etc/tupoproxy");
     let candidates = [
         startup_cwd.join("config.toml"),
-        startup_cwd.join("telemt.toml"),
-        etc_telemt.join("telemt.toml"),
-        etc_telemt.join("config.toml"),
+        startup_cwd.join("tupoproxy.toml"),
+        etc_tupoproxy.join("tupoproxy.toml"),
+        etc_tupoproxy.join("config.toml"),
     ];
     for candidate in candidates {
         if candidate.is_file() {
@@ -94,7 +94,7 @@ pub(crate) fn resolve_runtime_base_dir(
         return normalize_runtime_dir(parent, startup_cwd);
     }
 
-    PathBuf::from("/etc/telemt")
+    PathBuf::from("/etc/tupoproxy")
 }
 
 fn normalize_runtime_dir(path: &Path, startup_cwd: &Path) -> PathBuf {
@@ -128,7 +128,7 @@ pub(crate) fn parse_cli() -> CliArgs {
     let log_cli_options = match crate::logging::parse_log_cli_options(&args) {
         Ok(options) => options,
         Err(error) => {
-            eprintln!("[telemt] {error}");
+            eprintln!("[tupoproxy] {error}");
             std::process::exit(2);
         }
     };
@@ -136,7 +136,7 @@ pub(crate) fn parse_cli() -> CliArgs {
     // Check for --init first (handled before tokio)
     if let Some(init_opts) = cli::parse_init_args(&args) {
         if let Err(e) = cli::run_init(init_opts) {
-            eprintln!("[telemt] Init failed: {}", e);
+            eprintln!("[tupoproxy] Init failed: {}", e);
             std::process::exit(1);
         }
         std::process::exit(0);
@@ -205,7 +205,7 @@ pub(crate) fn parse_cli() -> CliArgs {
                 std::process::exit(0);
             }
             "--version" | "-V" => {
-                println!("telemt {}", env!("CARGO_PKG_VERSION"));
+                println!("tupoproxy {}", env!("CARGO_PKG_VERSION"));
                 std::process::exit(0);
             }
             // Skip daemon-related flags (already parsed)
@@ -250,7 +250,7 @@ pub(crate) fn parse_cli() -> CliArgs {
 }
 
 fn print_help() {
-    eprintln!("Usage: telemt [COMMAND] [OPTIONS] [config.toml]");
+    eprintln!("Usage: tupoproxy [COMMAND] [OPTIONS] [config.toml]");
     eprintln!();
     eprintln!("Commands:");
     eprintln!("  run                     Run in foreground (default if no command given)");
@@ -287,7 +287,7 @@ fn print_help() {
         eprintln!("Daemon options (Unix only):");
         eprintln!("  --daemon, -d            Fork to background (daemonize)");
         eprintln!("  --foreground, -f        Explicit foreground mode (for systemd)");
-        eprintln!("  --pid-file <PATH>       PID file path (default: /var/run/telemt.pid)");
+        eprintln!("  --pid-file <PATH>       PID file path (default: /var/run/tupoproxy.pid)");
         eprintln!("  --run-as-user <USER>    Drop privileges to this user after binding");
         eprintln!("  --run-as-group <GROUP>  Drop privileges to this group after binding");
         eprintln!("  --working-dir <DIR>     Working directory for daemon mode");
@@ -296,21 +296,22 @@ fn print_help() {
     eprintln!("Setup (fire-and-forget):");
     eprintln!("  --init                  Generate config, install systemd service, start");
     eprintln!("    --port <PORT>          Listen port (default: 443)");
-    eprintln!("    --domain <DOMAIN>      TLS domain for masking (default: www.google.com)");
+    eprintln!("    --domain <DOMAIN>      TLS domain for masking (default: proxy.example.com)");
+    eprintln!("    --fingerprint <NAME>   chrome|firefox|compat|legacy (default: chrome)");
     eprintln!("    --secret <HEX>         32-char hex secret (auto-generated if omitted)");
     eprintln!("    --user <NAME>          Username (default: user)");
-    eprintln!("    --config-dir <DIR>     Config directory (default: /etc/telemt)");
+    eprintln!("    --config-dir <DIR>     Config directory (default: /etc/tupoproxy)");
     eprintln!("    --no-start             Don't start the service after install");
     #[cfg(unix)]
     {
         eprintln!();
         eprintln!("Examples:");
-        eprintln!("  telemt config.toml                    Run in foreground");
-        eprintln!("  telemt start config.toml              Start as daemon");
-        eprintln!("  telemt start --pid-file /tmp/t.pid    Start with custom PID file");
-        eprintln!("  telemt stop                           Stop daemon");
-        eprintln!("  telemt reload                         Reload configuration");
-        eprintln!("  telemt status                         Check daemon status");
+        eprintln!("  tupoproxy config.toml                    Run in foreground");
+        eprintln!("  tupoproxy start config.toml              Start as daemon");
+        eprintln!("  tupoproxy start --pid-file /tmp/t.pid    Start with custom PID file");
+        eprintln!("  tupoproxy stop                           Stop daemon");
+        eprintln!("  tupoproxy reload                         Reload configuration");
+        eprintln!("  tupoproxy status                         Check daemon status");
     }
 }
 
@@ -343,7 +344,7 @@ mod tests {
             .duration_since(std::time::UNIX_EPOCH)
             .unwrap()
             .as_nanos();
-        let startup_cwd = std::env::temp_dir().join(format!("telemt_cfg_path_{nonce}"));
+        let startup_cwd = std::env::temp_dir().join(format!("tupoproxy_cfg_path_{nonce}"));
         std::fs::create_dir_all(&startup_cwd).unwrap();
         let target = startup_cwd.join("config.toml");
         std::fs::write(&target, " ").unwrap();
@@ -361,7 +362,7 @@ mod tests {
             .duration_since(std::time::UNIX_EPOCH)
             .unwrap()
             .as_nanos();
-        let startup_cwd = std::env::temp_dir().join(format!("telemt_cfg_path_missing_{nonce}"));
+        let startup_cwd = std::env::temp_dir().join(format!("tupoproxy_cfg_path_missing_{nonce}"));
         std::fs::create_dir_all(&startup_cwd).unwrap();
 
         let resolved = resolve_runtime_config_path("missing.toml", &startup_cwd, true);
@@ -377,15 +378,15 @@ mod tests {
             .unwrap()
             .as_nanos();
         let startup_cwd =
-            std::env::temp_dir().join(format!("telemt_cfg_startup_candidates_{nonce}"));
+            std::env::temp_dir().join(format!("tupoproxy_cfg_startup_candidates_{nonce}"));
         std::fs::create_dir_all(&startup_cwd).unwrap();
-        let telemt = startup_cwd.join("telemt.toml");
-        std::fs::write(&telemt, " ").unwrap();
+        let tupoproxy = startup_cwd.join("tupoproxy.toml");
+        std::fs::write(&tupoproxy, " ").unwrap();
 
         let resolved = resolve_runtime_config_path("config.toml", &startup_cwd, false);
-        assert_eq!(resolved, telemt.canonicalize().unwrap());
+        assert_eq!(resolved, tupoproxy.canonicalize().unwrap());
 
-        let _ = std::fs::remove_file(&telemt);
+        let _ = std::fs::remove_file(&tupoproxy);
         let _ = std::fs::remove_dir(&startup_cwd);
     }
 
@@ -395,7 +396,7 @@ mod tests {
             .duration_since(std::time::UNIX_EPOCH)
             .unwrap()
             .as_nanos();
-        let startup_cwd = std::env::temp_dir().join(format!("telemt_cfg_startup_default_{nonce}"));
+        let startup_cwd = std::env::temp_dir().join(format!("tupoproxy_cfg_startup_default_{nonce}"));
         std::fs::create_dir_all(&startup_cwd).unwrap();
 
         let resolved = resolve_runtime_config_path("config.toml", &startup_cwd, false);
@@ -410,8 +411,8 @@ mod tests {
             .duration_since(std::time::UNIX_EPOCH)
             .unwrap()
             .as_nanos();
-        let startup_cwd = std::env::temp_dir().join(format!("telemt_runtime_base_cwd_{nonce}"));
-        let data_path = std::env::temp_dir().join(format!("telemt_runtime_base_data_{nonce}"));
+        let startup_cwd = std::env::temp_dir().join(format!("tupoproxy_runtime_base_cwd_{nonce}"));
+        let data_path = std::env::temp_dir().join(format!("tupoproxy_runtime_base_data_{nonce}"));
         std::fs::create_dir_all(&startup_cwd).unwrap();
         std::fs::create_dir_all(&data_path).unwrap();
 
@@ -433,13 +434,13 @@ mod tests {
             .duration_since(std::time::UNIX_EPOCH)
             .unwrap()
             .as_nanos();
-        let startup_cwd = std::env::temp_dir().join(format!("telemt_runtime_base_start_{nonce}"));
-        let config_dir = std::env::temp_dir().join(format!("telemt_runtime_base_cfg_{nonce}"));
+        let startup_cwd = std::env::temp_dir().join(format!("tupoproxy_runtime_base_start_{nonce}"));
+        let config_dir = std::env::temp_dir().join(format!("tupoproxy_runtime_base_cfg_{nonce}"));
         std::fs::create_dir_all(&startup_cwd).unwrap();
         std::fs::create_dir_all(&config_dir).unwrap();
 
         let resolved =
-            resolve_runtime_base_dir(&config_dir.join("telemt.toml"), &startup_cwd, true, None);
+            resolve_runtime_base_dir(&config_dir.join("tupoproxy.toml"), &startup_cwd, true, None);
         assert_eq!(resolved, startup_cwd.canonicalize().unwrap());
 
         let _ = std::fs::remove_dir(&config_dir);
@@ -452,11 +453,11 @@ mod tests {
             .duration_since(std::time::UNIX_EPOCH)
             .unwrap()
             .as_nanos();
-        let config_dir = std::env::temp_dir().join(format!("telemt_runtime_base_root_cfg_{nonce}"));
+        let config_dir = std::env::temp_dir().join(format!("tupoproxy_runtime_base_root_cfg_{nonce}"));
         std::fs::create_dir_all(&config_dir).unwrap();
 
         let resolved =
-            resolve_runtime_base_dir(&config_dir.join("telemt.toml"), Path::new("/"), true, None);
+            resolve_runtime_base_dir(&config_dir.join("tupoproxy.toml"), Path::new("/"), true, None);
         assert_eq!(resolved, config_dir.canonicalize().unwrap());
 
         let _ = std::fs::remove_dir(&config_dir);
@@ -468,7 +469,7 @@ mod tests {
             .duration_since(std::time::UNIX_EPOCH)
             .unwrap()
             .as_nanos();
-        let startup_cwd = std::env::temp_dir().join(format!("telemt_runtime_base_systemd_{nonce}"));
+        let startup_cwd = std::env::temp_dir().join(format!("tupoproxy_runtime_base_systemd_{nonce}"));
         std::fs::create_dir_all(&startup_cwd).unwrap();
 
         let resolved =
@@ -481,12 +482,12 @@ mod tests {
     #[test]
     fn resolve_runtime_base_dir_falls_back_to_etc_from_root() {
         let resolved = resolve_runtime_base_dir(
-            Path::new("/etc/telemt/config.toml"),
+            Path::new("/etc/tupoproxy/config.toml"),
             Path::new("/"),
             false,
             None,
         );
-        assert_eq!(resolved, PathBuf::from("/etc/telemt"));
+        assert_eq!(resolved, PathBuf::from("/etc/tupoproxy"));
     }
 
     #[test]
@@ -596,13 +597,19 @@ pub(crate) fn print_proxy_links(host: &str, port: u16, config: &ProxyConfig) {
 
                 for domain in domains {
                     let domain_hex = hex::encode(&domain);
+                    let profile = config
+                        .censorship
+                        .tls_fingerprints
+                        .get(&domain)
+                        .map(|value| format!(" [{}]", value.as_str()))
+                        .unwrap_or_default();
                     print_maestro_line(format!(
-                        "EE-TLS: tg://proxy?server={host}&port={port}&secret=ee{secret}{domain_hex}"
+                        "EE-TLS{profile}: tg://proxy?server={host}&port={port}&secret=ee{secret}{domain_hex}"
                     ));
                 }
             }
         } else {
-            warn!(target: "telemt::links", "User '{}' in show_link not found", user_name);
+            warn!(target: "tupoproxy::links", "User '{}' in show_link not found", user_name);
         }
     }
 }

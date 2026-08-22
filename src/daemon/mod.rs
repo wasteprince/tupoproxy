@@ -1,7 +1,7 @@
-//! Unix daemon support for telemt.
+//! Unix daemon support for tupoproxy.
 //!
 //! Provides classic Unix daemonization (double-fork), PID file management,
-//! and privilege dropping for running telemt as a background service.
+//! and privilege dropping for running tupoproxy as a background service.
 
 use std::fs::{self, File, OpenOptions};
 use std::io::{self, Read, Write};
@@ -14,7 +14,7 @@ use nix::unistd::{self, ForkResult, Gid, Pid, Uid, chdir, close, fork, getpid, s
 use tracing::{debug, info, warn};
 
 /// Default PID file location.
-pub const DEFAULT_PID_FILE: &str = "/var/run/telemt.pid";
+pub const DEFAULT_PID_FILE: &str = "/var/run/tupoproxy.pid";
 
 /// Daemon configuration options parsed from CLI.
 #[derive(Debug, Clone, Default)]
@@ -403,7 +403,7 @@ pub fn drop_privileges(
         {
             let parent = pid.path.parent().unwrap_or(Path::new("."));
             let probe_path = parent.join(format!(
-                ".telemt_pid_probe_{}_{}",
+                ".tupoproxy_pid_probe_{}_{}",
                 std::process::id(),
                 getpid().as_raw()
             ));
@@ -574,13 +574,13 @@ mod tests {
 
     #[test]
     fn test_check_status_not_running() {
-        let path = "/tmp/telemt_test_nonexistent.pid";
+        let path = "/tmp/tupoproxy_test_nonexistent.pid";
         assert_eq!(check_status(path), DaemonStatus::NotRunning);
     }
 
     #[test]
     fn test_pid_file_basic() {
-        let path = "/tmp/telemt_test_pidfile.pid";
+        let path = "/tmp/tupoproxy_test_pidfile.pid";
         let _ = fs::remove_file(path);
 
         let mut pf = PidFile::new(path);

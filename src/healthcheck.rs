@@ -33,7 +33,7 @@ pub(crate) fn run(config_path: &str, mode: HealthcheckMode) -> i32 {
     match run_inner(config_path, mode) {
         Ok(()) => 0,
         Err(error) => {
-            eprintln!("[telemt] healthcheck failed: {error}");
+            eprintln!("[tupoproxy] healthcheck failed: {error}");
             1
         }
     }

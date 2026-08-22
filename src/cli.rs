@@ -57,7 +57,7 @@ impl Default for ParsedCommand {
             #[cfg(unix)]
             pid_file: PathBuf::from(DEFAULT_PID_FILE),
             #[cfg(not(unix))]
-            pid_file: PathBuf::from("/var/run/telemt.pid"),
+            pid_file: PathBuf::from("/var/run/tupoproxy.pid"),
             config_path: "config.toml".to_string(),
             healthcheck_mode: HealthcheckMode::Liveness,
             healthcheck_mode_invalid: None,
@@ -195,10 +195,10 @@ pub fn execute_subcommand(cmd: &ParsedCommand) -> Option<i32> {
         Subcommand::Healthcheck => {
             if let Some(invalid_mode) = cmd.healthcheck_mode_invalid.as_ref() {
                 if invalid_mode.is_empty() {
-                    eprintln!("[telemt] Missing value for --mode (supported: liveness, ready)");
+                    eprintln!("[tupoproxy] Missing value for --mode (supported: liveness, ready)");
                 } else {
                     eprintln!(
-                        "[telemt] Invalid --mode value '{invalid_mode}' (supported: liveness, ready)"
+                        "[tupoproxy] Invalid --mode value '{invalid_mode}' (supported: liveness, ready)"
                     );
                 }
                 Some(2)
@@ -211,7 +211,7 @@ pub fn execute_subcommand(cmd: &ParsedCommand) -> Option<i32> {
                 match run_init(opts) {
                     Ok(()) => Some(0),
                     Err(e) => {
-                        eprintln!("[telemt] Init failed: {}", e);
+                        eprintln!("[tupoproxy] Init failed: {}", e);
                         Some(1)
                     }
                 }
@@ -228,16 +228,16 @@ pub fn execute_subcommand(cmd: &ParsedCommand) -> Option<i32> {
 pub fn execute_subcommand(cmd: &ParsedCommand) -> Option<i32> {
     match cmd.subcommand {
         Subcommand::Stop | Subcommand::Reload | Subcommand::Status => {
-            eprintln!("[telemt] Subcommand not supported on this platform");
+            eprintln!("[tupoproxy] Subcommand not supported on this platform");
             Some(1)
         }
         Subcommand::Healthcheck => {
             if let Some(invalid_mode) = cmd.healthcheck_mode_invalid.as_ref() {
                 if invalid_mode.is_empty() {
-                    eprintln!("[telemt] Missing value for --mode (supported: liveness, ready)");
+                    eprintln!("[tupoproxy] Missing value for --mode (supported: liveness, ready)");
                 } else {
                     eprintln!(
-                        "[telemt] Invalid --mode value '{invalid_mode}' (supported: liveness, ready)"
+                        "[tupoproxy] Invalid --mode value '{invalid_mode}' (supported: liveness, ready)"
                     );
                 }
                 Some(2)
@@ -250,7 +250,7 @@ pub fn execute_subcommand(cmd: &ParsedCommand) -> Option<i32> {
                 match run_init(opts) {
                     Ok(()) => Some(0),
                     Err(e) => {
-                        eprintln!("[telemt] Init failed: {}", e);
+                        eprintln!("[tupoproxy] Init failed: {}", e);
                         Some(1)
                     }
                 }
@@ -267,7 +267,7 @@ pub fn execute_subcommand(cmd: &ParsedCommand) -> Option<i32> {
 fn cmd_stop(pid_file: &Path) -> i32 {
     use nix::sys::signal::Signal;
 
-    println!("Stopping telemt daemon...");
+    println!("Stopping tupoproxy daemon...");
 
     match daemon::signal_pid_file(pid_file, Signal::SIGTERM) {
         Ok(()) => {
@@ -296,7 +296,7 @@ fn cmd_stop(pid_file: &Path) -> i32 {
 fn cmd_reload(pid_file: &Path) -> i32 {
     use nix::sys::signal::Signal;
 
-    println!("Reloading telemt configuration...");
+    println!("Reloading tupoproxy configuration...");
 
     match daemon::signal_pid_file(pid_file, Signal::SIGHUP) {
         Ok(()) => {
@@ -315,17 +315,17 @@ fn cmd_reload(pid_file: &Path) -> i32 {
 fn cmd_status(pid_file: &Path) -> i32 {
     match daemon::check_status(pid_file) {
         daemon::DaemonStatus::Running(pid) => {
-            println!("telemt is running (pid {})", pid);
+            println!("tupoproxy is running (pid {})", pid);
             0
         }
         daemon::DaemonStatus::Stale(pid) => {
-            println!("telemt is not running (stale pid file, was pid {})", pid);
+            println!("tupoproxy is not running (stale pid file, was pid {})", pid);
             // Clean up stale PID file
             let _ = std::fs::remove_file(pid_file);
             1
         }
         daemon::DaemonStatus::NotRunning => {
-            println!("telemt is not running");
+            println!("tupoproxy is not running");
             1
         }
     }
@@ -336,6 +336,7 @@ fn cmd_status(pid_file: &Path) -> i32 {
 pub struct InitOptions {
     pub port: u16,
     pub domain: String,
+    pub fingerprint: String,
     pub secret: Option<String>,
     pub username: String,
     pub config_dir: PathBuf,
@@ -404,10 +405,11 @@ impl Default for InitOptions {
     fn default() -> Self {
         Self {
             port: 443,
-            domain: "www.google.com".to_string(),
+            domain: "proxy.example.com".to_string(),
+            fingerprint: "chrome".to_string(),
             secret: None,
             username: "user".to_string(),
-            config_dir: PathBuf::from("/etc/telemt"),
+            config_dir: PathBuf::from("/etc/tupoproxy"),
             no_start: false,
         }
     }
@@ -436,6 +438,14 @@ pub fn parse_init_args(args: &[String]) -> Option<InitOptions> {
                 i += 1;
                 if i < args.len() {
                     opts.domain = args[i].clone();
+                }
+            }
+            "--fingerprint" => {
+                i += 1;
+                if i < args.len()
+                    && matches!(args[i].as_str(), "chrome" | "firefox" | "compat" | "legacy")
+                {
+                    opts.fingerprint = args[i].clone();
                 }
             }
             "--secret" => {
@@ -471,7 +481,7 @@ pub fn parse_init_args(args: &[String]) -> Option<InitOptions> {
 pub fn run_init(opts: InitOptions) -> Result<(), Box<dyn std::error::Error>> {
     use crate::service::{self, InitSystem, ServiceOptions};
 
-    eprintln!("[telemt] Fire-and-forget setup");
+    eprintln!("[tupoproxy] Fire-and-forget setup");
     eprintln!();
 
     // 1. Detect init system
@@ -494,28 +504,35 @@ pub fn run_init(opts: InitOptions) -> Result<(), Box<dyn std::error::Error>> {
     eprintln!("[+] User:   {}", opts.username);
     eprintln!("[+] Port:   {}", opts.port);
     eprintln!("[+] Domain: {}", opts.domain);
+    eprintln!("[+] TLS fingerprint: {}", opts.fingerprint);
 
     // 3. Create config directory
     fs::create_dir_all(&opts.config_dir)?;
     let config_path = opts.config_dir.join("config.toml");
 
     // 4. Write config
-    let config_content = generate_config(&opts.username, &secret, opts.port, &opts.domain);
+    let config_content = generate_config(
+        &opts.username,
+        &secret,
+        opts.port,
+        &opts.domain,
+        &opts.fingerprint,
+    );
     fs::write(&config_path, &config_content)?;
     eprintln!("[+] Config written to {}", config_path.display());
 
     // 5. Generate and write service file
     let exe_path =
-        std::env::current_exe().unwrap_or_else(|_| PathBuf::from("/usr/local/bin/telemt"));
+        std::env::current_exe().unwrap_or_else(|_| PathBuf::from("/usr/local/bin/tupoproxy"));
 
     let service_opts = ServiceOptions {
         exe_path: &exe_path,
         config_path: &config_path,
         user: None, // Let systemd/init handle user
         group: None,
-        pid_file: "/var/run/telemt.pid",
-        working_dir: Some("/var/lib/telemt"),
-        description: "Telemt MTProxy - Telegram MTProto Proxy",
+        pid_file: "/var/run/tupoproxy.pid",
+        working_dir: Some("/var/lib/tupoproxy"),
+        description: "tupoproxy - Telegram MTProto Proxy",
     };
 
     let service_path = service::service_file_path(init_system);
@@ -556,16 +573,16 @@ pub fn run_init(opts: InitOptions) -> Result<(), Box<dyn std::error::Error>> {
     match init_system {
         InitSystem::Systemd => {
             run_cmd("systemctl", &["daemon-reload"]);
-            run_cmd("systemctl", &["enable", "telemt.service"]);
+            run_cmd("systemctl", &["enable", "tupoproxy.service"]);
             eprintln!("[+] Service enabled");
 
             if !opts.no_start {
-                run_cmd("systemctl", &["start", "telemt.service"]);
+                run_cmd("systemctl", &["start", "tupoproxy.service"]);
                 eprintln!("[+] Service started");
 
                 std::thread::sleep(std::time::Duration::from_secs(1));
                 let status = Command::new("systemctl")
-                    .args(["is-active", "telemt.service"])
+                    .args(["is-active", "tupoproxy.service"])
                     .output();
 
                 match status {
@@ -574,36 +591,36 @@ pub fn run_init(opts: InitOptions) -> Result<(), Box<dyn std::error::Error>> {
                     }
                     _ => {
                         eprintln!("[!] Service may not have started correctly");
-                        eprintln!("[!] Check: journalctl -u telemt.service -n 20");
+                        eprintln!("[!] Check: journalctl -u tupoproxy.service -n 20");
                     }
                 }
             } else {
                 eprintln!("[+] Service not started (--no-start)");
-                eprintln!("[+] Start manually: systemctl start telemt.service");
+                eprintln!("[+] Start manually: systemctl start tupoproxy.service");
             }
         }
         InitSystem::OpenRC => {
-            run_cmd("rc-update", &["add", "telemt", "default"]);
+            run_cmd("rc-update", &["add", "tupoproxy", "default"]);
             eprintln!("[+] Service enabled");
 
             if !opts.no_start {
-                run_cmd("rc-service", &["telemt", "start"]);
+                run_cmd("rc-service", &["tupoproxy", "start"]);
                 eprintln!("[+] Service started");
             } else {
                 eprintln!("[+] Service not started (--no-start)");
-                eprintln!("[+] Start manually: rc-service telemt start");
+                eprintln!("[+] Start manually: rc-service tupoproxy start");
             }
         }
         InitSystem::FreeBSDRc => {
-            run_cmd("sysrc", &["telemt_enable=YES"]);
+            run_cmd("sysrc", &["tupoproxy_enable=YES"]);
             eprintln!("[+] Service enabled");
 
             if !opts.no_start {
-                run_cmd("service", &["telemt", "start"]);
+                run_cmd("service", &["tupoproxy", "start"]);
                 eprintln!("[+] Service started");
             } else {
                 eprintln!("[+] Service not started (--no-start)");
-                eprintln!("[+] Start manually: service telemt start");
+                eprintln!("[+] Start manually: service tupoproxy start");
             }
         }
         InitSystem::Unknown => {
@@ -626,10 +643,16 @@ fn generate_secret() -> String {
     hex::encode(bytes)
 }
 
-fn generate_config(username: &str, secret: &str, port: u16, domain: &str) -> String {
+fn generate_config(
+    username: &str,
+    secret: &str,
+    port: u16,
+    domain: &str,
+    fingerprint: &str,
+) -> String {
     format!(
-        r#"# Telemt MTProxy — auto-generated config
-# Re-run `telemt --init` to regenerate
+        r#"# tupoproxy — auto-generated config
+# Re-run `tupoproxy --init` to regenerate
 
 show_link = ["{username}"]
 
@@ -672,7 +695,7 @@ listen_addr_ipv6 = "::"
 [[server.listeners]]
 ip = "0.0.0.0"
 port = {port}
-# reuse_allow = false # Set true only when intentionally running multiple telemt instances on same port
+# reuse_allow = false # Set true only when intentionally running multiple tupoproxy instances on the same port
 
 [[server.listeners]]
 ip = "::"
@@ -686,6 +709,7 @@ client_ack = 300
 
 [censorship]
 tls_domain = "{domain}"
+tls_fingerprints = {{ "{domain}" = "{fingerprint}" }}
 mask = true
 mask_port = 443
 fake_cert_len = 2048
@@ -713,6 +737,7 @@ weight = 10
         secret = secret,
         port = port,
         domain = domain,
+        fingerprint = fingerprint,
     )
 }
 
@@ -742,6 +767,6 @@ fn print_links(username: &str, secret: &str, port: u16, domain: &str) {
     println!();
     println!("Replace YOUR_SERVER_IP with your server's public IP.");
     println!("The proxy will auto-detect and display the correct link on startup.");
-    println!("Check: journalctl -u telemt.service | head -30");
+    println!("Check: journalctl -u tupoproxy.service | head -30");
     println!("===================");
 }

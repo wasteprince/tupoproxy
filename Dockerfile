@@ -1,138 +1,62 @@
 # syntax=docker/dockerfile:1
 
-ARG TELEMT_REPOSITORY=telemt/telemt
-ARG TELEMT_VERSION=latest
+# Build this working tree so local fork changes are never replaced by a
+# downloaded release artifact.
+FROM rust:slim-bookworm AS builder
 
-# ==========================
-# Minimal Image
-# ==========================
-FROM debian:12-slim AS minimal
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends build-essential ca-certificates pkg-config \
+    && rm -rf /var/lib/apt/lists/*
 
-ARG TARGETARCH
-ARG TELEMT_REPOSITORY
-ARG TELEMT_VERSION
+WORKDIR /src
+COPY Cargo.toml Cargo.lock ./
+COPY src ./src
+COPY benches ./benches
+RUN cargo build --release --locked --bin tupoproxy
 
-RUN set -eux; \
-    apt-get update; \
-    apt-get install -y --no-install-recommends \
-        binutils \
-        ca-certificates \
-        curl \
-        tar; \
-    rm -rf /var/lib/apt/lists/*
+FROM debian:12-slim AS runtime
 
-RUN set -eux; \
-    case "${TARGETARCH}" in \
-        amd64) ASSET="telemt-x86_64-linux-musl.tar.gz" ;; \
-        arm64) ASSET="telemt-aarch64-linux-musl.tar.gz" ;; \
-        *) echo "Unsupported TARGETARCH: ${TARGETARCH}" >&2; exit 1 ;; \
-    esac; \
-    VERSION="${TELEMT_VERSION#refs/tags/}"; \
-    if [ -z "${VERSION}" ] || [ "${VERSION}" = "latest" ]; then \
-        BASE_URL="https://github.com/${TELEMT_REPOSITORY}/releases/latest/download"; \
-    else \
-        BASE_URL="https://github.com/${TELEMT_REPOSITORY}/releases/download/${VERSION}"; \
-    fi; \
-    curl -fL \
-        --retry 5 \
-        --retry-delay 3 \
-        --connect-timeout 10 \
-        --max-time 120 \
-        -o "/tmp/${ASSET}" \
-        "${BASE_URL}/${ASSET}"; \
-    curl -fL \
-        --retry 5 \
-        --retry-delay 3 \
-        --connect-timeout 10 \
-        --max-time 120 \
-        -o "/tmp/${ASSET}.sha256" \
-        "${BASE_URL}/${ASSET}.sha256"; \
-    cd /tmp; \
-    sha256sum -c "${ASSET}.sha256"; \
-    tar -xzf "${ASSET}" -C /tmp; \
-    test -f /tmp/telemt; \
-    install -m 0755 /tmp/telemt /telemt; \
-    strip --strip-unneeded /telemt || true; \
-    rm -f "/tmp/${ASSET}" "/tmp/${ASSET}.sha256" /tmp/telemt
-
-RUN --mount=type=bind,target=/tmp \
-    mkdir -p /app && \
-    if [ -f /tmp/config.toml ]; then \
-        cp /tmp/config.toml /app/config.toml; \
-    elif [ -f /tmp/config/config.toml ]; then \
-        cp /tmp/config/config.toml /app/config.toml; \
-    else \
-        echo "Config file not found" && exit 1; \
-    fi
-
-# ==========================
-# Debug Image
-# ==========================
-FROM debian:12-slim AS debug
-
-RUN set -eux; \
-    apt-get update; \
-    apt-get install -y --no-install-recommends \
-        ca-certificates \
-        tzdata \
-        curl \
-        iproute2 \
-        busybox; \
-    rm -rf /var/lib/apt/lists/*
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends ca-certificates tzdata \
+    && rm -rf /var/lib/apt/lists/* \
+    && groupadd --system --gid 65532 tupoproxy \
+    && useradd --system --uid 65532 --gid tupoproxy --home-dir /app --shell /usr/sbin/nologin tupoproxy
 
 WORKDIR /app
+COPY --from=builder /src/target/release/tupoproxy /app/tupoproxy
+COPY config.toml /app/config.toml
 
-COPY --from=minimal /telemt /app/telemt
-COPY ./config/config.toml /app/config.toml
-
+USER tupoproxy:tupoproxy
 EXPOSE 443 9090 9091
+HEALTHCHECK --interval=30s --timeout=5s --start-period=20s --retries=3 \
+    CMD ["/app/tupoproxy", "healthcheck", "/app/config.toml", "--mode", "liveness"]
+ENTRYPOINT ["/app/tupoproxy"]
+CMD ["/app/config.toml"]
 
-HEALTHCHECK --interval=30s --timeout=5s --start-period=20s --retries=3 CMD ["/app/telemt", "healthcheck", "/app/config.toml", "--mode", "liveness"]
+FROM runtime AS prod
 
-ENTRYPOINT ["/app/telemt"]
-CMD ["config.toml"]
+FROM runtime AS debug
 
-# ==========================
-# Production Netfilter Profile
-# ==========================
+USER root
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends curl iproute2 busybox \
+    && rm -rf /var/lib/apt/lists/*
+USER tupoproxy:tupoproxy
+
 FROM debian:12-slim AS prod-netfilter
 
-RUN set -eux; \
-    apt-get update; \
-    apt-get install -y --no-install-recommends \
-        ca-certificates \
-        conntrack \
-        nftables \
-        iptables; \
-    rm -rf /var/lib/apt/lists/*
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends ca-certificates tzdata conntrack nftables iptables \
+    && rm -rf /var/lib/apt/lists/* \
+    && groupadd --system --gid 65532 tupoproxy \
+    && useradd --system --uid 65532 --gid tupoproxy --home-dir /app --shell /usr/sbin/nologin tupoproxy
 
 WORKDIR /app
-
-COPY --from=minimal /telemt /app/telemt
-COPY --from=minimal /app/config.toml /app/config.toml
-
-EXPOSE 443 9090 9091
-
-HEALTHCHECK --interval=30s --timeout=5s --start-period=20s --retries=3 CMD ["/app/telemt", "healthcheck", "/app/config.toml", "--mode", "liveness"]
-
-ENTRYPOINT ["/app/telemt"]
-CMD ["config.toml"]
-
-# ==========================
-# Production Distroless on MUSL
-# ==========================
-FROM gcr.io/distroless/static-debian12 AS prod
-
-WORKDIR /app
-
-COPY --from=minimal /telemt /app/telemt
-COPY --from=minimal /app/config.toml /app/config.toml
-
-USER nonroot:nonroot
+COPY --from=builder /src/target/release/tupoproxy /app/tupoproxy
+COPY config.toml /app/config.toml
 
 EXPOSE 443 9090 9091
-
-HEALTHCHECK --interval=30s --timeout=5s --start-period=20s --retries=3 CMD ["/app/telemt", "healthcheck", "/app/config.toml", "--mode", "liveness"]
-
-ENTRYPOINT ["/app/telemt"]
-CMD ["config.toml"]
+HEALTHCHECK --interval=30s --timeout=5s --start-period=20s --retries=3 \
+    CMD ["/app/tupoproxy", "healthcheck", "/app/config.toml", "--mode", "liveness"]
+ENTRYPOINT ["/app/tupoproxy"]
+CMD ["/app/config.toml"]

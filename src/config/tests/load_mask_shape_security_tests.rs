@@ -14,7 +14,7 @@ fn write_temp_config(contents: &str) -> PathBuf {
     let seq = TEMP_CONFIG_COUNTER.fetch_add(1, Ordering::Relaxed);
     let pid = std::process::id();
     let path = std::env::temp_dir().join(format!(
-        "telemt-load-mask-shape-security-{pid}-{seq}-{nonce}.toml"
+        "tupoproxy-load-mask-shape-security-{pid}-{seq}-{nonce}.toml"
     ));
     fs::write(&path, contents).expect("temp config write must succeed");
     path

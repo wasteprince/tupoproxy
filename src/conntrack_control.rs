@@ -478,7 +478,7 @@ fn notrack_targets(cfg: &ProxyConfig) -> (Vec<(Option<IpAddr>, u16)>, Vec<(Optio
 async fn apply_nft_rules(cfg: &ProxyConfig) -> Result<(), String> {
     let _ = run_command(
         "nft",
-        &["delete", "table", "inet", "telemt_conntrack"],
+        &["delete", "table", "inet", "tupoproxy_conntrack"],
         None,
     )
     .await;
@@ -511,7 +511,7 @@ async fn apply_nft_rules(cfg: &ProxyConfig) -> Result<(), String> {
         format!("    {}\n", rules.join("\n    "))
     };
     let script = format!(
-        "table inet telemt_conntrack {{\n  chain preraw {{\n    type filter hook prerouting priority raw; policy accept;\n{rule_blob}  }}\n}}\n"
+        "table inet tupoproxy_conntrack {{\n  chain preraw {{\n    type filter hook prerouting priority raw; policy accept;\n{rule_blob}  }}\n}}\n"
     );
     run_command("nft", &["-f", "-"], Some(script)).await
 }
@@ -530,7 +530,7 @@ async fn apply_iptables_rules_for_binary(
     if !command_exists(binary) {
         return Ok(());
     }
-    let chain = "TELEMT_NOTRACK";
+    let chain = "TUPOPROXY_NOTRACK";
     let _ = run_command(
         binary,
         &["-t", "raw", "-D", "PREROUTING", "-j", chain],
@@ -591,26 +591,26 @@ async fn apply_iptables_rules_for_binary(
 async fn clear_notrack_rules_all_backends() {
     let _ = run_command(
         "nft",
-        &["delete", "table", "inet", "telemt_conntrack"],
+        &["delete", "table", "inet", "tupoproxy_conntrack"],
         None,
     )
     .await;
     let _ = run_command(
         "iptables",
-        &["-t", "raw", "-D", "PREROUTING", "-j", "TELEMT_NOTRACK"],
+        &["-t", "raw", "-D", "PREROUTING", "-j", "TUPOPROXY_NOTRACK"],
         None,
     )
     .await;
-    let _ = run_command("iptables", &["-t", "raw", "-F", "TELEMT_NOTRACK"], None).await;
-    let _ = run_command("iptables", &["-t", "raw", "-X", "TELEMT_NOTRACK"], None).await;
+    let _ = run_command("iptables", &["-t", "raw", "-F", "TUPOPROXY_NOTRACK"], None).await;
+    let _ = run_command("iptables", &["-t", "raw", "-X", "TUPOPROXY_NOTRACK"], None).await;
     let _ = run_command(
         "ip6tables",
-        &["-t", "raw", "-D", "PREROUTING", "-j", "TELEMT_NOTRACK"],
+        &["-t", "raw", "-D", "PREROUTING", "-j", "TUPOPROXY_NOTRACK"],
         None,
     )
     .await;
-    let _ = run_command("ip6tables", &["-t", "raw", "-F", "TELEMT_NOTRACK"], None).await;
-    let _ = run_command("ip6tables", &["-t", "raw", "-X", "TELEMT_NOTRACK"], None).await;
+    let _ = run_command("ip6tables", &["-t", "raw", "-F", "TUPOPROXY_NOTRACK"], None).await;
+    let _ = run_command("ip6tables", &["-t", "raw", "-X", "TUPOPROXY_NOTRACK"], None).await;
 }
 
 enum DeleteOutcome {

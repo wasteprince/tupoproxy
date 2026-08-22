@@ -41,7 +41,7 @@ impl BoundedFileAppender {
         let base_name = path
             .file_name()
             .and_then(|name| name.to_str())
-            .unwrap_or("telemt")
+            .unwrap_or("tupoproxy")
             .to_string();
 
         let start = now();
@@ -320,7 +320,7 @@ mod tests {
             .filter(|path| {
                 path.file_name()
                     .and_then(|name| name.to_str())
-                    .map(|name| name.starts_with("telemt.log"))
+                    .map(|name| name.starts_with("tupoproxy.log"))
                     .unwrap_or(false)
             })
             .collect();
@@ -331,7 +331,7 @@ mod tests {
     #[test]
     fn size_rotation_keeps_latest_write_in_active_file() {
         let dir = tempdir().unwrap();
-        let path = dir.path().join("telemt.log");
+        let path = dir.path().join("tupoproxy.log");
         let mut options = options(path.clone());
         options.max_size_bytes = 6;
 
@@ -347,7 +347,7 @@ mod tests {
     #[test]
     fn max_files_retention_removes_oldest_archives() {
         let dir = tempdir().unwrap();
-        let path = dir.path().join("telemt.log");
+        let path = dir.path().join("tupoproxy.log");
         let mut options = options(path);
         options.max_size_bytes = 4;
         options.max_files = 2;
@@ -368,8 +368,8 @@ mod tests {
         use std::os::unix::ffi::OsStrExt;
 
         let dir = tempdir().unwrap();
-        let path = dir.path().join("telemt.log");
-        let old_archive = dir.path().join("telemt.log.20000101000000.0");
+        let path = dir.path().join("tupoproxy.log");
+        let old_archive = dir.path().join("tupoproxy.log.20000101000000.0");
         fs::write(&old_archive, "old").unwrap();
 
         let c_path = CString::new(old_archive.as_os_str().as_bytes()).unwrap();

@@ -172,10 +172,10 @@ pub(super) fn synlimit_namespace(targets: &SynLimitTargets) -> Option<SynLimitNa
     let iptables_suffix = &suffix[..12];
     let hashlimit_suffix = &suffix[..10];
     Some(SynLimitNamespace {
-        nft_table: format!("telemt_synlimit_{suffix}"),
+        nft_table: format!("tupoproxy_synlimit_{suffix}"),
         iptables_chain: format!("TMT_SYN_{iptables_suffix}"),
         iptables_hashlimit_prefix: format!("TMT{hashlimit_suffix}"),
-        pf_anchor: format!("telemt_synlimit/{suffix}"),
+        pf_anchor: format!("tupoproxy_synlimit/{suffix}"),
     })
 }
 
@@ -388,11 +388,11 @@ mod tests {
 
         assert_eq!(first, second);
         assert_ne!(first, changed);
-        assert!(first.nft_table.starts_with("telemt_synlimit_"));
+        assert!(first.nft_table.starts_with("tupoproxy_synlimit_"));
         assert!(first.iptables_chain.starts_with("TMT_SYN_"));
         assert!(first.iptables_chain.len() <= 28);
         assert!(first.iptables_hashlimit_prefix.starts_with("TMT"));
-        assert!(first.pf_anchor.starts_with("telemt_synlimit/"));
+        assert!(first.pf_anchor.starts_with("tupoproxy_synlimit/"));
     }
 
     #[test]

@@ -38,7 +38,7 @@ pub(super) async fn save_sections_to_disk(
 
 /// Render one top-level table as `[section]\n...\n` (or `[[upstreams]]` array
 /// of tables) from the typed `cfg`. Serializes via the `toml` crate so the
-/// output matches the canonical format Telemt parses.
+/// output matches the canonical format tupoproxy parses.
 pub(in crate::api) fn render_top_level_section(
     cfg: &ProxyConfig,
     section: &str,
@@ -286,7 +286,7 @@ pub(in crate::api) fn upsert_toml_table(
     let blocks = find_all_table_blocks(source, table_name);
     if let Some(&(first_start, first_end)) = blocks.first() {
         // Replace the first block in place and delete any further blocks that
-        // also belong to this table. Telemt writes a section's sub-tables
+        // also belong to this table. tupoproxy writes a section's sub-tables
         // contiguously, but a hand-edited config may scatter them; dropping the
         // extras here prevents the duplicate-table corruption that would
         // otherwise break config load.

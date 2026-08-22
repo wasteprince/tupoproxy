@@ -300,127 +300,127 @@ async fn render_tls_front_profile_health(
 
     let _ = writeln!(
         out,
-        "# HELP telemt_tls_front_profile_domains TLS front configured profile domains by export status"
+        "# HELP tupoproxy_tls_front_profile_domains TLS front configured profile domains by export status"
     );
-    let _ = writeln!(out, "# TYPE telemt_tls_front_profile_domains gauge");
+    let _ = writeln!(out, "# TYPE tupoproxy_tls_front_profile_domains gauge");
     let _ = writeln!(
         out,
-        "telemt_tls_front_profile_domains{{status=\"configured\"}} {}",
+        "tupoproxy_tls_front_profile_domains{{status=\"configured\"}} {}",
         domains.len()
     );
     let _ = writeln!(
         out,
-        "telemt_tls_front_profile_domains{{status=\"emitted\"}} {}",
+        "tupoproxy_tls_front_profile_domains{{status=\"emitted\"}} {}",
         health.len()
     );
     let _ = writeln!(
         out,
-        "telemt_tls_front_profile_domains{{status=\"suppressed\"}} {}",
+        "tupoproxy_tls_front_profile_domains{{status=\"suppressed\"}} {}",
         suppressed
     );
     let _ = writeln!(
         out,
-        "# HELP telemt_tls_front_profile_info TLS front profile source and feature flags per configured domain"
+        "# HELP tupoproxy_tls_front_profile_info TLS front profile source and feature flags per configured domain"
     );
-    let _ = writeln!(out, "# TYPE telemt_tls_front_profile_info gauge");
+    let _ = writeln!(out, "# TYPE tupoproxy_tls_front_profile_info gauge");
     let _ = writeln!(
         out,
-        "# HELP telemt_tls_front_profile_quality_info TLS front profile quality and key-share group per configured domain"
+        "# HELP tupoproxy_tls_front_profile_quality_info TLS front profile quality and key-share group per configured domain"
     );
-    let _ = writeln!(out, "# TYPE telemt_tls_front_profile_quality_info gauge");
+    let _ = writeln!(out, "# TYPE tupoproxy_tls_front_profile_quality_info gauge");
     let _ = writeln!(
         out,
-        "# HELP telemt_tls_front_profile_age_seconds Age of cached TLS front profile data per configured domain"
+        "# HELP tupoproxy_tls_front_profile_age_seconds Age of cached TLS front profile data per configured domain"
     );
-    let _ = writeln!(out, "# TYPE telemt_tls_front_profile_age_seconds gauge");
+    let _ = writeln!(out, "# TYPE tupoproxy_tls_front_profile_age_seconds gauge");
     let _ = writeln!(
         out,
-        "# HELP telemt_tls_front_profile_server_hello_bytes TLS front cached ServerHello record body bytes per configured domain"
-    );
-    let _ = writeln!(
-        out,
-        "# TYPE telemt_tls_front_profile_server_hello_bytes gauge"
+        "# HELP tupoproxy_tls_front_profile_server_hello_bytes TLS front cached ServerHello record body bytes per configured domain"
     );
     let _ = writeln!(
         out,
-        "# HELP telemt_tls_front_profile_server_hello_extensions TLS front cached visible ServerHello extension count per configured domain"
+        "# TYPE tupoproxy_tls_front_profile_server_hello_bytes gauge"
     );
     let _ = writeln!(
         out,
-        "# TYPE telemt_tls_front_profile_server_hello_extensions gauge"
+        "# HELP tupoproxy_tls_front_profile_server_hello_extensions TLS front cached visible ServerHello extension count per configured domain"
     );
     let _ = writeln!(
         out,
-        "# HELP telemt_tls_front_profile_app_data_records TLS front cached app-data record count per configured domain"
+        "# TYPE tupoproxy_tls_front_profile_server_hello_extensions gauge"
     );
     let _ = writeln!(
         out,
-        "# TYPE telemt_tls_front_profile_app_data_records gauge"
+        "# HELP tupoproxy_tls_front_profile_app_data_records TLS front cached app-data record count per configured domain"
     );
     let _ = writeln!(
         out,
-        "# HELP telemt_tls_front_profile_ticket_records TLS front cached ticket-like tail record count per configured domain"
-    );
-    let _ = writeln!(out, "# TYPE telemt_tls_front_profile_ticket_records gauge");
-    let _ = writeln!(
-        out,
-        "# HELP telemt_tls_front_profile_change_cipher_spec_records TLS front cached ChangeCipherSpec record count per configured domain"
+        "# TYPE tupoproxy_tls_front_profile_app_data_records gauge"
     );
     let _ = writeln!(
         out,
-        "# TYPE telemt_tls_front_profile_change_cipher_spec_records gauge"
+        "# HELP tupoproxy_tls_front_profile_ticket_records TLS front cached ticket-like tail record count per configured domain"
+    );
+    let _ = writeln!(out, "# TYPE tupoproxy_tls_front_profile_ticket_records gauge");
+    let _ = writeln!(
+        out,
+        "# HELP tupoproxy_tls_front_profile_change_cipher_spec_records TLS front cached ChangeCipherSpec record count per configured domain"
     );
     let _ = writeln!(
         out,
-        "# HELP telemt_tls_front_profile_app_data_bytes TLS front cached total app-data bytes per configured domain"
+        "# TYPE tupoproxy_tls_front_profile_change_cipher_spec_records gauge"
     );
-    let _ = writeln!(out, "# TYPE telemt_tls_front_profile_app_data_bytes gauge");
+    let _ = writeln!(
+        out,
+        "# HELP tupoproxy_tls_front_profile_app_data_bytes TLS front cached total app-data bytes per configured domain"
+    );
+    let _ = writeln!(out, "# TYPE tupoproxy_tls_front_profile_app_data_bytes gauge");
 
     for item in health {
         let domain = prometheus_label_value(&item.domain);
         let _ = writeln!(
             out,
-            "telemt_tls_front_profile_info{{domain=\"{}\",source=\"{}\",is_default=\"{}\",has_cert_info=\"{}\",has_cert_payload=\"{}\"}} 1",
+            "tupoproxy_tls_front_profile_info{{domain=\"{}\",source=\"{}\",is_default=\"{}\",has_cert_info=\"{}\",has_cert_payload=\"{}\"}} 1",
             domain, item.source, item.is_default, item.has_cert_info, item.has_cert_payload
         );
         let _ = writeln!(
             out,
-            "telemt_tls_front_profile_quality_info{{domain=\"{}\",quality=\"{}\",key_share_group=\"{}\"}} 1",
+            "tupoproxy_tls_front_profile_quality_info{{domain=\"{}\",quality=\"{}\",key_share_group=\"{}\"}} 1",
             domain, item.quality, item.key_share_group
         );
         let _ = writeln!(
             out,
-            "telemt_tls_front_profile_age_seconds{{domain=\"{}\"}} {}",
+            "tupoproxy_tls_front_profile_age_seconds{{domain=\"{}\"}} {}",
             domain, item.age_seconds
         );
         let _ = writeln!(
             out,
-            "telemt_tls_front_profile_server_hello_bytes{{domain=\"{}\"}} {}",
+            "tupoproxy_tls_front_profile_server_hello_bytes{{domain=\"{}\"}} {}",
             domain, item.server_hello_record_len
         );
         let _ = writeln!(
             out,
-            "telemt_tls_front_profile_server_hello_extensions{{domain=\"{}\"}} {}",
+            "tupoproxy_tls_front_profile_server_hello_extensions{{domain=\"{}\"}} {}",
             domain, item.server_hello_extensions
         );
         let _ = writeln!(
             out,
-            "telemt_tls_front_profile_app_data_records{{domain=\"{}\"}} {}",
+            "tupoproxy_tls_front_profile_app_data_records{{domain=\"{}\"}} {}",
             domain, item.app_data_records
         );
         let _ = writeln!(
             out,
-            "telemt_tls_front_profile_ticket_records{{domain=\"{}\"}} {}",
+            "tupoproxy_tls_front_profile_ticket_records{{domain=\"{}\"}} {}",
             domain, item.ticket_records
         );
         let _ = writeln!(
             out,
-            "telemt_tls_front_profile_change_cipher_spec_records{{domain=\"{}\"}} {}",
+            "tupoproxy_tls_front_profile_change_cipher_spec_records{{domain=\"{}\"}} {}",
             domain, item.change_cipher_spec_count
         );
         let _ = writeln!(
             out,
-            "telemt_tls_front_profile_app_data_bytes{{domain=\"{}\"}} {}",
+            "tupoproxy_tls_front_profile_app_data_bytes{{domain=\"{}\"}} {}",
             domain, item.total_app_data_len
         );
     }
@@ -443,55 +443,55 @@ async fn render_metrics(
 
     let _ = writeln!(
         out,
-        "# HELP telemt_build_info Build information for the running telemt binary"
+        "# HELP tupoproxy_build_info Build information for the running tupoproxy binary"
     );
-    let _ = writeln!(out, "# TYPE telemt_build_info gauge");
+    let _ = writeln!(out, "# TYPE tupoproxy_build_info gauge");
     let _ = writeln!(
         out,
-        "telemt_build_info{{version=\"{}\"}} 1",
+        "tupoproxy_build_info{{version=\"{}\"}} 1",
         env!("CARGO_PKG_VERSION")
     );
 
-    let _ = writeln!(out, "# HELP telemt_uptime_seconds Proxy uptime");
-    let _ = writeln!(out, "# TYPE telemt_uptime_seconds gauge");
-    let _ = writeln!(out, "telemt_uptime_seconds {:.1}", stats.uptime_secs());
+    let _ = writeln!(out, "# HELP tupoproxy_uptime_seconds Proxy uptime");
+    let _ = writeln!(out, "# TYPE tupoproxy_uptime_seconds gauge");
+    let _ = writeln!(out, "tupoproxy_uptime_seconds {:.1}", stats.uptime_secs());
 
     let _ = writeln!(
         out,
-        "# HELP telemt_telemetry_core_enabled Runtime core telemetry switch"
+        "# HELP tupoproxy_telemetry_core_enabled Runtime core telemetry switch"
     );
-    let _ = writeln!(out, "# TYPE telemt_telemetry_core_enabled gauge");
+    let _ = writeln!(out, "# TYPE tupoproxy_telemetry_core_enabled gauge");
     let _ = writeln!(
         out,
-        "telemt_telemetry_core_enabled {}",
+        "tupoproxy_telemetry_core_enabled {}",
         if core_enabled { 1 } else { 0 }
     );
 
     let _ = writeln!(
         out,
-        "# HELP telemt_telemetry_user_enabled Runtime per-user telemetry switch"
+        "# HELP tupoproxy_telemetry_user_enabled Runtime per-user telemetry switch"
     );
-    let _ = writeln!(out, "# TYPE telemt_telemetry_user_enabled gauge");
+    let _ = writeln!(out, "# TYPE tupoproxy_telemetry_user_enabled gauge");
     let _ = writeln!(
         out,
-        "telemt_telemetry_user_enabled {}",
+        "tupoproxy_telemetry_user_enabled {}",
         if user_enabled { 1 } else { 0 }
     );
     let _ = writeln!(
         out,
-        "# HELP telemt_stats_user_entries Retained per-user stats entries"
+        "# HELP tupoproxy_stats_user_entries Retained per-user stats entries"
     );
-    let _ = writeln!(out, "# TYPE telemt_stats_user_entries gauge");
-    let _ = writeln!(out, "telemt_stats_user_entries {}", stats.user_stats_len());
+    let _ = writeln!(out, "# TYPE tupoproxy_stats_user_entries gauge");
+    let _ = writeln!(out, "tupoproxy_stats_user_entries {}", stats.user_stats_len());
 
     let _ = writeln!(
         out,
-        "# HELP telemt_telemetry_me_level Runtime ME telemetry level flag"
+        "# HELP tupoproxy_telemetry_me_level Runtime ME telemetry level flag"
     );
-    let _ = writeln!(out, "# TYPE telemt_telemetry_me_level gauge");
+    let _ = writeln!(out, "# TYPE tupoproxy_telemetry_me_level gauge");
     let _ = writeln!(
         out,
-        "telemt_telemetry_me_level{{level=\"silent\"}} {}",
+        "tupoproxy_telemetry_me_level{{level=\"silent\"}} {}",
         if matches!(telemetry.me_level, crate::config::MeTelemetryLevel::Silent) {
             1
         } else {
@@ -500,7 +500,7 @@ async fn render_metrics(
     );
     let _ = writeln!(
         out,
-        "telemt_telemetry_me_level{{level=\"normal\"}} {}",
+        "tupoproxy_telemetry_me_level{{level=\"normal\"}} {}",
         if matches!(telemetry.me_level, crate::config::MeTelemetryLevel::Normal) {
             1
         } else {
@@ -509,7 +509,7 @@ async fn render_metrics(
     );
     let _ = writeln!(
         out,
-        "telemt_telemetry_me_level{{level=\"debug\"}} {}",
+        "tupoproxy_telemetry_me_level{{level=\"debug\"}} {}",
         if matches!(telemetry.me_level, crate::config::MeTelemetryLevel::Debug) {
             1
         } else {
@@ -519,41 +519,41 @@ async fn render_metrics(
 
     let _ = writeln!(
         out,
-        "# HELP telemt_buffer_pool_buffers_total Snapshot of pooled and allocated buffers"
+        "# HELP tupoproxy_buffer_pool_buffers_total Snapshot of pooled and allocated buffers"
     );
-    let _ = writeln!(out, "# TYPE telemt_buffer_pool_buffers_total gauge");
+    let _ = writeln!(out, "# TYPE tupoproxy_buffer_pool_buffers_total gauge");
     let _ = writeln!(
         out,
-        "telemt_buffer_pool_buffers_total{{kind=\"pooled\"}} {}",
+        "tupoproxy_buffer_pool_buffers_total{{kind=\"pooled\"}} {}",
         stats.get_buffer_pool_pooled_gauge()
     );
     let _ = writeln!(
         out,
-        "telemt_buffer_pool_buffers_total{{kind=\"allocated\"}} {}",
+        "tupoproxy_buffer_pool_buffers_total{{kind=\"allocated\"}} {}",
         stats.get_buffer_pool_allocated_gauge()
     );
     let _ = writeln!(
         out,
-        "telemt_buffer_pool_buffers_total{{kind=\"in_use\"}} {}",
+        "tupoproxy_buffer_pool_buffers_total{{kind=\"in_use\"}} {}",
         stats.get_buffer_pool_in_use_gauge()
     );
     let _ = writeln!(
         out,
-        "# HELP telemt_buffer_pool_events_total Buffer-pool allocation lifecycle events"
+        "# HELP tupoproxy_buffer_pool_events_total Buffer-pool allocation lifecycle events"
     );
-    let _ = writeln!(out, "# TYPE telemt_buffer_pool_events_total counter");
+    let _ = writeln!(out, "# TYPE tupoproxy_buffer_pool_events_total counter");
     let _ = writeln!(
         out,
-        "telemt_buffer_pool_events_total{{event=\"replaced_nonstandard\"}} {}",
+        "tupoproxy_buffer_pool_events_total{{event=\"replaced_nonstandard\"}} {}",
         stats.get_buffer_pool_replaced_nonstandard_total()
     );
 
     let direct_budget = shared_state.direct_buffer_budget.snapshot();
     let _ = writeln!(
         out,
-        "# HELP telemt_direct_relay_buffer_budget_bytes Direct relay copy-buffer budget and memory inputs"
+        "# HELP tupoproxy_direct_relay_buffer_budget_bytes Direct relay copy-buffer budget and memory inputs"
     );
-    let _ = writeln!(out, "# TYPE telemt_direct_relay_buffer_budget_bytes gauge");
+    let _ = writeln!(out, "# TYPE tupoproxy_direct_relay_buffer_budget_bytes gauge");
     for (kind, value) in [
         ("hard_limit", direct_budget.hard_limit_bytes),
         ("target", direct_budget.target_bytes),
@@ -564,17 +564,17 @@ async fn render_metrics(
     ] {
         let _ = writeln!(
             out,
-            "telemt_direct_relay_buffer_budget_bytes{{kind=\"{}\"}} {}",
+            "tupoproxy_direct_relay_buffer_budget_bytes{{kind=\"{}\"}} {}",
             kind, value
         );
     }
     let _ = writeln!(
         out,
-        "# HELP telemt_direct_relay_buffer_budget_events_total Direct relay buffer-budget lifecycle events"
+        "# HELP tupoproxy_direct_relay_buffer_budget_events_total Direct relay buffer-budget lifecycle events"
     );
     let _ = writeln!(
         out,
-        "# TYPE telemt_direct_relay_buffer_budget_events_total counter"
+        "# TYPE tupoproxy_direct_relay_buffer_budget_events_total counter"
     );
     for (result, value) in [
         ("promotion", direct_budget.promotion_total),
@@ -593,82 +593,82 @@ async fn render_metrics(
     ] {
         let _ = writeln!(
             out,
-            "telemt_direct_relay_buffer_budget_events_total{{result=\"{}\"}} {}",
+            "tupoproxy_direct_relay_buffer_budget_events_total{{result=\"{}\"}} {}",
             result, value
         );
     }
     let _ = writeln!(
         out,
-        "# HELP telemt_direct_relay_buffer_sessions Current Direct relay sessions by adaptive tier"
+        "# HELP tupoproxy_direct_relay_buffer_sessions Current Direct relay sessions by adaptive tier"
     );
-    let _ = writeln!(out, "# TYPE telemt_direct_relay_buffer_sessions gauge");
+    let _ = writeln!(out, "# TYPE tupoproxy_direct_relay_buffer_sessions gauge");
     for (tier, value) in ["base", "tier1", "tier2", "tier3"]
         .into_iter()
         .zip(direct_budget.tier_sessions)
     {
         let _ = writeln!(
             out,
-            "telemt_direct_relay_buffer_sessions{{tier=\"{}\"}} {}",
+            "tupoproxy_direct_relay_buffer_sessions{{tier=\"{}\"}} {}",
             tier, value
         );
     }
 
     let _ = writeln!(
         out,
-        "# HELP telemt_tls_fetch_profile_cache_entries Current adaptive TLS fetch profile-cache entries"
+        "# HELP tupoproxy_tls_fetch_profile_cache_entries Current adaptive TLS fetch profile-cache entries"
     );
-    let _ = writeln!(out, "# TYPE telemt_tls_fetch_profile_cache_entries gauge");
+    let _ = writeln!(out, "# TYPE tupoproxy_tls_fetch_profile_cache_entries gauge");
     let _ = writeln!(
         out,
-        "telemt_tls_fetch_profile_cache_entries {}",
+        "tupoproxy_tls_fetch_profile_cache_entries {}",
         fetcher::profile_cache_entries_for_metrics()
     );
     let _ = writeln!(
         out,
-        "# HELP telemt_tls_fetch_profile_cache_cap_drops_total Profile-cache winner inserts skipped because the cache cap was reached"
+        "# HELP tupoproxy_tls_fetch_profile_cache_cap_drops_total Profile-cache winner inserts skipped because the cache cap was reached"
     );
     let _ = writeln!(
         out,
-        "# TYPE telemt_tls_fetch_profile_cache_cap_drops_total counter"
+        "# TYPE tupoproxy_tls_fetch_profile_cache_cap_drops_total counter"
     );
     let _ = writeln!(
         out,
-        "telemt_tls_fetch_profile_cache_cap_drops_total {}",
+        "tupoproxy_tls_fetch_profile_cache_cap_drops_total {}",
         fetcher::profile_cache_cap_drops_for_metrics()
     );
     let _ = writeln!(
         out,
-        "# HELP telemt_tls_front_full_cert_budget_ips Current IP entries tracked by TLS full-cert budget"
+        "# HELP tupoproxy_tls_front_full_cert_budget_ips Current IP entries tracked by TLS full-cert budget"
     );
-    let _ = writeln!(out, "# TYPE telemt_tls_front_full_cert_budget_ips gauge");
+    let _ = writeln!(out, "# TYPE tupoproxy_tls_front_full_cert_budget_ips gauge");
     let _ = writeln!(
         out,
-        "telemt_tls_front_full_cert_budget_ips {}",
+        "tupoproxy_tls_front_full_cert_budget_ips {}",
         cache::full_cert_sent_ips_for_metrics()
     );
     let _ = writeln!(
         out,
-        "# HELP telemt_tls_front_full_cert_budget_cap_drops_total New IPs denied full-cert budget tracking because the cap was reached"
+        "# HELP tupoproxy_tls_front_full_cert_budget_cap_drops_total New IPs denied full-cert budget tracking because the cap was reached"
     );
     let _ = writeln!(
         out,
-        "# TYPE telemt_tls_front_full_cert_budget_cap_drops_total counter"
+        "# TYPE tupoproxy_tls_front_full_cert_budget_cap_drops_total counter"
     );
     let _ = writeln!(
         out,
-        "telemt_tls_front_full_cert_budget_cap_drops_total {}",
+        "tupoproxy_tls_front_full_cert_budget_cap_drops_total {}",
         cache::full_cert_sent_cap_drops_for_metrics()
     );
     render_tls_front_profile_health(&mut out, config, tls_cache).await;
 
     let _ = writeln!(
         out,
-        "# HELP telemt_connections_total Total accepted connections"
+        "# HELP tupoproxy_connections_total Total accepted connections"
     );
-    let _ = writeln!(out, "# TYPE telemt_connections_total counter");
+    let _ = writeln!(out, "# TYPE tupoproxy_connections_total counter");
     let _ = writeln!(
         out,
-        "telemt_connections_total {}",
+        "tupoproxy_connections_total {}",
         if core_enabled {
             stats.get_connects_all()
         } else {
@@ -678,12 +678,12 @@ async fn render_metrics(
 
     let _ = writeln!(
         out,
-        "# HELP telemt_connections_bad_total Bad/rejected connections"
+        "# HELP tupoproxy_connections_bad_total Bad/rejected connections"
     );
-    let _ = writeln!(out, "# TYPE telemt_connections_bad_total counter");
+    let _ = writeln!(out, "# TYPE tupoproxy_connections_bad_total counter");
     let _ = writeln!(
         out,
-        "telemt_connections_bad_total {}",
+        "tupoproxy_connections_bad_total {}",
         if core_enabled {
             stats.get_connects_bad()
         } else {
@@ -693,14 +693,14 @@ async fn render_metrics(
 
     let _ = writeln!(
         out,
-        "# HELP telemt_connections_bad_by_class_total Bad/rejected connections by class"
+        "# HELP tupoproxy_connections_bad_by_class_total Bad/rejected connections by class"
     );
-    let _ = writeln!(out, "# TYPE telemt_connections_bad_by_class_total counter");
+    let _ = writeln!(out, "# TYPE tupoproxy_connections_bad_by_class_total counter");
     if core_enabled {
         for (class, total) in stats.get_connects_bad_class_counts() {
             let _ = writeln!(
                 out,
-                "telemt_connections_bad_by_class_total{{class=\"{}\"}} {}",
+                "tupoproxy_connections_bad_by_class_total{{class=\"{}\"}} {}",
                 class, total
             );
         }
@@ -708,12 +708,12 @@ async fn render_metrics(
 
     let _ = writeln!(
         out,
-        "# HELP telemt_handshake_timeouts_total Handshake timeouts"
+        "# HELP tupoproxy_handshake_timeouts_total Handshake timeouts"
     );
-    let _ = writeln!(out, "# TYPE telemt_handshake_timeouts_total counter");
+    let _ = writeln!(out, "# TYPE tupoproxy_handshake_timeouts_total counter");
     let _ = writeln!(
         out,
-        "telemt_handshake_timeouts_total {}",
+        "tupoproxy_handshake_timeouts_total {}",
         if core_enabled {
             stats.get_handshake_timeouts()
         } else {
@@ -723,17 +723,17 @@ async fn render_metrics(
 
     let _ = writeln!(
         out,
-        "# HELP telemt_handshake_failures_by_class_total Handshake failures by class"
+        "# HELP tupoproxy_handshake_failures_by_class_total Handshake failures by class"
     );
     let _ = writeln!(
         out,
-        "# TYPE telemt_handshake_failures_by_class_total counter"
+        "# TYPE tupoproxy_handshake_failures_by_class_total counter"
     );
     if core_enabled {
         for (class, total) in stats.get_handshake_failure_class_counts() {
             let _ = writeln!(
                 out,
-                "telemt_handshake_failures_by_class_total{{class=\"{}\"}} {}",
+                "tupoproxy_handshake_failures_by_class_total{{class=\"{}\"}} {}",
                 class, total
             );
         }
@@ -741,12 +741,12 @@ async fn render_metrics(
 
     let _ = writeln!(
         out,
-        "# HELP telemt_auth_expensive_checks_total Expensive authentication candidate checks executed during handshake validation"
+        "# HELP tupoproxy_auth_expensive_checks_total Expensive authentication candidate checks executed during handshake validation"
     );
-    let _ = writeln!(out, "# TYPE telemt_auth_expensive_checks_total counter");
+    let _ = writeln!(out, "# TYPE tupoproxy_auth_expensive_checks_total counter");
     let _ = writeln!(
         out,
-        "telemt_auth_expensive_checks_total {}",
+        "tupoproxy_auth_expensive_checks_total {}",
         if core_enabled {
             shared_state
                 .handshake
@@ -759,12 +759,12 @@ async fn render_metrics(
 
     let _ = writeln!(
         out,
-        "# HELP telemt_auth_budget_exhausted_total Handshake validations that hit authentication candidate budget limits"
+        "# HELP tupoproxy_auth_budget_exhausted_total Handshake validations that hit authentication candidate budget limits"
     );
-    let _ = writeln!(out, "# TYPE telemt_auth_budget_exhausted_total counter");
+    let _ = writeln!(out, "# TYPE tupoproxy_auth_budget_exhausted_total counter");
     let _ = writeln!(
         out,
-        "telemt_auth_budget_exhausted_total {}",
+        "tupoproxy_auth_budget_exhausted_total {}",
         if core_enabled {
             shared_state
                 .handshake
@@ -777,12 +777,12 @@ async fn render_metrics(
 
     let _ = writeln!(
         out,
-        "# HELP telemt_accept_permit_timeout_total Accepted connections dropped due to permit wait timeout"
+        "# HELP tupoproxy_accept_permit_timeout_total Accepted connections dropped due to permit wait timeout"
     );
-    let _ = writeln!(out, "# TYPE telemt_accept_permit_timeout_total counter");
+    let _ = writeln!(out, "# TYPE tupoproxy_accept_permit_timeout_total counter");
     let _ = writeln!(
         out,
-        "telemt_accept_permit_timeout_total {}",
+        "tupoproxy_accept_permit_timeout_total {}",
         if core_enabled {
             stats.get_accept_permit_timeout_total()
         } else {
@@ -792,43 +792,43 @@ async fn render_metrics(
 
     let _ = writeln!(
         out,
-        "# HELP telemt_route_cutover_parked_current Sessions currently parked in route cutover stagger delay"
+        "# HELP tupoproxy_route_cutover_parked_current Sessions currently parked in route cutover stagger delay"
     );
-    let _ = writeln!(out, "# TYPE telemt_route_cutover_parked_current gauge");
+    let _ = writeln!(out, "# TYPE tupoproxy_route_cutover_parked_current gauge");
     let _ = writeln!(
         out,
-        "telemt_route_cutover_parked_current{{route=\"direct\"}} {}",
+        "tupoproxy_route_cutover_parked_current{{route=\"direct\"}} {}",
         stats.get_route_cutover_parked_direct_current()
     );
     let _ = writeln!(
         out,
-        "telemt_route_cutover_parked_current{{route=\"middle\"}} {}",
+        "tupoproxy_route_cutover_parked_current{{route=\"middle\"}} {}",
         stats.get_route_cutover_parked_middle_current()
     );
     let _ = writeln!(
         out,
-        "# HELP telemt_route_cutover_parked_total Sessions parked in route cutover stagger delay"
+        "# HELP tupoproxy_route_cutover_parked_total Sessions parked in route cutover stagger delay"
     );
-    let _ = writeln!(out, "# TYPE telemt_route_cutover_parked_total counter");
+    let _ = writeln!(out, "# TYPE tupoproxy_route_cutover_parked_total counter");
     let _ = writeln!(
         out,
-        "telemt_route_cutover_parked_total{{route=\"direct\"}} {}",
+        "tupoproxy_route_cutover_parked_total{{route=\"direct\"}} {}",
         stats.get_route_cutover_parked_direct_total()
     );
     let _ = writeln!(
         out,
-        "telemt_route_cutover_parked_total{{route=\"middle\"}} {}",
+        "tupoproxy_route_cutover_parked_total{{route=\"middle\"}} {}",
         stats.get_route_cutover_parked_middle_total()
     );
 
     let _ = writeln!(
         out,
-        "# HELP telemt_quota_refund_bytes_total Reserved quota bytes returned before commit"
+        "# HELP tupoproxy_quota_refund_bytes_total Reserved quota bytes returned before commit"
     );
-    let _ = writeln!(out, "# TYPE telemt_quota_refund_bytes_total counter");
+    let _ = writeln!(out, "# TYPE tupoproxy_quota_refund_bytes_total counter");
     let _ = writeln!(
         out,
-        "telemt_quota_refund_bytes_total {}",
+        "tupoproxy_quota_refund_bytes_total {}",
         if core_enabled {
             stats.get_quota_refund_bytes_total()
         } else {
@@ -837,12 +837,12 @@ async fn render_metrics(
     );
     let _ = writeln!(
         out,
-        "# HELP telemt_quota_contention_total Quota reservation CAS contention events"
+        "# HELP tupoproxy_quota_contention_total Quota reservation CAS contention events"
     );
-    let _ = writeln!(out, "# TYPE telemt_quota_contention_total counter");
+    let _ = writeln!(out, "# TYPE tupoproxy_quota_contention_total counter");
     let _ = writeln!(
         out,
-        "telemt_quota_contention_total {}",
+        "tupoproxy_quota_contention_total {}",
         if core_enabled {
             stats.get_quota_contention_total()
         } else {
@@ -851,12 +851,12 @@ async fn render_metrics(
     );
     let _ = writeln!(
         out,
-        "# HELP telemt_quota_contention_timeout_total Quota reservations that hit the bounded contention budget"
+        "# HELP tupoproxy_quota_contention_timeout_total Quota reservations that hit the bounded contention budget"
     );
-    let _ = writeln!(out, "# TYPE telemt_quota_contention_timeout_total counter");
+    let _ = writeln!(out, "# TYPE tupoproxy_quota_contention_timeout_total counter");
     let _ = writeln!(
         out,
-        "telemt_quota_contention_timeout_total {}",
+        "tupoproxy_quota_contention_timeout_total {}",
         if core_enabled {
             stats.get_quota_contention_timeout_total()
         } else {
@@ -865,12 +865,12 @@ async fn render_metrics(
     );
     let _ = writeln!(
         out,
-        "# HELP telemt_quota_acquire_cancelled_total Quota acquisitions cancelled before reservation completed"
+        "# HELP tupoproxy_quota_acquire_cancelled_total Quota acquisitions cancelled before reservation completed"
     );
-    let _ = writeln!(out, "# TYPE telemt_quota_acquire_cancelled_total counter");
+    let _ = writeln!(out, "# TYPE tupoproxy_quota_acquire_cancelled_total counter");
     let _ = writeln!(
         out,
-        "telemt_quota_acquire_cancelled_total {}",
+        "tupoproxy_quota_acquire_cancelled_total {}",
         if core_enabled {
             stats.get_quota_acquire_cancelled_total()
         } else {
@@ -880,12 +880,12 @@ async fn render_metrics(
 
     let _ = writeln!(
         out,
-        "# HELP telemt_conntrack_control_state Runtime conntrack control state flags"
+        "# HELP tupoproxy_conntrack_control_state Runtime conntrack control state flags"
     );
-    let _ = writeln!(out, "# TYPE telemt_conntrack_control_state gauge");
+    let _ = writeln!(out, "# TYPE tupoproxy_conntrack_control_state gauge");
     let _ = writeln!(
         out,
-        "telemt_conntrack_control_state{{flag=\"enabled\"}} {}",
+        "tupoproxy_conntrack_control_state{{flag=\"enabled\"}} {}",
         if stats.get_conntrack_control_enabled() {
             1
         } else {
@@ -894,7 +894,7 @@ async fn render_metrics(
     );
     let _ = writeln!(
         out,
-        "telemt_conntrack_control_state{{flag=\"available\"}} {}",
+        "tupoproxy_conntrack_control_state{{flag=\"available\"}} {}",
         if stats.get_conntrack_control_available() {
             1
         } else {
@@ -903,7 +903,7 @@ async fn render_metrics(
     );
     let _ = writeln!(
         out,
-        "telemt_conntrack_control_state{{flag=\"pressure_active\"}} {}",
+        "tupoproxy_conntrack_control_state{{flag=\"pressure_active\"}} {}",
         if stats.get_conntrack_pressure_active() {
             1
         } else {
@@ -912,7 +912,7 @@ async fn render_metrics(
     );
     let _ = writeln!(
         out,
-        "telemt_conntrack_control_state{{flag=\"rule_apply_ok\"}} {}",
+        "tupoproxy_conntrack_control_state{{flag=\"rule_apply_ok\"}} {}",
         if stats.get_conntrack_rule_apply_ok() {
             1
         } else {
@@ -922,23 +922,23 @@ async fn render_metrics(
 
     let _ = writeln!(
         out,
-        "# HELP telemt_conntrack_event_queue_depth Pending close events in conntrack control queue"
+        "# HELP tupoproxy_conntrack_event_queue_depth Pending close events in conntrack control queue"
     );
-    let _ = writeln!(out, "# TYPE telemt_conntrack_event_queue_depth gauge");
+    let _ = writeln!(out, "# TYPE tupoproxy_conntrack_event_queue_depth gauge");
     let _ = writeln!(
         out,
-        "telemt_conntrack_event_queue_depth {}",
+        "tupoproxy_conntrack_event_queue_depth {}",
         stats.get_conntrack_event_queue_depth()
     );
 
     let _ = writeln!(
         out,
-        "# HELP telemt_conntrack_delete_total Conntrack delete attempts by outcome"
+        "# HELP tupoproxy_conntrack_delete_total Conntrack delete attempts by outcome"
     );
-    let _ = writeln!(out, "# TYPE telemt_conntrack_delete_total counter");
+    let _ = writeln!(out, "# TYPE tupoproxy_conntrack_delete_total counter");
     let _ = writeln!(
         out,
-        "telemt_conntrack_delete_total{{result=\"attempt\"}} {}",
+        "tupoproxy_conntrack_delete_total{{result=\"attempt\"}} {}",
         if core_enabled {
             stats.get_conntrack_delete_attempt_total()
         } else {
@@ -947,7 +947,7 @@ async fn render_metrics(
     );
     let _ = writeln!(
         out,
-        "telemt_conntrack_delete_total{{result=\"success\"}} {}",
+        "tupoproxy_conntrack_delete_total{{result=\"success\"}} {}",
         if core_enabled {
             stats.get_conntrack_delete_success_total()
         } else {
@@ -956,7 +956,7 @@ async fn render_metrics(
     );
     let _ = writeln!(
         out,
-        "telemt_conntrack_delete_total{{result=\"not_found\"}} {}",
+        "tupoproxy_conntrack_delete_total{{result=\"not_found\"}} {}",
         if core_enabled {
             stats.get_conntrack_delete_not_found_total()
         } else {
@@ -965,7 +965,7 @@ async fn render_metrics(
     );
     let _ = writeln!(
         out,
-        "telemt_conntrack_delete_total{{result=\"error\"}} {}",
+        "tupoproxy_conntrack_delete_total{{result=\"error\"}} {}",
         if core_enabled {
             stats.get_conntrack_delete_error_total()
         } else {
@@ -975,15 +975,15 @@ async fn render_metrics(
 
     let _ = writeln!(
         out,
-        "# HELP telemt_conntrack_close_event_drop_total Dropped conntrack close events due to queue pressure or unavailable sender"
+        "# HELP tupoproxy_conntrack_close_event_drop_total Dropped conntrack close events due to queue pressure or unavailable sender"
     );
     let _ = writeln!(
         out,
-        "# TYPE telemt_conntrack_close_event_drop_total counter"
+        "# TYPE tupoproxy_conntrack_close_event_drop_total counter"
     );
     let _ = writeln!(
         out,
-        "telemt_conntrack_close_event_drop_total {}",
+        "tupoproxy_conntrack_close_event_drop_total {}",
         if core_enabled {
             stats.get_conntrack_close_event_drop_total()
         } else {
@@ -994,12 +994,12 @@ async fn render_metrics(
     let limiter_metrics = shared_state.traffic_limiter.metrics_snapshot();
     let _ = writeln!(
         out,
-        "# HELP telemt_rate_limiter_burst_bound_bytes Configured upper bound for one direct relay rate-limit burst"
+        "# HELP tupoproxy_rate_limiter_burst_bound_bytes Configured upper bound for one direct relay rate-limit burst"
     );
-    let _ = writeln!(out, "# TYPE telemt_rate_limiter_burst_bound_bytes gauge");
+    let _ = writeln!(out, "# TYPE tupoproxy_rate_limiter_burst_bound_bytes gauge");
     let _ = writeln!(
         out,
-        "telemt_rate_limiter_burst_bound_bytes{{direction=\"up\"}} {}",
+        "tupoproxy_rate_limiter_burst_bound_bytes{{direction=\"up\"}} {}",
         if core_enabled {
             config.general.direct_relay_copy_buf_c2s_bytes
         } else {
@@ -1008,7 +1008,7 @@ async fn render_metrics(
     );
     let _ = writeln!(
         out,
-        "telemt_rate_limiter_burst_bound_bytes{{direction=\"down\"}} {}",
+        "tupoproxy_rate_limiter_burst_bound_bytes{{direction=\"down\"}} {}",
         if core_enabled {
             config.general.direct_relay_copy_buf_s2c_bytes
         } else {
@@ -1017,12 +1017,12 @@ async fn render_metrics(
     );
     let _ = writeln!(
         out,
-        "# HELP telemt_rate_limiter_throttle_total Traffic limiter throttle events by scope and direction"
+        "# HELP tupoproxy_rate_limiter_throttle_total Traffic limiter throttle events by scope and direction"
     );
-    let _ = writeln!(out, "# TYPE telemt_rate_limiter_throttle_total counter");
+    let _ = writeln!(out, "# TYPE tupoproxy_rate_limiter_throttle_total counter");
     let _ = writeln!(
         out,
-        "telemt_rate_limiter_throttle_total{{scope=\"user\",direction=\"up\"}} {}",
+        "tupoproxy_rate_limiter_throttle_total{{scope=\"user\",direction=\"up\"}} {}",
         if core_enabled {
             limiter_metrics.user_throttle_up_total
         } else {
@@ -1031,7 +1031,7 @@ async fn render_metrics(
     );
     let _ = writeln!(
         out,
-        "telemt_rate_limiter_throttle_total{{scope=\"user\",direction=\"down\"}} {}",
+        "tupoproxy_rate_limiter_throttle_total{{scope=\"user\",direction=\"down\"}} {}",
         if core_enabled {
             limiter_metrics.user_throttle_down_total
         } else {
@@ -1040,7 +1040,7 @@ async fn render_metrics(
     );
     let _ = writeln!(
         out,
-        "telemt_rate_limiter_throttle_total{{scope=\"cidr\",direction=\"up\"}} {}",
+        "tupoproxy_rate_limiter_throttle_total{{scope=\"cidr\",direction=\"up\"}} {}",
         if core_enabled {
             limiter_metrics.cidr_throttle_up_total
         } else {
@@ -1049,7 +1049,7 @@ async fn render_metrics(
     );
     let _ = writeln!(
         out,
-        "telemt_rate_limiter_throttle_total{{scope=\"cidr\",direction=\"down\"}} {}",
+        "tupoproxy_rate_limiter_throttle_total{{scope=\"cidr\",direction=\"down\"}} {}",
         if core_enabled {
             limiter_metrics.cidr_throttle_down_total
         } else {
@@ -1059,12 +1059,12 @@ async fn render_metrics(
 
     let _ = writeln!(
         out,
-        "# HELP telemt_rate_limiter_wait_ms_total Traffic limiter accumulated wait time in milliseconds by scope and direction"
+        "# HELP tupoproxy_rate_limiter_wait_ms_total Traffic limiter accumulated wait time in milliseconds by scope and direction"
     );
-    let _ = writeln!(out, "# TYPE telemt_rate_limiter_wait_ms_total counter");
+    let _ = writeln!(out, "# TYPE tupoproxy_rate_limiter_wait_ms_total counter");
     let _ = writeln!(
         out,
-        "telemt_rate_limiter_wait_ms_total{{scope=\"user\",direction=\"up\"}} {}",
+        "tupoproxy_rate_limiter_wait_ms_total{{scope=\"user\",direction=\"up\"}} {}",
         if core_enabled {
             limiter_metrics.user_wait_up_ms_total
         } else {
@@ -1073,7 +1073,7 @@ async fn render_metrics(
     );
     let _ = writeln!(
         out,
-        "telemt_rate_limiter_wait_ms_total{{scope=\"user\",direction=\"down\"}} {}",
+        "tupoproxy_rate_limiter_wait_ms_total{{scope=\"user\",direction=\"down\"}} {}",
         if core_enabled {
             limiter_metrics.user_wait_down_ms_total
         } else {
@@ -1082,7 +1082,7 @@ async fn render_metrics(
     );
     let _ = writeln!(
         out,
-        "telemt_rate_limiter_wait_ms_total{{scope=\"cidr\",direction=\"up\"}} {}",
+        "tupoproxy_rate_limiter_wait_ms_total{{scope=\"cidr\",direction=\"up\"}} {}",
         if core_enabled {
             limiter_metrics.cidr_wait_up_ms_total
         } else {
@@ -1091,7 +1091,7 @@ async fn render_metrics(
     );
     let _ = writeln!(
         out,
-        "telemt_rate_limiter_wait_ms_total{{scope=\"cidr\",direction=\"down\"}} {}",
+        "tupoproxy_rate_limiter_wait_ms_total{{scope=\"cidr\",direction=\"down\"}} {}",
         if core_enabled {
             limiter_metrics.cidr_wait_down_ms_total
         } else {
@@ -1101,12 +1101,12 @@ async fn render_metrics(
 
     let _ = writeln!(
         out,
-        "# HELP telemt_rate_limiter_active_leases Active relay leases under rate limiting by scope"
+        "# HELP tupoproxy_rate_limiter_active_leases Active relay leases under rate limiting by scope"
     );
-    let _ = writeln!(out, "# TYPE telemt_rate_limiter_active_leases gauge");
+    let _ = writeln!(out, "# TYPE tupoproxy_rate_limiter_active_leases gauge");
     let _ = writeln!(
         out,
-        "telemt_rate_limiter_active_leases{{scope=\"user\"}} {}",
+        "tupoproxy_rate_limiter_active_leases{{scope=\"user\"}} {}",
         if core_enabled {
             limiter_metrics.user_active_leases
         } else {
@@ -1115,7 +1115,7 @@ async fn render_metrics(
     );
     let _ = writeln!(
         out,
-        "telemt_rate_limiter_active_leases{{scope=\"cidr\"}} {}",
+        "tupoproxy_rate_limiter_active_leases{{scope=\"cidr\"}} {}",
         if core_enabled {
             limiter_metrics.cidr_active_leases
         } else {
@@ -1125,12 +1125,12 @@ async fn render_metrics(
 
     let _ = writeln!(
         out,
-        "# HELP telemt_rate_limiter_policy_entries Active rate-limit policy entries by scope"
+        "# HELP tupoproxy_rate_limiter_policy_entries Active rate-limit policy entries by scope"
     );
-    let _ = writeln!(out, "# TYPE telemt_rate_limiter_policy_entries gauge");
+    let _ = writeln!(out, "# TYPE tupoproxy_rate_limiter_policy_entries gauge");
     let _ = writeln!(
         out,
-        "telemt_rate_limiter_policy_entries{{scope=\"user\"}} {}",
+        "tupoproxy_rate_limiter_policy_entries{{scope=\"user\"}} {}",
         if core_enabled {
             limiter_metrics.user_policy_entries
         } else {
@@ -1139,7 +1139,7 @@ async fn render_metrics(
     );
     let _ = writeln!(
         out,
-        "telemt_rate_limiter_policy_entries{{scope=\"cidr\"}} {}",
+        "tupoproxy_rate_limiter_policy_entries{{scope=\"cidr\"}} {}",
         if core_enabled {
             limiter_metrics.cidr_policy_entries
         } else {
@@ -1149,12 +1149,12 @@ async fn render_metrics(
 
     let _ = writeln!(
         out,
-        "# HELP telemt_upstream_connect_attempt_total Upstream connect attempts across all requests"
+        "# HELP tupoproxy_upstream_connect_attempt_total Upstream connect attempts across all requests"
     );
-    let _ = writeln!(out, "# TYPE telemt_upstream_connect_attempt_total counter");
+    let _ = writeln!(out, "# TYPE tupoproxy_upstream_connect_attempt_total counter");
     let _ = writeln!(
         out,
-        "telemt_upstream_connect_attempt_total {}",
+        "tupoproxy_upstream_connect_attempt_total {}",
         if core_enabled {
             stats.get_upstream_connect_attempt_total()
         } else {
@@ -1164,12 +1164,12 @@ async fn render_metrics(
 
     let _ = writeln!(
         out,
-        "# HELP telemt_upstream_connect_success_total Successful upstream connect request cycles"
+        "# HELP tupoproxy_upstream_connect_success_total Successful upstream connect request cycles"
     );
-    let _ = writeln!(out, "# TYPE telemt_upstream_connect_success_total counter");
+    let _ = writeln!(out, "# TYPE tupoproxy_upstream_connect_success_total counter");
     let _ = writeln!(
         out,
-        "telemt_upstream_connect_success_total {}",
+        "tupoproxy_upstream_connect_success_total {}",
         if core_enabled {
             stats.get_upstream_connect_success_total()
         } else {
@@ -1179,12 +1179,12 @@ async fn render_metrics(
 
     let _ = writeln!(
         out,
-        "# HELP telemt_upstream_connect_fail_total Failed upstream connect request cycles"
+        "# HELP tupoproxy_upstream_connect_fail_total Failed upstream connect request cycles"
     );
-    let _ = writeln!(out, "# TYPE telemt_upstream_connect_fail_total counter");
+    let _ = writeln!(out, "# TYPE tupoproxy_upstream_connect_fail_total counter");
     let _ = writeln!(
         out,
-        "telemt_upstream_connect_fail_total {}",
+        "tupoproxy_upstream_connect_fail_total {}",
         if core_enabled {
             stats.get_upstream_connect_fail_total()
         } else {
@@ -1194,15 +1194,15 @@ async fn render_metrics(
 
     let _ = writeln!(
         out,
-        "# HELP telemt_upstream_connect_failfast_hard_error_total Hard errors that triggered upstream connect failfast"
+        "# HELP tupoproxy_upstream_connect_failfast_hard_error_total Hard errors that triggered upstream connect failfast"
     );
     let _ = writeln!(
         out,
-        "# TYPE telemt_upstream_connect_failfast_hard_error_total counter"
+        "# TYPE tupoproxy_upstream_connect_failfast_hard_error_total counter"
     );
     let _ = writeln!(
         out,
-        "telemt_upstream_connect_failfast_hard_error_total {}",
+        "tupoproxy_upstream_connect_failfast_hard_error_total {}",
         if core_enabled {
             stats.get_upstream_connect_failfast_hard_error_total()
         } else {
@@ -1212,15 +1212,15 @@ async fn render_metrics(
 
     let _ = writeln!(
         out,
-        "# HELP telemt_upstream_connect_attempts_per_request Histogram-like buckets for attempts per upstream connect request cycle"
+        "# HELP tupoproxy_upstream_connect_attempts_per_request Histogram-like buckets for attempts per upstream connect request cycle"
     );
     let _ = writeln!(
         out,
-        "# TYPE telemt_upstream_connect_attempts_per_request counter"
+        "# TYPE tupoproxy_upstream_connect_attempts_per_request counter"
     );
     let _ = writeln!(
         out,
-        "telemt_upstream_connect_attempts_per_request{{bucket=\"1\"}} {}",
+        "tupoproxy_upstream_connect_attempts_per_request{{bucket=\"1\"}} {}",
         if core_enabled {
             stats.get_upstream_connect_attempts_bucket_1()
         } else {
@@ -1229,7 +1229,7 @@ async fn render_metrics(
     );
     let _ = writeln!(
         out,
-        "telemt_upstream_connect_attempts_per_request{{bucket=\"2\"}} {}",
+        "tupoproxy_upstream_connect_attempts_per_request{{bucket=\"2\"}} {}",
         if core_enabled {
             stats.get_upstream_connect_attempts_bucket_2()
         } else {
@@ -1238,7 +1238,7 @@ async fn render_metrics(
     );
     let _ = writeln!(
         out,
-        "telemt_upstream_connect_attempts_per_request{{bucket=\"3_4\"}} {}",
+        "tupoproxy_upstream_connect_attempts_per_request{{bucket=\"3_4\"}} {}",
         if core_enabled {
             stats.get_upstream_connect_attempts_bucket_3_4()
         } else {
@@ -1247,7 +1247,7 @@ async fn render_metrics(
     );
     let _ = writeln!(
         out,
-        "telemt_upstream_connect_attempts_per_request{{bucket=\"gt_4\"}} {}",
+        "tupoproxy_upstream_connect_attempts_per_request{{bucket=\"gt_4\"}} {}",
         if core_enabled {
             stats.get_upstream_connect_attempts_bucket_gt_4()
         } else {
@@ -1257,15 +1257,15 @@ async fn render_metrics(
 
     let _ = writeln!(
         out,
-        "# HELP telemt_upstream_connect_duration_success_total Histogram-like buckets of successful upstream connect cycle duration"
+        "# HELP tupoproxy_upstream_connect_duration_success_total Histogram-like buckets of successful upstream connect cycle duration"
     );
     let _ = writeln!(
         out,
-        "# TYPE telemt_upstream_connect_duration_success_total counter"
+        "# TYPE tupoproxy_upstream_connect_duration_success_total counter"
     );
     let _ = writeln!(
         out,
-        "telemt_upstream_connect_duration_success_total{{bucket=\"le_100ms\"}} {}",
+        "tupoproxy_upstream_connect_duration_success_total{{bucket=\"le_100ms\"}} {}",
         if core_enabled {
             stats.get_upstream_connect_duration_success_bucket_le_100ms()
         } else {
@@ -1274,7 +1274,7 @@ async fn render_metrics(
     );
     let _ = writeln!(
         out,
-        "telemt_upstream_connect_duration_success_total{{bucket=\"101_500ms\"}} {}",
+        "tupoproxy_upstream_connect_duration_success_total{{bucket=\"101_500ms\"}} {}",
         if core_enabled {
             stats.get_upstream_connect_duration_success_bucket_101_500ms()
         } else {
@@ -1283,7 +1283,7 @@ async fn render_metrics(
     );
     let _ = writeln!(
         out,
-        "telemt_upstream_connect_duration_success_total{{bucket=\"501_1000ms\"}} {}",
+        "tupoproxy_upstream_connect_duration_success_total{{bucket=\"501_1000ms\"}} {}",
         if core_enabled {
             stats.get_upstream_connect_duration_success_bucket_501_1000ms()
         } else {
@@ -1292,7 +1292,7 @@ async fn render_metrics(
     );
     let _ = writeln!(
         out,
-        "telemt_upstream_connect_duration_success_total{{bucket=\"gt_1000ms\"}} {}",
+        "tupoproxy_upstream_connect_duration_success_total{{bucket=\"gt_1000ms\"}} {}",
         if core_enabled {
             stats.get_upstream_connect_duration_success_bucket_gt_1000ms()
         } else {
@@ -1302,15 +1302,15 @@ async fn render_metrics(
 
     let _ = writeln!(
         out,
-        "# HELP telemt_upstream_connect_duration_fail_total Histogram-like buckets of failed upstream connect cycle duration"
+        "# HELP tupoproxy_upstream_connect_duration_fail_total Histogram-like buckets of failed upstream connect cycle duration"
     );
     let _ = writeln!(
         out,
-        "# TYPE telemt_upstream_connect_duration_fail_total counter"
+        "# TYPE tupoproxy_upstream_connect_duration_fail_total counter"
     );
     let _ = writeln!(
         out,
-        "telemt_upstream_connect_duration_fail_total{{bucket=\"le_100ms\"}} {}",
+        "tupoproxy_upstream_connect_duration_fail_total{{bucket=\"le_100ms\"}} {}",
         if core_enabled {
             stats.get_upstream_connect_duration_fail_bucket_le_100ms()
         } else {
@@ -1319,7 +1319,7 @@ async fn render_metrics(
     );
     let _ = writeln!(
         out,
-        "telemt_upstream_connect_duration_fail_total{{bucket=\"101_500ms\"}} {}",
+        "tupoproxy_upstream_connect_duration_fail_total{{bucket=\"101_500ms\"}} {}",
         if core_enabled {
             stats.get_upstream_connect_duration_fail_bucket_101_500ms()
         } else {
@@ -1328,7 +1328,7 @@ async fn render_metrics(
     );
     let _ = writeln!(
         out,
-        "telemt_upstream_connect_duration_fail_total{{bucket=\"501_1000ms\"}} {}",
+        "tupoproxy_upstream_connect_duration_fail_total{{bucket=\"501_1000ms\"}} {}",
         if core_enabled {
             stats.get_upstream_connect_duration_fail_bucket_501_1000ms()
         } else {
@@ -1337,7 +1337,7 @@ async fn render_metrics(
     );
     let _ = writeln!(
         out,
-        "telemt_upstream_connect_duration_fail_total{{bucket=\"gt_1000ms\"}} {}",
+        "tupoproxy_upstream_connect_duration_fail_total{{bucket=\"gt_1000ms\"}} {}",
         if core_enabled {
             stats.get_upstream_connect_duration_fail_bucket_gt_1000ms()
         } else {
@@ -1347,12 +1347,12 @@ async fn render_metrics(
 
     let _ = writeln!(
         out,
-        "# HELP telemt_me_keepalive_sent_total ME keepalive frames sent"
+        "# HELP tupoproxy_me_keepalive_sent_total ME keepalive frames sent"
     );
-    let _ = writeln!(out, "# TYPE telemt_me_keepalive_sent_total counter");
+    let _ = writeln!(out, "# TYPE tupoproxy_me_keepalive_sent_total counter");
     let _ = writeln!(
         out,
-        "telemt_me_keepalive_sent_total {}",
+        "tupoproxy_me_keepalive_sent_total {}",
         if me_allows_debug {
             stats.get_me_keepalive_sent()
         } else {
@@ -1362,12 +1362,12 @@ async fn render_metrics(
 
     let _ = writeln!(
         out,
-        "# HELP telemt_me_keepalive_failed_total ME keepalive send failures"
+        "# HELP tupoproxy_me_keepalive_failed_total ME keepalive send failures"
     );
-    let _ = writeln!(out, "# TYPE telemt_me_keepalive_failed_total counter");
+    let _ = writeln!(out, "# TYPE tupoproxy_me_keepalive_failed_total counter");
     let _ = writeln!(
         out,
-        "telemt_me_keepalive_failed_total {}",
+        "tupoproxy_me_keepalive_failed_total {}",
         if me_allows_normal {
             stats.get_me_keepalive_failed()
         } else {
@@ -1377,12 +1377,12 @@ async fn render_metrics(
 
     let _ = writeln!(
         out,
-        "# HELP telemt_me_keepalive_pong_total ME keepalive pong replies"
+        "# HELP tupoproxy_me_keepalive_pong_total ME keepalive pong replies"
     );
-    let _ = writeln!(out, "# TYPE telemt_me_keepalive_pong_total counter");
+    let _ = writeln!(out, "# TYPE tupoproxy_me_keepalive_pong_total counter");
     let _ = writeln!(
         out,
-        "telemt_me_keepalive_pong_total {}",
+        "tupoproxy_me_keepalive_pong_total {}",
         if me_allows_debug {
             stats.get_me_keepalive_pong()
         } else {
@@ -1392,12 +1392,12 @@ async fn render_metrics(
 
     let _ = writeln!(
         out,
-        "# HELP telemt_me_keepalive_timeout_total ME keepalive ping timeouts"
+        "# HELP tupoproxy_me_keepalive_timeout_total ME keepalive ping timeouts"
     );
-    let _ = writeln!(out, "# TYPE telemt_me_keepalive_timeout_total counter");
+    let _ = writeln!(out, "# TYPE tupoproxy_me_keepalive_timeout_total counter");
     let _ = writeln!(
         out,
-        "telemt_me_keepalive_timeout_total {}",
+        "tupoproxy_me_keepalive_timeout_total {}",
         if me_allows_normal {
             stats.get_me_keepalive_timeout()
         } else {
@@ -1407,15 +1407,15 @@ async fn render_metrics(
 
     let _ = writeln!(
         out,
-        "# HELP telemt_me_rpc_proxy_req_signal_sent_total Service RPC_PROXY_REQ activity signals sent"
+        "# HELP tupoproxy_me_rpc_proxy_req_signal_sent_total Service RPC_PROXY_REQ activity signals sent"
     );
     let _ = writeln!(
         out,
-        "# TYPE telemt_me_rpc_proxy_req_signal_sent_total counter"
+        "# TYPE tupoproxy_me_rpc_proxy_req_signal_sent_total counter"
     );
     let _ = writeln!(
         out,
-        "telemt_me_rpc_proxy_req_signal_sent_total {}",
+        "tupoproxy_me_rpc_proxy_req_signal_sent_total {}",
         if me_allows_normal {
             stats.get_me_rpc_proxy_req_signal_sent_total()
         } else {
@@ -1425,15 +1425,15 @@ async fn render_metrics(
 
     let _ = writeln!(
         out,
-        "# HELP telemt_me_rpc_proxy_req_signal_failed_total Service RPC_PROXY_REQ activity signal failures"
+        "# HELP tupoproxy_me_rpc_proxy_req_signal_failed_total Service RPC_PROXY_REQ activity signal failures"
     );
     let _ = writeln!(
         out,
-        "# TYPE telemt_me_rpc_proxy_req_signal_failed_total counter"
+        "# TYPE tupoproxy_me_rpc_proxy_req_signal_failed_total counter"
     );
     let _ = writeln!(
         out,
-        "telemt_me_rpc_proxy_req_signal_failed_total {}",
+        "tupoproxy_me_rpc_proxy_req_signal_failed_total {}",
         if me_allows_normal {
             stats.get_me_rpc_proxy_req_signal_failed_total()
         } else {
@@ -1443,15 +1443,15 @@ async fn render_metrics(
 
     let _ = writeln!(
         out,
-        "# HELP telemt_me_rpc_proxy_req_signal_skipped_no_meta_total Service RPC_PROXY_REQ skipped due to missing writer metadata"
+        "# HELP tupoproxy_me_rpc_proxy_req_signal_skipped_no_meta_total Service RPC_PROXY_REQ skipped due to missing writer metadata"
     );
     let _ = writeln!(
         out,
-        "# TYPE telemt_me_rpc_proxy_req_signal_skipped_no_meta_total counter"
+        "# TYPE tupoproxy_me_rpc_proxy_req_signal_skipped_no_meta_total counter"
     );
     let _ = writeln!(
         out,
-        "telemt_me_rpc_proxy_req_signal_skipped_no_meta_total {}",
+        "tupoproxy_me_rpc_proxy_req_signal_skipped_no_meta_total {}",
         if me_allows_normal {
             stats.get_me_rpc_proxy_req_signal_skipped_no_meta_total()
         } else {
@@ -1461,15 +1461,15 @@ async fn render_metrics(
 
     let _ = writeln!(
         out,
-        "# HELP telemt_me_rpc_proxy_req_signal_response_total Service RPC_PROXY_REQ responses observed"
+        "# HELP tupoproxy_me_rpc_proxy_req_signal_response_total Service RPC_PROXY_REQ responses observed"
     );
     let _ = writeln!(
         out,
-        "# TYPE telemt_me_rpc_proxy_req_signal_response_total counter"
+        "# TYPE tupoproxy_me_rpc_proxy_req_signal_response_total counter"
     );
     let _ = writeln!(
         out,
-        "telemt_me_rpc_proxy_req_signal_response_total {}",
+        "tupoproxy_me_rpc_proxy_req_signal_response_total {}",
         if me_allows_normal {
             stats.get_me_rpc_proxy_req_signal_response_total()
         } else {
@@ -1479,15 +1479,15 @@ async fn render_metrics(
 
     let _ = writeln!(
         out,
-        "# HELP telemt_me_rpc_proxy_req_signal_close_sent_total Service RPC_CLOSE_EXT sent after activity signals"
+        "# HELP tupoproxy_me_rpc_proxy_req_signal_close_sent_total Service RPC_CLOSE_EXT sent after activity signals"
     );
     let _ = writeln!(
         out,
-        "# TYPE telemt_me_rpc_proxy_req_signal_close_sent_total counter"
+        "# TYPE tupoproxy_me_rpc_proxy_req_signal_close_sent_total counter"
     );
     let _ = writeln!(
         out,
-        "telemt_me_rpc_proxy_req_signal_close_sent_total {}",
+        "tupoproxy_me_rpc_proxy_req_signal_close_sent_total {}",
         if me_allows_normal {
             stats.get_me_rpc_proxy_req_signal_close_sent_total()
         } else {
@@ -1497,12 +1497,12 @@ async fn render_metrics(
 
     let _ = writeln!(
         out,
-        "# HELP telemt_me_reconnect_attempts_total ME reconnect attempts"
+        "# HELP tupoproxy_me_reconnect_attempts_total ME reconnect attempts"
     );
-    let _ = writeln!(out, "# TYPE telemt_me_reconnect_attempts_total counter");
+    let _ = writeln!(out, "# TYPE tupoproxy_me_reconnect_attempts_total counter");
     let _ = writeln!(
         out,
-        "telemt_me_reconnect_attempts_total {}",
+        "tupoproxy_me_reconnect_attempts_total {}",
         if me_allows_normal {
             stats.get_me_reconnect_attempts()
         } else {
@@ -1512,12 +1512,12 @@ async fn render_metrics(
 
     let _ = writeln!(
         out,
-        "# HELP telemt_me_reconnect_success_total ME reconnect successes"
+        "# HELP tupoproxy_me_reconnect_success_total ME reconnect successes"
     );
-    let _ = writeln!(out, "# TYPE telemt_me_reconnect_success_total counter");
+    let _ = writeln!(out, "# TYPE tupoproxy_me_reconnect_success_total counter");
     let _ = writeln!(
         out,
-        "telemt_me_reconnect_success_total {}",
+        "tupoproxy_me_reconnect_success_total {}",
         if me_allows_normal {
             stats.get_me_reconnect_success()
         } else {
@@ -1527,12 +1527,12 @@ async fn render_metrics(
 
     let _ = writeln!(
         out,
-        "# HELP telemt_me_handshake_reject_total ME handshake rejects from upstream"
+        "# HELP tupoproxy_me_handshake_reject_total ME handshake rejects from upstream"
     );
-    let _ = writeln!(out, "# TYPE telemt_me_handshake_reject_total counter");
+    let _ = writeln!(out, "# TYPE tupoproxy_me_handshake_reject_total counter");
     let _ = writeln!(
         out,
-        "telemt_me_handshake_reject_total {}",
+        "tupoproxy_me_handshake_reject_total {}",
         if me_allows_normal {
             stats.get_me_handshake_reject_total()
         } else {
@@ -1542,14 +1542,14 @@ async fn render_metrics(
 
     let _ = writeln!(
         out,
-        "# HELP telemt_me_handshake_error_code_total ME handshake reject errors by code"
+        "# HELP tupoproxy_me_handshake_error_code_total ME handshake reject errors by code"
     );
-    let _ = writeln!(out, "# TYPE telemt_me_handshake_error_code_total counter");
+    let _ = writeln!(out, "# TYPE tupoproxy_me_handshake_error_code_total counter");
     if me_allows_normal {
         for (error_code, count) in stats.get_me_handshake_error_code_counts() {
             let _ = writeln!(
                 out,
-                "telemt_me_handshake_error_code_total{{error_code=\"{}\"}} {}",
+                "tupoproxy_me_handshake_error_code_total{{error_code=\"{}\"}} {}",
                 error_code, count
             );
         }
@@ -1557,12 +1557,12 @@ async fn render_metrics(
 
     let _ = writeln!(
         out,
-        "# HELP telemt_me_reader_eof_total ME reader EOF terminations"
+        "# HELP tupoproxy_me_reader_eof_total ME reader EOF terminations"
     );
-    let _ = writeln!(out, "# TYPE telemt_me_reader_eof_total counter");
+    let _ = writeln!(out, "# TYPE tupoproxy_me_reader_eof_total counter");
     let _ = writeln!(
         out,
-        "telemt_me_reader_eof_total {}",
+        "tupoproxy_me_reader_eof_total {}",
         if me_allows_normal {
             stats.get_me_reader_eof_total()
         } else {
@@ -1572,12 +1572,12 @@ async fn render_metrics(
 
     let _ = writeln!(
         out,
-        "# HELP telemt_me_idle_close_by_peer_total ME idle writers closed by peer"
+        "# HELP tupoproxy_me_idle_close_by_peer_total ME idle writers closed by peer"
     );
-    let _ = writeln!(out, "# TYPE telemt_me_idle_close_by_peer_total counter");
+    let _ = writeln!(out, "# TYPE tupoproxy_me_idle_close_by_peer_total counter");
     let _ = writeln!(
         out,
-        "telemt_me_idle_close_by_peer_total {}",
+        "tupoproxy_me_idle_close_by_peer_total {}",
         if me_allows_normal {
             stats.get_me_idle_close_by_peer_total()
         } else {
@@ -1587,12 +1587,12 @@ async fn render_metrics(
 
     let _ = writeln!(
         out,
-        "# HELP telemt_relay_idle_soft_mark_total Middle-relay sessions marked as soft-idle candidates"
+        "# HELP tupoproxy_relay_idle_soft_mark_total Middle-relay sessions marked as soft-idle candidates"
     );
-    let _ = writeln!(out, "# TYPE telemt_relay_idle_soft_mark_total counter");
+    let _ = writeln!(out, "# TYPE tupoproxy_relay_idle_soft_mark_total counter");
     let _ = writeln!(
         out,
-        "telemt_relay_idle_soft_mark_total {}",
+        "tupoproxy_relay_idle_soft_mark_total {}",
         if me_allows_normal {
             stats.get_relay_idle_soft_mark_total()
         } else {
@@ -1602,12 +1602,12 @@ async fn render_metrics(
 
     let _ = writeln!(
         out,
-        "# HELP telemt_relay_idle_hard_close_total Middle-relay sessions closed by hard-idle policy"
+        "# HELP tupoproxy_relay_idle_hard_close_total Middle-relay sessions closed by hard-idle policy"
     );
-    let _ = writeln!(out, "# TYPE telemt_relay_idle_hard_close_total counter");
+    let _ = writeln!(out, "# TYPE tupoproxy_relay_idle_hard_close_total counter");
     let _ = writeln!(
         out,
-        "telemt_relay_idle_hard_close_total {}",
+        "tupoproxy_relay_idle_hard_close_total {}",
         if me_allows_normal {
             stats.get_relay_idle_hard_close_total()
         } else {
@@ -1617,12 +1617,12 @@ async fn render_metrics(
 
     let _ = writeln!(
         out,
-        "# HELP telemt_relay_pressure_evict_total Middle-relay sessions evicted under resource pressure"
+        "# HELP tupoproxy_relay_pressure_evict_total Middle-relay sessions evicted under resource pressure"
     );
-    let _ = writeln!(out, "# TYPE telemt_relay_pressure_evict_total counter");
+    let _ = writeln!(out, "# TYPE tupoproxy_relay_pressure_evict_total counter");
     let _ = writeln!(
         out,
-        "telemt_relay_pressure_evict_total {}",
+        "tupoproxy_relay_pressure_evict_total {}",
         if me_allows_normal {
             stats.get_relay_pressure_evict_total()
         } else {
@@ -1632,15 +1632,15 @@ async fn render_metrics(
 
     let _ = writeln!(
         out,
-        "# HELP telemt_relay_protocol_desync_close_total Middle-relay sessions closed due to protocol desync"
+        "# HELP tupoproxy_relay_protocol_desync_close_total Middle-relay sessions closed due to protocol desync"
     );
     let _ = writeln!(
         out,
-        "# TYPE telemt_relay_protocol_desync_close_total counter"
+        "# TYPE tupoproxy_relay_protocol_desync_close_total counter"
     );
     let _ = writeln!(
         out,
-        "telemt_relay_protocol_desync_close_total {}",
+        "tupoproxy_relay_protocol_desync_close_total {}",
         if me_allows_normal {
             stats.get_relay_protocol_desync_close_total()
         } else {
@@ -1648,11 +1648,11 @@ async fn render_metrics(
         }
     );
 
-    let _ = writeln!(out, "# HELP telemt_me_crc_mismatch_total ME CRC mismatches");
-    let _ = writeln!(out, "# TYPE telemt_me_crc_mismatch_total counter");
+    let _ = writeln!(out, "# HELP tupoproxy_me_crc_mismatch_total ME CRC mismatches");
+    let _ = writeln!(out, "# TYPE tupoproxy_me_crc_mismatch_total counter");
     let _ = writeln!(
         out,
-        "telemt_me_crc_mismatch_total {}",
+        "tupoproxy_me_crc_mismatch_total {}",
         if me_allows_normal {
             stats.get_me_crc_mismatch()
         } else {
@@ -1662,12 +1662,12 @@ async fn render_metrics(
 
     let _ = writeln!(
         out,
-        "# HELP telemt_me_seq_mismatch_total ME sequence mismatches"
+        "# HELP tupoproxy_me_seq_mismatch_total ME sequence mismatches"
     );
-    let _ = writeln!(out, "# TYPE telemt_me_seq_mismatch_total counter");
+    let _ = writeln!(out, "# TYPE tupoproxy_me_seq_mismatch_total counter");
     let _ = writeln!(
         out,
-        "telemt_me_seq_mismatch_total {}",
+        "tupoproxy_me_seq_mismatch_total {}",
         if me_allows_normal {
             stats.get_me_seq_mismatch()
         } else {
@@ -1677,12 +1677,12 @@ async fn render_metrics(
 
     let _ = writeln!(
         out,
-        "# HELP telemt_me_route_drop_no_conn_total ME route drops: no conn"
+        "# HELP tupoproxy_me_route_drop_no_conn_total ME route drops: no conn"
     );
-    let _ = writeln!(out, "# TYPE telemt_me_route_drop_no_conn_total counter");
+    let _ = writeln!(out, "# TYPE tupoproxy_me_route_drop_no_conn_total counter");
     let _ = writeln!(
         out,
-        "telemt_me_route_drop_no_conn_total {}",
+        "tupoproxy_me_route_drop_no_conn_total {}",
         if me_allows_normal {
             stats.get_me_route_drop_no_conn()
         } else {
@@ -1692,15 +1692,15 @@ async fn render_metrics(
 
     let _ = writeln!(
         out,
-        "# HELP telemt_me_route_drop_channel_closed_total ME route drops: channel closed"
+        "# HELP tupoproxy_me_route_drop_channel_closed_total ME route drops: channel closed"
     );
     let _ = writeln!(
         out,
-        "# TYPE telemt_me_route_drop_channel_closed_total counter"
+        "# TYPE tupoproxy_me_route_drop_channel_closed_total counter"
     );
     let _ = writeln!(
         out,
-        "telemt_me_route_drop_channel_closed_total {}",
+        "tupoproxy_me_route_drop_channel_closed_total {}",
         if me_allows_normal {
             stats.get_me_route_drop_channel_closed()
         } else {
@@ -1710,12 +1710,12 @@ async fn render_metrics(
 
     let _ = writeln!(
         out,
-        "# HELP telemt_me_route_drop_queue_full_total ME route drops: queue full"
+        "# HELP tupoproxy_me_route_drop_queue_full_total ME route drops: queue full"
     );
-    let _ = writeln!(out, "# TYPE telemt_me_route_drop_queue_full_total counter");
+    let _ = writeln!(out, "# TYPE tupoproxy_me_route_drop_queue_full_total counter");
     let _ = writeln!(
         out,
-        "telemt_me_route_drop_queue_full_total {}",
+        "tupoproxy_me_route_drop_queue_full_total {}",
         if me_allows_normal {
             stats.get_me_route_drop_queue_full()
         } else {
@@ -1725,15 +1725,15 @@ async fn render_metrics(
 
     let _ = writeln!(
         out,
-        "# HELP telemt_me_route_drop_queue_full_profile_total ME route drops: queue full by adaptive profile"
+        "# HELP tupoproxy_me_route_drop_queue_full_profile_total ME route drops: queue full by adaptive profile"
     );
     let _ = writeln!(
         out,
-        "# TYPE telemt_me_route_drop_queue_full_profile_total counter"
+        "# TYPE tupoproxy_me_route_drop_queue_full_profile_total counter"
     );
     let _ = writeln!(
         out,
-        "telemt_me_route_drop_queue_full_profile_total{{profile=\"base\"}} {}",
+        "tupoproxy_me_route_drop_queue_full_profile_total{{profile=\"base\"}} {}",
         if me_allows_normal {
             stats.get_me_route_drop_queue_full_base()
         } else {
@@ -1742,7 +1742,7 @@ async fn render_metrics(
     );
     let _ = writeln!(
         out,
-        "telemt_me_route_drop_queue_full_profile_total{{profile=\"high\"}} {}",
+        "tupoproxy_me_route_drop_queue_full_profile_total{{profile=\"high\"}} {}",
         if me_allows_normal {
             stats.get_me_route_drop_queue_full_high()
         } else {
@@ -1751,12 +1751,12 @@ async fn render_metrics(
     );
     let _ = writeln!(
         out,
-        "# HELP telemt_me_fair_pressure_state Worker-local fairness pressure state"
+        "# HELP tupoproxy_me_fair_pressure_state Worker-local fairness pressure state"
     );
-    let _ = writeln!(out, "# TYPE telemt_me_fair_pressure_state gauge");
+    let _ = writeln!(out, "# TYPE tupoproxy_me_fair_pressure_state gauge");
     let _ = writeln!(
         out,
-        "telemt_me_fair_pressure_state {}",
+        "tupoproxy_me_fair_pressure_state {}",
         if me_allows_normal {
             stats.get_me_fair_pressure_state_gauge()
         } else {
@@ -1766,12 +1766,12 @@ async fn render_metrics(
 
     let _ = writeln!(
         out,
-        "# HELP telemt_me_fair_active_flows Fair-scheduler active flow count"
+        "# HELP tupoproxy_me_fair_active_flows Fair-scheduler active flow count"
     );
-    let _ = writeln!(out, "# TYPE telemt_me_fair_active_flows gauge");
+    let _ = writeln!(out, "# TYPE tupoproxy_me_fair_active_flows gauge");
     let _ = writeln!(
         out,
-        "telemt_me_fair_active_flows {}",
+        "tupoproxy_me_fair_active_flows {}",
         if me_allows_normal {
             stats.get_me_fair_active_flows_gauge()
         } else {
@@ -1781,12 +1781,12 @@ async fn render_metrics(
 
     let _ = writeln!(
         out,
-        "# HELP telemt_me_fair_queued_bytes Fair-scheduler queued bytes"
+        "# HELP tupoproxy_me_fair_queued_bytes Fair-scheduler queued bytes"
     );
-    let _ = writeln!(out, "# TYPE telemt_me_fair_queued_bytes gauge");
+    let _ = writeln!(out, "# TYPE tupoproxy_me_fair_queued_bytes gauge");
     let _ = writeln!(
         out,
-        "telemt_me_fair_queued_bytes {}",
+        "tupoproxy_me_fair_queued_bytes {}",
         if me_allows_normal {
             stats.get_me_fair_queued_bytes_gauge()
         } else {
@@ -1796,12 +1796,12 @@ async fn render_metrics(
 
     let _ = writeln!(
         out,
-        "# HELP telemt_me_fair_flow_state_gauge Fair-scheduler flow health classes"
+        "# HELP tupoproxy_me_fair_flow_state_gauge Fair-scheduler flow health classes"
     );
-    let _ = writeln!(out, "# TYPE telemt_me_fair_flow_state_gauge gauge");
+    let _ = writeln!(out, "# TYPE tupoproxy_me_fair_flow_state_gauge gauge");
     let _ = writeln!(
         out,
-        "telemt_me_fair_flow_state_gauge{{class=\"standing\"}} {}",
+        "tupoproxy_me_fair_flow_state_gauge{{class=\"standing\"}} {}",
         if me_allows_normal {
             stats.get_me_fair_standing_flows_gauge()
         } else {
@@ -1810,7 +1810,7 @@ async fn render_metrics(
     );
     let _ = writeln!(
         out,
-        "telemt_me_fair_flow_state_gauge{{class=\"backpressured\"}} {}",
+        "tupoproxy_me_fair_flow_state_gauge{{class=\"backpressured\"}} {}",
         if me_allows_normal {
             stats.get_me_fair_backpressured_flows_gauge()
         } else {
@@ -1820,12 +1820,12 @@ async fn render_metrics(
 
     let _ = writeln!(
         out,
-        "# HELP telemt_me_fair_events_total Fair-scheduler event counters"
+        "# HELP tupoproxy_me_fair_events_total Fair-scheduler event counters"
     );
-    let _ = writeln!(out, "# TYPE telemt_me_fair_events_total counter");
+    let _ = writeln!(out, "# TYPE tupoproxy_me_fair_events_total counter");
     let _ = writeln!(
         out,
-        "telemt_me_fair_events_total{{event=\"scheduler_round\"}} {}",
+        "tupoproxy_me_fair_events_total{{event=\"scheduler_round\"}} {}",
         if me_allows_normal {
             stats.get_me_fair_scheduler_rounds_total()
         } else {
@@ -1834,7 +1834,7 @@ async fn render_metrics(
     );
     let _ = writeln!(
         out,
-        "telemt_me_fair_events_total{{event=\"deficit_grant\"}} {}",
+        "tupoproxy_me_fair_events_total{{event=\"deficit_grant\"}} {}",
         if me_allows_normal {
             stats.get_me_fair_deficit_grants_total()
         } else {
@@ -1843,7 +1843,7 @@ async fn render_metrics(
     );
     let _ = writeln!(
         out,
-        "telemt_me_fair_events_total{{event=\"deficit_skip\"}} {}",
+        "tupoproxy_me_fair_events_total{{event=\"deficit_skip\"}} {}",
         if me_allows_normal {
             stats.get_me_fair_deficit_skips_total()
         } else {
@@ -1852,7 +1852,7 @@ async fn render_metrics(
     );
     let _ = writeln!(
         out,
-        "telemt_me_fair_events_total{{event=\"enqueue_reject\"}} {}",
+        "tupoproxy_me_fair_events_total{{event=\"enqueue_reject\"}} {}",
         if me_allows_normal {
             stats.get_me_fair_enqueue_rejects_total()
         } else {
@@ -1861,7 +1861,7 @@ async fn render_metrics(
     );
     let _ = writeln!(
         out,
-        "telemt_me_fair_events_total{{event=\"shed_drop\"}} {}",
+        "tupoproxy_me_fair_events_total{{event=\"shed_drop\"}} {}",
         if me_allows_normal {
             stats.get_me_fair_shed_drops_total()
         } else {
@@ -1870,7 +1870,7 @@ async fn render_metrics(
     );
     let _ = writeln!(
         out,
-        "telemt_me_fair_events_total{{event=\"penalty\"}} {}",
+        "tupoproxy_me_fair_events_total{{event=\"penalty\"}} {}",
         if me_allows_normal {
             stats.get_me_fair_penalties_total()
         } else {
@@ -1879,7 +1879,7 @@ async fn render_metrics(
     );
     let _ = writeln!(
         out,
-        "telemt_me_fair_events_total{{event=\"downstream_stall\"}} {}",
+        "tupoproxy_me_fair_events_total{{event=\"downstream_stall\"}} {}",
         if me_allows_normal {
             stats.get_me_fair_downstream_stalls_total()
         } else {
@@ -1889,12 +1889,12 @@ async fn render_metrics(
 
     let _ = writeln!(
         out,
-        "# HELP telemt_me_c2me_enqueue_events_total ME client->ME enqueue outcomes"
+        "# HELP tupoproxy_me_c2me_enqueue_events_total ME client->ME enqueue outcomes"
     );
-    let _ = writeln!(out, "# TYPE telemt_me_c2me_enqueue_events_total counter");
+    let _ = writeln!(out, "# TYPE tupoproxy_me_c2me_enqueue_events_total counter");
     let _ = writeln!(
         out,
-        "telemt_me_c2me_enqueue_events_total{{event=\"full\"}} {}",
+        "tupoproxy_me_c2me_enqueue_events_total{{event=\"full\"}} {}",
         if me_allows_normal {
             stats.get_me_c2me_send_full_total()
         } else {
@@ -1903,7 +1903,7 @@ async fn render_metrics(
     );
     let _ = writeln!(
         out,
-        "telemt_me_c2me_enqueue_events_total{{event=\"high_water\"}} {}",
+        "tupoproxy_me_c2me_enqueue_events_total{{event=\"high_water\"}} {}",
         if me_allows_normal {
             stats.get_me_c2me_send_high_water_total()
         } else {
@@ -1912,7 +1912,7 @@ async fn render_metrics(
     );
     let _ = writeln!(
         out,
-        "telemt_me_c2me_enqueue_events_total{{event=\"timeout\"}} {}",
+        "tupoproxy_me_c2me_enqueue_events_total{{event=\"timeout\"}} {}",
         if me_allows_normal {
             stats.get_me_c2me_send_timeout_total()
         } else {
@@ -1922,12 +1922,12 @@ async fn render_metrics(
 
     let _ = writeln!(
         out,
-        "# HELP telemt_me_d2c_batches_total Total DC->Client flush batches"
+        "# HELP tupoproxy_me_d2c_batches_total Total DC->Client flush batches"
     );
-    let _ = writeln!(out, "# TYPE telemt_me_d2c_batches_total counter");
+    let _ = writeln!(out, "# TYPE tupoproxy_me_d2c_batches_total counter");
     let _ = writeln!(
         out,
-        "telemt_me_d2c_batches_total {}",
+        "tupoproxy_me_d2c_batches_total {}",
         if me_allows_normal {
             stats.get_me_d2c_batches_total()
         } else {
@@ -1937,12 +1937,12 @@ async fn render_metrics(
 
     let _ = writeln!(
         out,
-        "# HELP telemt_me_d2c_batch_frames_total Total DC->Client frames flushed in batches"
+        "# HELP tupoproxy_me_d2c_batch_frames_total Total DC->Client frames flushed in batches"
     );
-    let _ = writeln!(out, "# TYPE telemt_me_d2c_batch_frames_total counter");
+    let _ = writeln!(out, "# TYPE tupoproxy_me_d2c_batch_frames_total counter");
     let _ = writeln!(
         out,
-        "telemt_me_d2c_batch_frames_total {}",
+        "tupoproxy_me_d2c_batch_frames_total {}",
         if me_allows_normal {
             stats.get_me_d2c_batch_frames_total()
         } else {
@@ -1952,12 +1952,12 @@ async fn render_metrics(
 
     let _ = writeln!(
         out,
-        "# HELP telemt_me_d2c_batch_bytes_total Total DC->Client bytes flushed in batches"
+        "# HELP tupoproxy_me_d2c_batch_bytes_total Total DC->Client bytes flushed in batches"
     );
-    let _ = writeln!(out, "# TYPE telemt_me_d2c_batch_bytes_total counter");
+    let _ = writeln!(out, "# TYPE tupoproxy_me_d2c_batch_bytes_total counter");
     let _ = writeln!(
         out,
-        "telemt_me_d2c_batch_bytes_total {}",
+        "tupoproxy_me_d2c_batch_bytes_total {}",
         if me_allows_normal {
             stats.get_me_d2c_batch_bytes_total()
         } else {
@@ -1967,12 +1967,12 @@ async fn render_metrics(
 
     let _ = writeln!(
         out,
-        "# HELP telemt_me_d2c_flush_reason_total DC->Client flush reasons"
+        "# HELP tupoproxy_me_d2c_flush_reason_total DC->Client flush reasons"
     );
-    let _ = writeln!(out, "# TYPE telemt_me_d2c_flush_reason_total counter");
+    let _ = writeln!(out, "# TYPE tupoproxy_me_d2c_flush_reason_total counter");
     let _ = writeln!(
         out,
-        "telemt_me_d2c_flush_reason_total{{reason=\"queue_drain\"}} {}",
+        "tupoproxy_me_d2c_flush_reason_total{{reason=\"queue_drain\"}} {}",
         if me_allows_normal {
             stats.get_me_d2c_flush_reason_queue_drain_total()
         } else {
@@ -1981,7 +1981,7 @@ async fn render_metrics(
     );
     let _ = writeln!(
         out,
-        "telemt_me_d2c_flush_reason_total{{reason=\"batch_frames\"}} {}",
+        "tupoproxy_me_d2c_flush_reason_total{{reason=\"batch_frames\"}} {}",
         if me_allows_normal {
             stats.get_me_d2c_flush_reason_batch_frames_total()
         } else {
@@ -1990,7 +1990,7 @@ async fn render_metrics(
     );
     let _ = writeln!(
         out,
-        "telemt_me_d2c_flush_reason_total{{reason=\"batch_bytes\"}} {}",
+        "tupoproxy_me_d2c_flush_reason_total{{reason=\"batch_bytes\"}} {}",
         if me_allows_normal {
             stats.get_me_d2c_flush_reason_batch_bytes_total()
         } else {
@@ -1999,7 +1999,7 @@ async fn render_metrics(
     );
     let _ = writeln!(
         out,
-        "telemt_me_d2c_flush_reason_total{{reason=\"max_delay\"}} {}",
+        "tupoproxy_me_d2c_flush_reason_total{{reason=\"max_delay\"}} {}",
         if me_allows_normal {
             stats.get_me_d2c_flush_reason_max_delay_total()
         } else {
@@ -2008,7 +2008,7 @@ async fn render_metrics(
     );
     let _ = writeln!(
         out,
-        "telemt_me_d2c_flush_reason_total{{reason=\"ack_immediate\"}} {}",
+        "tupoproxy_me_d2c_flush_reason_total{{reason=\"ack_immediate\"}} {}",
         if me_allows_normal {
             stats.get_me_d2c_flush_reason_ack_immediate_total()
         } else {
@@ -2017,7 +2017,7 @@ async fn render_metrics(
     );
     let _ = writeln!(
         out,
-        "telemt_me_d2c_flush_reason_total{{reason=\"close\"}} {}",
+        "tupoproxy_me_d2c_flush_reason_total{{reason=\"close\"}} {}",
         if me_allows_normal {
             stats.get_me_d2c_flush_reason_close_total()
         } else {
@@ -2027,12 +2027,12 @@ async fn render_metrics(
 
     let _ = writeln!(
         out,
-        "# HELP telemt_me_d2c_data_frames_total DC->Client data frames"
+        "# HELP tupoproxy_me_d2c_data_frames_total DC->Client data frames"
     );
-    let _ = writeln!(out, "# TYPE telemt_me_d2c_data_frames_total counter");
+    let _ = writeln!(out, "# TYPE tupoproxy_me_d2c_data_frames_total counter");
     let _ = writeln!(
         out,
-        "telemt_me_d2c_data_frames_total {}",
+        "tupoproxy_me_d2c_data_frames_total {}",
         if me_allows_normal {
             stats.get_me_d2c_data_frames_total()
         } else {
@@ -2042,12 +2042,12 @@ async fn render_metrics(
 
     let _ = writeln!(
         out,
-        "# HELP telemt_me_d2c_ack_frames_total DC->Client quick-ack frames"
+        "# HELP tupoproxy_me_d2c_ack_frames_total DC->Client quick-ack frames"
     );
-    let _ = writeln!(out, "# TYPE telemt_me_d2c_ack_frames_total counter");
+    let _ = writeln!(out, "# TYPE tupoproxy_me_d2c_ack_frames_total counter");
     let _ = writeln!(
         out,
-        "telemt_me_d2c_ack_frames_total {}",
+        "tupoproxy_me_d2c_ack_frames_total {}",
         if me_allows_normal {
             stats.get_me_d2c_ack_frames_total()
         } else {
@@ -2057,12 +2057,12 @@ async fn render_metrics(
 
     let _ = writeln!(
         out,
-        "# HELP telemt_me_d2c_payload_bytes_total DC->Client payload bytes before transport framing"
+        "# HELP tupoproxy_me_d2c_payload_bytes_total DC->Client payload bytes before transport framing"
     );
-    let _ = writeln!(out, "# TYPE telemt_me_d2c_payload_bytes_total counter");
+    let _ = writeln!(out, "# TYPE tupoproxy_me_d2c_payload_bytes_total counter");
     let _ = writeln!(
         out,
-        "telemt_me_d2c_payload_bytes_total {}",
+        "tupoproxy_me_d2c_payload_bytes_total {}",
         if me_allows_normal {
             stats.get_me_d2c_payload_bytes_total()
         } else {
@@ -2072,12 +2072,12 @@ async fn render_metrics(
 
     let _ = writeln!(
         out,
-        "# HELP telemt_me_d2c_write_mode_total DC->Client writer mode selection"
+        "# HELP tupoproxy_me_d2c_write_mode_total DC->Client writer mode selection"
     );
-    let _ = writeln!(out, "# TYPE telemt_me_d2c_write_mode_total counter");
+    let _ = writeln!(out, "# TYPE tupoproxy_me_d2c_write_mode_total counter");
     let _ = writeln!(
         out,
-        "telemt_me_d2c_write_mode_total{{mode=\"coalesced\"}} {}",
+        "tupoproxy_me_d2c_write_mode_total{{mode=\"coalesced\"}} {}",
         if me_allows_normal {
             stats.get_me_d2c_write_mode_coalesced_total()
         } else {
@@ -2086,7 +2086,7 @@ async fn render_metrics(
     );
     let _ = writeln!(
         out,
-        "telemt_me_d2c_write_mode_total{{mode=\"split\"}} {}",
+        "tupoproxy_me_d2c_write_mode_total{{mode=\"split\"}} {}",
         if me_allows_normal {
             stats.get_me_d2c_write_mode_split_total()
         } else {
@@ -2096,12 +2096,12 @@ async fn render_metrics(
 
     let _ = writeln!(
         out,
-        "# HELP telemt_me_d2c_quota_reject_total DC->Client quota rejects"
+        "# HELP tupoproxy_me_d2c_quota_reject_total DC->Client quota rejects"
     );
-    let _ = writeln!(out, "# TYPE telemt_me_d2c_quota_reject_total counter");
+    let _ = writeln!(out, "# TYPE tupoproxy_me_d2c_quota_reject_total counter");
     let _ = writeln!(
         out,
-        "telemt_me_d2c_quota_reject_total{{stage=\"pre_write\"}} {}",
+        "tupoproxy_me_d2c_quota_reject_total{{stage=\"pre_write\"}} {}",
         if me_allows_normal {
             stats.get_me_d2c_quota_reject_pre_write_total()
         } else {
@@ -2110,7 +2110,7 @@ async fn render_metrics(
     );
     let _ = writeln!(
         out,
-        "telemt_me_d2c_quota_reject_total{{stage=\"post_write\"}} {}",
+        "tupoproxy_me_d2c_quota_reject_total{{stage=\"post_write\"}} {}",
         if me_allows_normal {
             stats.get_me_d2c_quota_reject_post_write_total()
         } else {
@@ -2119,12 +2119,12 @@ async fn render_metrics(
     );
     let _ = writeln!(
         out,
-        "# HELP telemt_me_child_join_timeout_total Middle relay child tasks that did not join before cleanup deadline"
+        "# HELP tupoproxy_me_child_join_timeout_total Middle relay child tasks that did not join before cleanup deadline"
     );
-    let _ = writeln!(out, "# TYPE telemt_me_child_join_timeout_total counter");
+    let _ = writeln!(out, "# TYPE tupoproxy_me_child_join_timeout_total counter");
     let _ = writeln!(
         out,
-        "telemt_me_child_join_timeout_total {}",
+        "tupoproxy_me_child_join_timeout_total {}",
         if core_enabled {
             stats.get_me_child_join_timeout_total()
         } else {
@@ -2133,12 +2133,12 @@ async fn render_metrics(
     );
     let _ = writeln!(
         out,
-        "# HELP telemt_me_child_abort_total Middle relay child tasks aborted after bounded cleanup timeout"
+        "# HELP tupoproxy_me_child_abort_total Middle relay child tasks aborted after bounded cleanup timeout"
     );
-    let _ = writeln!(out, "# TYPE telemt_me_child_abort_total counter");
+    let _ = writeln!(out, "# TYPE tupoproxy_me_child_abort_total counter");
     let _ = writeln!(
         out,
-        "telemt_me_child_abort_total {}",
+        "tupoproxy_me_child_abort_total {}",
         if core_enabled {
             stats.get_me_child_abort_total()
         } else {
@@ -2147,12 +2147,12 @@ async fn render_metrics(
     );
     let _ = writeln!(
         out,
-        "# HELP telemt_flow_wait_events_total Flow wait events by reason, direction, and outcome"
+        "# HELP tupoproxy_flow_wait_events_total Flow wait events by reason, direction, and outcome"
     );
-    let _ = writeln!(out, "# TYPE telemt_flow_wait_events_total counter");
+    let _ = writeln!(out, "# TYPE tupoproxy_flow_wait_events_total counter");
     let _ = writeln!(
         out,
-        "telemt_flow_wait_events_total{{reason=\"middle_rate_limit\",direction=\"down\",outcome=\"waited\"}} {}",
+        "tupoproxy_flow_wait_events_total{{reason=\"middle_rate_limit\",direction=\"down\",outcome=\"waited\"}} {}",
         if core_enabled {
             stats.get_flow_wait_middle_rate_limit_total()
         } else {
@@ -2161,7 +2161,7 @@ async fn render_metrics(
     );
     let _ = writeln!(
         out,
-        "telemt_flow_wait_events_total{{reason=\"middle_rate_limit\",direction=\"down\",outcome=\"cancelled\"}} {}",
+        "tupoproxy_flow_wait_events_total{{reason=\"middle_rate_limit\",direction=\"down\",outcome=\"cancelled\"}} {}",
         if core_enabled {
             stats.get_flow_wait_middle_rate_limit_cancelled_total()
         } else {
@@ -2170,12 +2170,12 @@ async fn render_metrics(
     );
     let _ = writeln!(
         out,
-        "# HELP telemt_flow_wait_ms_total Flow wait time in milliseconds by reason and direction"
+        "# HELP tupoproxy_flow_wait_ms_total Flow wait time in milliseconds by reason and direction"
     );
-    let _ = writeln!(out, "# TYPE telemt_flow_wait_ms_total counter");
+    let _ = writeln!(out, "# TYPE tupoproxy_flow_wait_ms_total counter");
     let _ = writeln!(
         out,
-        "telemt_flow_wait_ms_total{{reason=\"middle_rate_limit\",direction=\"down\"}} {}",
+        "tupoproxy_flow_wait_ms_total{{reason=\"middle_rate_limit\",direction=\"down\"}} {}",
         if core_enabled {
             stats.get_flow_wait_middle_rate_limit_ms_total()
         } else {
@@ -2184,12 +2184,12 @@ async fn render_metrics(
     );
     let _ = writeln!(
         out,
-        "# HELP telemt_session_drop_fallback_total Session reservations cleaned by Drop instead of explicit async release"
+        "# HELP tupoproxy_session_drop_fallback_total Session reservations cleaned by Drop instead of explicit async release"
     );
-    let _ = writeln!(out, "# TYPE telemt_session_drop_fallback_total counter");
+    let _ = writeln!(out, "# TYPE tupoproxy_session_drop_fallback_total counter");
     let _ = writeln!(
         out,
-        "telemt_session_drop_fallback_total {}",
+        "tupoproxy_session_drop_fallback_total {}",
         if core_enabled {
             stats.get_session_drop_fallback_total()
         } else {
@@ -2199,12 +2199,12 @@ async fn render_metrics(
 
     let _ = writeln!(
         out,
-        "# HELP telemt_me_d2c_frame_buf_shrink_total DC->Client reusable frame buffer shrink events"
+        "# HELP tupoproxy_me_d2c_frame_buf_shrink_total DC->Client reusable frame buffer shrink events"
     );
-    let _ = writeln!(out, "# TYPE telemt_me_d2c_frame_buf_shrink_total counter");
+    let _ = writeln!(out, "# TYPE tupoproxy_me_d2c_frame_buf_shrink_total counter");
     let _ = writeln!(
         out,
-        "telemt_me_d2c_frame_buf_shrink_total {}",
+        "tupoproxy_me_d2c_frame_buf_shrink_total {}",
         if me_allows_normal {
             stats.get_me_d2c_frame_buf_shrink_total()
         } else {
@@ -2214,15 +2214,15 @@ async fn render_metrics(
 
     let _ = writeln!(
         out,
-        "# HELP telemt_me_d2c_frame_buf_shrink_bytes_total DC->Client reusable frame buffer bytes released"
+        "# HELP tupoproxy_me_d2c_frame_buf_shrink_bytes_total DC->Client reusable frame buffer bytes released"
     );
     let _ = writeln!(
         out,
-        "# TYPE telemt_me_d2c_frame_buf_shrink_bytes_total counter"
+        "# TYPE tupoproxy_me_d2c_frame_buf_shrink_bytes_total counter"
     );
     let _ = writeln!(
         out,
-        "telemt_me_d2c_frame_buf_shrink_bytes_total {}",
+        "tupoproxy_me_d2c_frame_buf_shrink_bytes_total {}",
         if me_allows_normal {
             stats.get_me_d2c_frame_buf_shrink_bytes_total()
         } else {
@@ -2232,15 +2232,15 @@ async fn render_metrics(
 
     let _ = writeln!(
         out,
-        "# HELP telemt_me_d2c_batch_frames_bucket_total DC->Client batch frame count buckets"
+        "# HELP tupoproxy_me_d2c_batch_frames_bucket_total DC->Client batch frame count buckets"
     );
     let _ = writeln!(
         out,
-        "# TYPE telemt_me_d2c_batch_frames_bucket_total counter"
+        "# TYPE tupoproxy_me_d2c_batch_frames_bucket_total counter"
     );
     let _ = writeln!(
         out,
-        "telemt_me_d2c_batch_frames_bucket_total{{bucket=\"1\"}} {}",
+        "tupoproxy_me_d2c_batch_frames_bucket_total{{bucket=\"1\"}} {}",
         if me_allows_debug {
             stats.get_me_d2c_batch_frames_bucket_1()
         } else {
@@ -2249,7 +2249,7 @@ async fn render_metrics(
     );
     let _ = writeln!(
         out,
-        "telemt_me_d2c_batch_frames_bucket_total{{bucket=\"2_4\"}} {}",
+        "tupoproxy_me_d2c_batch_frames_bucket_total{{bucket=\"2_4\"}} {}",
         if me_allows_debug {
             stats.get_me_d2c_batch_frames_bucket_2_4()
         } else {
@@ -2258,7 +2258,7 @@ async fn render_metrics(
     );
     let _ = writeln!(
         out,
-        "telemt_me_d2c_batch_frames_bucket_total{{bucket=\"5_8\"}} {}",
+        "tupoproxy_me_d2c_batch_frames_bucket_total{{bucket=\"5_8\"}} {}",
         if me_allows_debug {
             stats.get_me_d2c_batch_frames_bucket_5_8()
         } else {
@@ -2267,7 +2267,7 @@ async fn render_metrics(
     );
     let _ = writeln!(
         out,
-        "telemt_me_d2c_batch_frames_bucket_total{{bucket=\"9_16\"}} {}",
+        "tupoproxy_me_d2c_batch_frames_bucket_total{{bucket=\"9_16\"}} {}",
         if me_allows_debug {
             stats.get_me_d2c_batch_frames_bucket_9_16()
         } else {
@@ -2276,7 +2276,7 @@ async fn render_metrics(
     );
     let _ = writeln!(
         out,
-        "telemt_me_d2c_batch_frames_bucket_total{{bucket=\"17_32\"}} {}",
+        "tupoproxy_me_d2c_batch_frames_bucket_total{{bucket=\"17_32\"}} {}",
         if me_allows_debug {
             stats.get_me_d2c_batch_frames_bucket_17_32()
         } else {
@@ -2285,7 +2285,7 @@ async fn render_metrics(
     );
     let _ = writeln!(
         out,
-        "telemt_me_d2c_batch_frames_bucket_total{{bucket=\"gt_32\"}} {}",
+        "tupoproxy_me_d2c_batch_frames_bucket_total{{bucket=\"gt_32\"}} {}",
         if me_allows_debug {
             stats.get_me_d2c_batch_frames_bucket_gt_32()
         } else {
@@ -2295,12 +2295,12 @@ async fn render_metrics(
 
     let _ = writeln!(
         out,
-        "# HELP telemt_me_d2c_batch_bytes_bucket_total DC->Client batch byte size buckets"
+        "# HELP tupoproxy_me_d2c_batch_bytes_bucket_total DC->Client batch byte size buckets"
     );
-    let _ = writeln!(out, "# TYPE telemt_me_d2c_batch_bytes_bucket_total counter");
+    let _ = writeln!(out, "# TYPE tupoproxy_me_d2c_batch_bytes_bucket_total counter");
     let _ = writeln!(
         out,
-        "telemt_me_d2c_batch_bytes_bucket_total{{bucket=\"0_1k\"}} {}",
+        "tupoproxy_me_d2c_batch_bytes_bucket_total{{bucket=\"0_1k\"}} {}",
         if me_allows_debug {
             stats.get_me_d2c_batch_bytes_bucket_0_1k()
         } else {
@@ -2309,7 +2309,7 @@ async fn render_metrics(
     );
     let _ = writeln!(
         out,
-        "telemt_me_d2c_batch_bytes_bucket_total{{bucket=\"1k_4k\"}} {}",
+        "tupoproxy_me_d2c_batch_bytes_bucket_total{{bucket=\"1k_4k\"}} {}",
         if me_allows_debug {
             stats.get_me_d2c_batch_bytes_bucket_1k_4k()
         } else {
@@ -2318,7 +2318,7 @@ async fn render_metrics(
     );
     let _ = writeln!(
         out,
-        "telemt_me_d2c_batch_bytes_bucket_total{{bucket=\"4k_16k\"}} {}",
+        "tupoproxy_me_d2c_batch_bytes_bucket_total{{bucket=\"4k_16k\"}} {}",
         if me_allows_debug {
             stats.get_me_d2c_batch_bytes_bucket_4k_16k()
         } else {
@@ -2327,7 +2327,7 @@ async fn render_metrics(
     );
     let _ = writeln!(
         out,
-        "telemt_me_d2c_batch_bytes_bucket_total{{bucket=\"16k_64k\"}} {}",
+        "tupoproxy_me_d2c_batch_bytes_bucket_total{{bucket=\"16k_64k\"}} {}",
         if me_allows_debug {
             stats.get_me_d2c_batch_bytes_bucket_16k_64k()
         } else {
@@ -2336,7 +2336,7 @@ async fn render_metrics(
     );
     let _ = writeln!(
         out,
-        "telemt_me_d2c_batch_bytes_bucket_total{{bucket=\"64k_128k\"}} {}",
+        "tupoproxy_me_d2c_batch_bytes_bucket_total{{bucket=\"64k_128k\"}} {}",
         if me_allows_debug {
             stats.get_me_d2c_batch_bytes_bucket_64k_128k()
         } else {
@@ -2345,7 +2345,7 @@ async fn render_metrics(
     );
     let _ = writeln!(
         out,
-        "telemt_me_d2c_batch_bytes_bucket_total{{bucket=\"gt_128k\"}} {}",
+        "tupoproxy_me_d2c_batch_bytes_bucket_total{{bucket=\"gt_128k\"}} {}",
         if me_allows_debug {
             stats.get_me_d2c_batch_bytes_bucket_gt_128k()
         } else {
@@ -2355,15 +2355,15 @@ async fn render_metrics(
 
     let _ = writeln!(
         out,
-        "# HELP telemt_me_d2c_flush_duration_us_bucket_total DC->Client flush duration buckets"
+        "# HELP tupoproxy_me_d2c_flush_duration_us_bucket_total DC->Client flush duration buckets"
     );
     let _ = writeln!(
         out,
-        "# TYPE telemt_me_d2c_flush_duration_us_bucket_total counter"
+        "# TYPE tupoproxy_me_d2c_flush_duration_us_bucket_total counter"
     );
     let _ = writeln!(
         out,
-        "telemt_me_d2c_flush_duration_us_bucket_total{{bucket=\"0_50\"}} {}",
+        "tupoproxy_me_d2c_flush_duration_us_bucket_total{{bucket=\"0_50\"}} {}",
         if me_allows_debug {
             stats.get_me_d2c_flush_duration_us_bucket_0_50()
         } else {
@@ -2372,7 +2372,7 @@ async fn render_metrics(
     );
     let _ = writeln!(
         out,
-        "telemt_me_d2c_flush_duration_us_bucket_total{{bucket=\"51_200\"}} {}",
+        "tupoproxy_me_d2c_flush_duration_us_bucket_total{{bucket=\"51_200\"}} {}",
         if me_allows_debug {
             stats.get_me_d2c_flush_duration_us_bucket_51_200()
         } else {
@@ -2381,7 +2381,7 @@ async fn render_metrics(
     );
     let _ = writeln!(
         out,
-        "telemt_me_d2c_flush_duration_us_bucket_total{{bucket=\"201_1000\"}} {}",
+        "tupoproxy_me_d2c_flush_duration_us_bucket_total{{bucket=\"201_1000\"}} {}",
         if me_allows_debug {
             stats.get_me_d2c_flush_duration_us_bucket_201_1000()
         } else {
@@ -2390,7 +2390,7 @@ async fn render_metrics(
     );
     let _ = writeln!(
         out,
-        "telemt_me_d2c_flush_duration_us_bucket_total{{bucket=\"1001_5000\"}} {}",
+        "tupoproxy_me_d2c_flush_duration_us_bucket_total{{bucket=\"1001_5000\"}} {}",
         if me_allows_debug {
             stats.get_me_d2c_flush_duration_us_bucket_1001_5000()
         } else {
@@ -2399,7 +2399,7 @@ async fn render_metrics(
     );
     let _ = writeln!(
         out,
-        "telemt_me_d2c_flush_duration_us_bucket_total{{bucket=\"5001_20000\"}} {}",
+        "tupoproxy_me_d2c_flush_duration_us_bucket_total{{bucket=\"5001_20000\"}} {}",
         if me_allows_debug {
             stats.get_me_d2c_flush_duration_us_bucket_5001_20000()
         } else {
@@ -2408,7 +2408,7 @@ async fn render_metrics(
     );
     let _ = writeln!(
         out,
-        "telemt_me_d2c_flush_duration_us_bucket_total{{bucket=\"gt_20000\"}} {}",
+        "tupoproxy_me_d2c_flush_duration_us_bucket_total{{bucket=\"gt_20000\"}} {}",
         if me_allows_debug {
             stats.get_me_d2c_flush_duration_us_bucket_gt_20000()
         } else {
@@ -2418,15 +2418,15 @@ async fn render_metrics(
 
     let _ = writeln!(
         out,
-        "# HELP telemt_me_d2c_batch_timeout_armed_total DC->Client max-delay timer armed events"
+        "# HELP tupoproxy_me_d2c_batch_timeout_armed_total DC->Client max-delay timer armed events"
     );
     let _ = writeln!(
         out,
-        "# TYPE telemt_me_d2c_batch_timeout_armed_total counter"
+        "# TYPE tupoproxy_me_d2c_batch_timeout_armed_total counter"
     );
     let _ = writeln!(
         out,
-        "telemt_me_d2c_batch_timeout_armed_total {}",
+        "tupoproxy_me_d2c_batch_timeout_armed_total {}",
         if me_allows_debug {
             stats.get_me_d2c_batch_timeout_armed_total()
         } else {
@@ -2436,15 +2436,15 @@ async fn render_metrics(
 
     let _ = writeln!(
         out,
-        "# HELP telemt_me_d2c_batch_timeout_fired_total DC->Client max-delay timer fired events"
+        "# HELP tupoproxy_me_d2c_batch_timeout_fired_total DC->Client max-delay timer fired events"
     );
     let _ = writeln!(
         out,
-        "# TYPE telemt_me_d2c_batch_timeout_fired_total counter"
+        "# TYPE tupoproxy_me_d2c_batch_timeout_fired_total counter"
     );
     let _ = writeln!(
         out,
-        "telemt_me_d2c_batch_timeout_fired_total {}",
+        "tupoproxy_me_d2c_batch_timeout_fired_total {}",
         if me_allows_debug {
             stats.get_me_d2c_batch_timeout_fired_total()
         } else {
@@ -2454,12 +2454,12 @@ async fn render_metrics(
 
     let _ = writeln!(
         out,
-        "# HELP telemt_me_writer_byte_budget_limit_bytes Configured resident-memory budget per ME writer"
+        "# HELP tupoproxy_me_writer_byte_budget_limit_bytes Configured resident-memory budget per ME writer"
     );
-    let _ = writeln!(out, "# TYPE telemt_me_writer_byte_budget_limit_bytes gauge");
+    let _ = writeln!(out, "# TYPE tupoproxy_me_writer_byte_budget_limit_bytes gauge");
     let _ = writeln!(
         out,
-        "telemt_me_writer_byte_budget_limit_bytes {}",
+        "tupoproxy_me_writer_byte_budget_limit_bytes {}",
         if me_allows_normal {
             stats.get_me_writer_byte_budget_limit_bytes_gauge()
         } else {
@@ -2468,15 +2468,15 @@ async fn render_metrics(
     );
     let _ = writeln!(
         out,
-        "# HELP telemt_me_writer_byte_budget_reserved_bytes Aggregate ME writer memory reservations by lifecycle state"
+        "# HELP tupoproxy_me_writer_byte_budget_reserved_bytes Aggregate ME writer memory reservations by lifecycle state"
     );
     let _ = writeln!(
         out,
-        "# TYPE telemt_me_writer_byte_budget_reserved_bytes gauge"
+        "# TYPE tupoproxy_me_writer_byte_budget_reserved_bytes gauge"
     );
     let _ = writeln!(
         out,
-        "telemt_me_writer_byte_budget_reserved_bytes{{state=\"queued\"}} {}",
+        "tupoproxy_me_writer_byte_budget_reserved_bytes{{state=\"queued\"}} {}",
         if me_allows_normal {
             stats.get_me_writer_byte_budget_queued_bytes_gauge()
         } else {
@@ -2485,7 +2485,7 @@ async fn render_metrics(
     );
     let _ = writeln!(
         out,
-        "telemt_me_writer_byte_budget_reserved_bytes{{state=\"inflight\"}} {}",
+        "tupoproxy_me_writer_byte_budget_reserved_bytes{{state=\"inflight\"}} {}",
         if me_allows_normal {
             stats.get_me_writer_byte_budget_inflight_bytes_gauge()
         } else {
@@ -2494,15 +2494,15 @@ async fn render_metrics(
     );
     let _ = writeln!(
         out,
-        "# HELP telemt_me_writer_byte_budget_events_total ME writer byte-budget outcomes"
+        "# HELP tupoproxy_me_writer_byte_budget_events_total ME writer byte-budget outcomes"
     );
     let _ = writeln!(
         out,
-        "# TYPE telemt_me_writer_byte_budget_events_total counter"
+        "# TYPE tupoproxy_me_writer_byte_budget_events_total counter"
     );
     let _ = writeln!(
         out,
-        "telemt_me_writer_byte_budget_events_total{{result=\"wait\"}} {}",
+        "tupoproxy_me_writer_byte_budget_events_total{{result=\"wait\"}} {}",
         if me_allows_normal {
             stats.get_me_writer_byte_budget_wait_total()
         } else {
@@ -2511,7 +2511,7 @@ async fn render_metrics(
     );
     let _ = writeln!(
         out,
-        "telemt_me_writer_byte_budget_events_total{{result=\"timeout\"}} {}",
+        "tupoproxy_me_writer_byte_budget_events_total{{result=\"timeout\"}} {}",
         if me_allows_normal {
             stats.get_me_writer_byte_budget_timeout_total()
         } else {
@@ -2520,7 +2520,7 @@ async fn render_metrics(
     );
     let _ = writeln!(
         out,
-        "telemt_me_writer_byte_budget_events_total{{result=\"oversize\"}} {}",
+        "tupoproxy_me_writer_byte_budget_events_total{{result=\"oversize\"}} {}",
         if me_allows_normal {
             stats.get_me_writer_byte_budget_oversize_total()
         } else {
@@ -2530,12 +2530,12 @@ async fn render_metrics(
 
     let _ = writeln!(
         out,
-        "# HELP telemt_me_writer_pick_total ME writer-pick outcomes by mode and result"
+        "# HELP tupoproxy_me_writer_pick_total ME writer-pick outcomes by mode and result"
     );
-    let _ = writeln!(out, "# TYPE telemt_me_writer_pick_total counter");
+    let _ = writeln!(out, "# TYPE tupoproxy_me_writer_pick_total counter");
     let _ = writeln!(
         out,
-        "telemt_me_writer_pick_total{{mode=\"sorted_rr\",result=\"success_try\"}} {}",
+        "tupoproxy_me_writer_pick_total{{mode=\"sorted_rr\",result=\"success_try\"}} {}",
         if me_allows_normal {
             stats.get_me_writer_pick_sorted_rr_success_try_total()
         } else {
@@ -2544,7 +2544,7 @@ async fn render_metrics(
     );
     let _ = writeln!(
         out,
-        "telemt_me_writer_pick_total{{mode=\"sorted_rr\",result=\"success_fallback\"}} {}",
+        "tupoproxy_me_writer_pick_total{{mode=\"sorted_rr\",result=\"success_fallback\"}} {}",
         if me_allows_normal {
             stats.get_me_writer_pick_sorted_rr_success_fallback_total()
         } else {
@@ -2553,7 +2553,7 @@ async fn render_metrics(
     );
     let _ = writeln!(
         out,
-        "telemt_me_writer_pick_total{{mode=\"sorted_rr\",result=\"full\"}} {}",
+        "tupoproxy_me_writer_pick_total{{mode=\"sorted_rr\",result=\"full\"}} {}",
         if me_allows_normal {
             stats.get_me_writer_pick_sorted_rr_full_total()
         } else {
@@ -2562,7 +2562,7 @@ async fn render_metrics(
     );
     let _ = writeln!(
         out,
-        "telemt_me_writer_pick_total{{mode=\"sorted_rr\",result=\"closed\"}} {}",
+        "tupoproxy_me_writer_pick_total{{mode=\"sorted_rr\",result=\"closed\"}} {}",
         if me_allows_normal {
             stats.get_me_writer_pick_sorted_rr_closed_total()
         } else {
@@ -2571,7 +2571,7 @@ async fn render_metrics(
     );
     let _ = writeln!(
         out,
-        "telemt_me_writer_pick_total{{mode=\"sorted_rr\",result=\"no_candidate\"}} {}",
+        "tupoproxy_me_writer_pick_total{{mode=\"sorted_rr\",result=\"no_candidate\"}} {}",
         if me_allows_normal {
             stats.get_me_writer_pick_sorted_rr_no_candidate_total()
         } else {
@@ -2580,7 +2580,7 @@ async fn render_metrics(
     );
     let _ = writeln!(
         out,
-        "telemt_me_writer_pick_total{{mode=\"p2c\",result=\"success_try\"}} {}",
+        "tupoproxy_me_writer_pick_total{{mode=\"p2c\",result=\"success_try\"}} {}",
         if me_allows_normal {
             stats.get_me_writer_pick_p2c_success_try_total()
         } else {
@@ -2589,7 +2589,7 @@ async fn render_metrics(
     );
     let _ = writeln!(
         out,
-        "telemt_me_writer_pick_total{{mode=\"p2c\",result=\"success_fallback\"}} {}",
+        "tupoproxy_me_writer_pick_total{{mode=\"p2c\",result=\"success_fallback\"}} {}",
         if me_allows_normal {
             stats.get_me_writer_pick_p2c_success_fallback_total()
         } else {
@@ -2598,7 +2598,7 @@ async fn render_metrics(
     );
     let _ = writeln!(
         out,
-        "telemt_me_writer_pick_total{{mode=\"p2c\",result=\"full\"}} {}",
+        "tupoproxy_me_writer_pick_total{{mode=\"p2c\",result=\"full\"}} {}",
         if me_allows_normal {
             stats.get_me_writer_pick_p2c_full_total()
         } else {
@@ -2607,7 +2607,7 @@ async fn render_metrics(
     );
     let _ = writeln!(
         out,
-        "telemt_me_writer_pick_total{{mode=\"p2c\",result=\"closed\"}} {}",
+        "tupoproxy_me_writer_pick_total{{mode=\"p2c\",result=\"closed\"}} {}",
         if me_allows_normal {
             stats.get_me_writer_pick_p2c_closed_total()
         } else {
@@ -2616,7 +2616,7 @@ async fn render_metrics(
     );
     let _ = writeln!(
         out,
-        "telemt_me_writer_pick_total{{mode=\"p2c\",result=\"no_candidate\"}} {}",
+        "tupoproxy_me_writer_pick_total{{mode=\"p2c\",result=\"no_candidate\"}} {}",
         if me_allows_normal {
             stats.get_me_writer_pick_p2c_no_candidate_total()
         } else {
@@ -2626,15 +2626,15 @@ async fn render_metrics(
 
     let _ = writeln!(
         out,
-        "# HELP telemt_me_writer_pick_blocking_fallback_total ME writer-pick blocking fallback attempts"
+        "# HELP tupoproxy_me_writer_pick_blocking_fallback_total ME writer-pick blocking fallback attempts"
     );
     let _ = writeln!(
         out,
-        "# TYPE telemt_me_writer_pick_blocking_fallback_total counter"
+        "# TYPE tupoproxy_me_writer_pick_blocking_fallback_total counter"
     );
     let _ = writeln!(
         out,
-        "telemt_me_writer_pick_blocking_fallback_total {}",
+        "tupoproxy_me_writer_pick_blocking_fallback_total {}",
         if me_allows_normal {
             stats.get_me_writer_pick_blocking_fallback_total()
         } else {
@@ -2644,15 +2644,15 @@ async fn render_metrics(
 
     let _ = writeln!(
         out,
-        "# HELP telemt_me_writer_pick_mode_switch_total Writer-pick mode switches via runtime updates"
+        "# HELP tupoproxy_me_writer_pick_mode_switch_total Writer-pick mode switches via runtime updates"
     );
     let _ = writeln!(
         out,
-        "# TYPE telemt_me_writer_pick_mode_switch_total counter"
+        "# TYPE tupoproxy_me_writer_pick_mode_switch_total counter"
     );
     let _ = writeln!(
         out,
-        "telemt_me_writer_pick_mode_switch_total {}",
+        "tupoproxy_me_writer_pick_mode_switch_total {}",
         if me_allows_normal {
             stats.get_me_writer_pick_mode_switch_total()
         } else {
@@ -2662,12 +2662,12 @@ async fn render_metrics(
 
     let _ = writeln!(
         out,
-        "# HELP telemt_me_socks_kdf_policy_total SOCKS KDF policy outcomes"
+        "# HELP tupoproxy_me_socks_kdf_policy_total SOCKS KDF policy outcomes"
     );
-    let _ = writeln!(out, "# TYPE telemt_me_socks_kdf_policy_total counter");
+    let _ = writeln!(out, "# TYPE tupoproxy_me_socks_kdf_policy_total counter");
     let _ = writeln!(
         out,
-        "telemt_me_socks_kdf_policy_total{{policy=\"strict\",outcome=\"reject\"}} {}",
+        "tupoproxy_me_socks_kdf_policy_total{{policy=\"strict\",outcome=\"reject\"}} {}",
         if me_allows_normal {
             stats.get_me_socks_kdf_strict_reject()
         } else {
@@ -2676,7 +2676,7 @@ async fn render_metrics(
     );
     let _ = writeln!(
         out,
-        "telemt_me_socks_kdf_policy_total{{policy=\"compat\",outcome=\"fallback\"}} {}",
+        "tupoproxy_me_socks_kdf_policy_total{{policy=\"compat\",outcome=\"fallback\"}} {}",
         if me_allows_debug {
             stats.get_me_socks_kdf_compat_fallback()
         } else {
@@ -2686,12 +2686,12 @@ async fn render_metrics(
 
     let _ = writeln!(
         out,
-        "# HELP telemt_me_endpoint_quarantine_total ME endpoint quarantines due to rapid flaps"
+        "# HELP tupoproxy_me_endpoint_quarantine_total ME endpoint quarantines due to rapid flaps"
     );
-    let _ = writeln!(out, "# TYPE telemt_me_endpoint_quarantine_total counter");
+    let _ = writeln!(out, "# TYPE tupoproxy_me_endpoint_quarantine_total counter");
     let _ = writeln!(
         out,
-        "telemt_me_endpoint_quarantine_total {}",
+        "tupoproxy_me_endpoint_quarantine_total {}",
         if me_allows_normal {
             stats.get_me_endpoint_quarantine_total()
         } else {
@@ -2700,15 +2700,15 @@ async fn render_metrics(
     );
     let _ = writeln!(
         out,
-        "# HELP telemt_me_endpoint_quarantine_unexpected_total ME endpoint quarantines caused by unexpected writer removals"
+        "# HELP tupoproxy_me_endpoint_quarantine_unexpected_total ME endpoint quarantines caused by unexpected writer removals"
     );
     let _ = writeln!(
         out,
-        "# TYPE telemt_me_endpoint_quarantine_unexpected_total counter"
+        "# TYPE tupoproxy_me_endpoint_quarantine_unexpected_total counter"
     );
     let _ = writeln!(
         out,
-        "telemt_me_endpoint_quarantine_unexpected_total {}",
+        "tupoproxy_me_endpoint_quarantine_unexpected_total {}",
         if me_allows_normal {
             stats.get_me_endpoint_quarantine_unexpected_total()
         } else {
@@ -2717,15 +2717,15 @@ async fn render_metrics(
     );
     let _ = writeln!(
         out,
-        "# HELP telemt_me_endpoint_quarantine_draining_suppressed_total Draining writer removals that skipped endpoint quarantine"
+        "# HELP tupoproxy_me_endpoint_quarantine_draining_suppressed_total Draining writer removals that skipped endpoint quarantine"
     );
     let _ = writeln!(
         out,
-        "# TYPE telemt_me_endpoint_quarantine_draining_suppressed_total counter"
+        "# TYPE tupoproxy_me_endpoint_quarantine_draining_suppressed_total counter"
     );
     let _ = writeln!(
         out,
-        "telemt_me_endpoint_quarantine_draining_suppressed_total {}",
+        "tupoproxy_me_endpoint_quarantine_draining_suppressed_total {}",
         if me_allows_normal {
             stats.get_me_endpoint_quarantine_draining_suppressed_total()
         } else {
@@ -2735,12 +2735,12 @@ async fn render_metrics(
 
     let _ = writeln!(
         out,
-        "# HELP telemt_me_kdf_drift_total ME KDF input drift detections"
+        "# HELP tupoproxy_me_kdf_drift_total ME KDF input drift detections"
     );
-    let _ = writeln!(out, "# TYPE telemt_me_kdf_drift_total counter");
+    let _ = writeln!(out, "# TYPE tupoproxy_me_kdf_drift_total counter");
     let _ = writeln!(
         out,
-        "telemt_me_kdf_drift_total {}",
+        "tupoproxy_me_kdf_drift_total {}",
         if me_allows_normal {
             stats.get_me_kdf_drift_total()
         } else {
@@ -2750,12 +2750,12 @@ async fn render_metrics(
 
     let _ = writeln!(
         out,
-        "# HELP telemt_me_kdf_port_only_drift_total ME KDF client-port changes with stable non-port material"
+        "# HELP tupoproxy_me_kdf_port_only_drift_total ME KDF client-port changes with stable non-port material"
     );
-    let _ = writeln!(out, "# TYPE telemt_me_kdf_port_only_drift_total counter");
+    let _ = writeln!(out, "# TYPE tupoproxy_me_kdf_port_only_drift_total counter");
     let _ = writeln!(
         out,
-        "telemt_me_kdf_port_only_drift_total {}",
+        "tupoproxy_me_kdf_port_only_drift_total {}",
         if me_allows_debug {
             stats.get_me_kdf_port_only_drift_total()
         } else {
@@ -2765,12 +2765,12 @@ async fn render_metrics(
 
     let _ = writeln!(
         out,
-        "# HELP telemt_me_hardswap_pending_reuse_total Hardswap cycles that reused an existing pending generation"
+        "# HELP tupoproxy_me_hardswap_pending_reuse_total Hardswap cycles that reused an existing pending generation"
     );
-    let _ = writeln!(out, "# TYPE telemt_me_hardswap_pending_reuse_total counter");
+    let _ = writeln!(out, "# TYPE tupoproxy_me_hardswap_pending_reuse_total counter");
     let _ = writeln!(
         out,
-        "telemt_me_hardswap_pending_reuse_total {}",
+        "tupoproxy_me_hardswap_pending_reuse_total {}",
         if me_allows_debug {
             stats.get_me_hardswap_pending_reuse_total()
         } else {
@@ -2780,15 +2780,15 @@ async fn render_metrics(
 
     let _ = writeln!(
         out,
-        "# HELP telemt_me_hardswap_pending_ttl_expired_total Pending hardswap generations reset by TTL expiration"
+        "# HELP tupoproxy_me_hardswap_pending_ttl_expired_total Pending hardswap generations reset by TTL expiration"
     );
     let _ = writeln!(
         out,
-        "# TYPE telemt_me_hardswap_pending_ttl_expired_total counter"
+        "# TYPE tupoproxy_me_hardswap_pending_ttl_expired_total counter"
     );
     let _ = writeln!(
         out,
-        "telemt_me_hardswap_pending_ttl_expired_total {}",
+        "tupoproxy_me_hardswap_pending_ttl_expired_total {}",
         if me_allows_normal {
             stats.get_me_hardswap_pending_ttl_expired_total()
         } else {
@@ -2798,15 +2798,15 @@ async fn render_metrics(
 
     let _ = writeln!(
         out,
-        "# HELP telemt_me_single_endpoint_outage_enter_total Single-endpoint DC outage transitions to active state"
+        "# HELP tupoproxy_me_single_endpoint_outage_enter_total Single-endpoint DC outage transitions to active state"
     );
     let _ = writeln!(
         out,
-        "# TYPE telemt_me_single_endpoint_outage_enter_total counter"
+        "# TYPE tupoproxy_me_single_endpoint_outage_enter_total counter"
     );
     let _ = writeln!(
         out,
-        "telemt_me_single_endpoint_outage_enter_total {}",
+        "tupoproxy_me_single_endpoint_outage_enter_total {}",
         if me_allows_normal {
             stats.get_me_single_endpoint_outage_enter_total()
         } else {
@@ -2816,15 +2816,15 @@ async fn render_metrics(
 
     let _ = writeln!(
         out,
-        "# HELP telemt_me_single_endpoint_outage_exit_total Single-endpoint DC outage recovery transitions"
+        "# HELP tupoproxy_me_single_endpoint_outage_exit_total Single-endpoint DC outage recovery transitions"
     );
     let _ = writeln!(
         out,
-        "# TYPE telemt_me_single_endpoint_outage_exit_total counter"
+        "# TYPE tupoproxy_me_single_endpoint_outage_exit_total counter"
     );
     let _ = writeln!(
         out,
-        "telemt_me_single_endpoint_outage_exit_total {}",
+        "tupoproxy_me_single_endpoint_outage_exit_total {}",
         if me_allows_normal {
             stats.get_me_single_endpoint_outage_exit_total()
         } else {
@@ -2834,15 +2834,15 @@ async fn render_metrics(
 
     let _ = writeln!(
         out,
-        "# HELP telemt_me_single_endpoint_outage_reconnect_attempt_total Reconnect attempts performed during single-endpoint outages"
+        "# HELP tupoproxy_me_single_endpoint_outage_reconnect_attempt_total Reconnect attempts performed during single-endpoint outages"
     );
     let _ = writeln!(
         out,
-        "# TYPE telemt_me_single_endpoint_outage_reconnect_attempt_total counter"
+        "# TYPE tupoproxy_me_single_endpoint_outage_reconnect_attempt_total counter"
     );
     let _ = writeln!(
         out,
-        "telemt_me_single_endpoint_outage_reconnect_attempt_total {}",
+        "tupoproxy_me_single_endpoint_outage_reconnect_attempt_total {}",
         if me_allows_normal {
             stats.get_me_single_endpoint_outage_reconnect_attempt_total()
         } else {
@@ -2852,15 +2852,15 @@ async fn render_metrics(
 
     let _ = writeln!(
         out,
-        "# HELP telemt_me_single_endpoint_outage_reconnect_success_total Successful reconnect attempts during single-endpoint outages"
+        "# HELP tupoproxy_me_single_endpoint_outage_reconnect_success_total Successful reconnect attempts during single-endpoint outages"
     );
     let _ = writeln!(
         out,
-        "# TYPE telemt_me_single_endpoint_outage_reconnect_success_total counter"
+        "# TYPE tupoproxy_me_single_endpoint_outage_reconnect_success_total counter"
     );
     let _ = writeln!(
         out,
-        "telemt_me_single_endpoint_outage_reconnect_success_total {}",
+        "tupoproxy_me_single_endpoint_outage_reconnect_success_total {}",
         if me_allows_normal {
             stats.get_me_single_endpoint_outage_reconnect_success_total()
         } else {
@@ -2870,15 +2870,15 @@ async fn render_metrics(
 
     let _ = writeln!(
         out,
-        "# HELP telemt_me_single_endpoint_quarantine_bypass_total Outage reconnect attempts that bypassed quarantine"
+        "# HELP tupoproxy_me_single_endpoint_quarantine_bypass_total Outage reconnect attempts that bypassed quarantine"
     );
     let _ = writeln!(
         out,
-        "# TYPE telemt_me_single_endpoint_quarantine_bypass_total counter"
+        "# TYPE tupoproxy_me_single_endpoint_quarantine_bypass_total counter"
     );
     let _ = writeln!(
         out,
-        "telemt_me_single_endpoint_quarantine_bypass_total {}",
+        "tupoproxy_me_single_endpoint_quarantine_bypass_total {}",
         if me_allows_normal {
             stats.get_me_single_endpoint_quarantine_bypass_total()
         } else {
@@ -2888,15 +2888,15 @@ async fn render_metrics(
 
     let _ = writeln!(
         out,
-        "# HELP telemt_me_single_endpoint_shadow_rotate_total Successful periodic shadow rotations for single-endpoint DC groups"
+        "# HELP tupoproxy_me_single_endpoint_shadow_rotate_total Successful periodic shadow rotations for single-endpoint DC groups"
     );
     let _ = writeln!(
         out,
-        "# TYPE telemt_me_single_endpoint_shadow_rotate_total counter"
+        "# TYPE tupoproxy_me_single_endpoint_shadow_rotate_total counter"
     );
     let _ = writeln!(
         out,
-        "telemt_me_single_endpoint_shadow_rotate_total {}",
+        "tupoproxy_me_single_endpoint_shadow_rotate_total {}",
         if me_allows_normal {
             stats.get_me_single_endpoint_shadow_rotate_total()
         } else {
@@ -2906,15 +2906,15 @@ async fn render_metrics(
 
     let _ = writeln!(
         out,
-        "# HELP telemt_me_single_endpoint_shadow_rotate_skipped_quarantine_total Shadow rotations skipped because endpoint is quarantined"
+        "# HELP tupoproxy_me_single_endpoint_shadow_rotate_skipped_quarantine_total Shadow rotations skipped because endpoint is quarantined"
     );
     let _ = writeln!(
         out,
-        "# TYPE telemt_me_single_endpoint_shadow_rotate_skipped_quarantine_total counter"
+        "# TYPE tupoproxy_me_single_endpoint_shadow_rotate_skipped_quarantine_total counter"
     );
     let _ = writeln!(
         out,
-        "telemt_me_single_endpoint_shadow_rotate_skipped_quarantine_total {}",
+        "tupoproxy_me_single_endpoint_shadow_rotate_skipped_quarantine_total {}",
         if me_allows_normal {
             stats.get_me_single_endpoint_shadow_rotate_skipped_quarantine_total()
         } else {
@@ -2924,13 +2924,13 @@ async fn render_metrics(
 
     let _ = writeln!(
         out,
-        "# HELP telemt_me_floor_mode Runtime ME writer floor policy mode"
+        "# HELP tupoproxy_me_floor_mode Runtime ME writer floor policy mode"
     );
-    let _ = writeln!(out, "# TYPE telemt_me_floor_mode gauge");
+    let _ = writeln!(out, "# TYPE tupoproxy_me_floor_mode gauge");
     let floor_mode = config.general.me_floor_mode;
     let _ = writeln!(
         out,
-        "telemt_me_floor_mode{{mode=\"static\"}} {}",
+        "tupoproxy_me_floor_mode{{mode=\"static\"}} {}",
         if matches!(floor_mode, crate::config::MeFloorMode::Static) {
             1
         } else {
@@ -2939,7 +2939,7 @@ async fn render_metrics(
     );
     let _ = writeln!(
         out,
-        "telemt_me_floor_mode{{mode=\"adaptive\"}} {}",
+        "tupoproxy_me_floor_mode{{mode=\"adaptive\"}} {}",
         if matches!(floor_mode, crate::config::MeFloorMode::Adaptive) {
             1
         } else {
@@ -2949,12 +2949,12 @@ async fn render_metrics(
 
     let _ = writeln!(
         out,
-        "# HELP telemt_me_floor_mode_switch_all_total Runtime ME floor mode switches"
+        "# HELP tupoproxy_me_floor_mode_switch_all_total Runtime ME floor mode switches"
     );
-    let _ = writeln!(out, "# TYPE telemt_me_floor_mode_switch_all_total counter");
+    let _ = writeln!(out, "# TYPE tupoproxy_me_floor_mode_switch_all_total counter");
     let _ = writeln!(
         out,
-        "telemt_me_floor_mode_switch_all_total {}",
+        "tupoproxy_me_floor_mode_switch_all_total {}",
         if me_allows_normal {
             stats.get_me_floor_mode_switch_total()
         } else {
@@ -2963,7 +2963,7 @@ async fn render_metrics(
     );
     let _ = writeln!(
         out,
-        "telemt_me_floor_mode_switch_total{{from=\"static\",to=\"adaptive\"}} {}",
+        "tupoproxy_me_floor_mode_switch_total{{from=\"static\",to=\"adaptive\"}} {}",
         if me_allows_normal {
             stats.get_me_floor_mode_switch_static_to_adaptive_total()
         } else {
@@ -2972,7 +2972,7 @@ async fn render_metrics(
     );
     let _ = writeln!(
         out,
-        "telemt_me_floor_mode_switch_total{{from=\"adaptive\",to=\"static\"}} {}",
+        "tupoproxy_me_floor_mode_switch_total{{from=\"adaptive\",to=\"static\"}} {}",
         if me_allows_normal {
             stats.get_me_floor_mode_switch_adaptive_to_static_total()
         } else {
@@ -2981,15 +2981,15 @@ async fn render_metrics(
     );
     let _ = writeln!(
         out,
-        "# HELP telemt_me_adaptive_floor_cpu_cores_detected Runtime detected logical CPU cores for adaptive floor"
+        "# HELP tupoproxy_me_adaptive_floor_cpu_cores_detected Runtime detected logical CPU cores for adaptive floor"
     );
     let _ = writeln!(
         out,
-        "# TYPE telemt_me_adaptive_floor_cpu_cores_detected gauge"
+        "# TYPE tupoproxy_me_adaptive_floor_cpu_cores_detected gauge"
     );
     let _ = writeln!(
         out,
-        "telemt_me_adaptive_floor_cpu_cores_detected {}",
+        "tupoproxy_me_adaptive_floor_cpu_cores_detected {}",
         if me_allows_normal {
             stats.get_me_floor_cpu_cores_detected_gauge()
         } else {
@@ -2998,15 +2998,15 @@ async fn render_metrics(
     );
     let _ = writeln!(
         out,
-        "# HELP telemt_me_adaptive_floor_cpu_cores_effective Runtime effective logical CPU cores for adaptive floor"
+        "# HELP tupoproxy_me_adaptive_floor_cpu_cores_effective Runtime effective logical CPU cores for adaptive floor"
     );
     let _ = writeln!(
         out,
-        "# TYPE telemt_me_adaptive_floor_cpu_cores_effective gauge"
+        "# TYPE tupoproxy_me_adaptive_floor_cpu_cores_effective gauge"
     );
     let _ = writeln!(
         out,
-        "telemt_me_adaptive_floor_cpu_cores_effective {}",
+        "tupoproxy_me_adaptive_floor_cpu_cores_effective {}",
         if me_allows_normal {
             stats.get_me_floor_cpu_cores_effective_gauge()
         } else {
@@ -3015,12 +3015,12 @@ async fn render_metrics(
     );
     let _ = writeln!(
         out,
-        "# HELP telemt_me_adaptive_floor_global_cap_raw Runtime raw global adaptive floor cap"
+        "# HELP tupoproxy_me_adaptive_floor_global_cap_raw Runtime raw global adaptive floor cap"
     );
-    let _ = writeln!(out, "# TYPE telemt_me_adaptive_floor_global_cap_raw gauge");
+    let _ = writeln!(out, "# TYPE tupoproxy_me_adaptive_floor_global_cap_raw gauge");
     let _ = writeln!(
         out,
-        "telemt_me_adaptive_floor_global_cap_raw {}",
+        "tupoproxy_me_adaptive_floor_global_cap_raw {}",
         if me_allows_normal {
             stats.get_me_floor_global_cap_raw_gauge()
         } else {
@@ -3029,15 +3029,15 @@ async fn render_metrics(
     );
     let _ = writeln!(
         out,
-        "# HELP telemt_me_adaptive_floor_global_cap_effective Runtime effective global adaptive floor cap"
+        "# HELP tupoproxy_me_adaptive_floor_global_cap_effective Runtime effective global adaptive floor cap"
     );
     let _ = writeln!(
         out,
-        "# TYPE telemt_me_adaptive_floor_global_cap_effective gauge"
+        "# TYPE tupoproxy_me_adaptive_floor_global_cap_effective gauge"
     );
     let _ = writeln!(
         out,
-        "telemt_me_adaptive_floor_global_cap_effective {}",
+        "tupoproxy_me_adaptive_floor_global_cap_effective {}",
         if me_allows_normal {
             stats.get_me_floor_global_cap_effective_gauge()
         } else {
@@ -3046,15 +3046,15 @@ async fn render_metrics(
     );
     let _ = writeln!(
         out,
-        "# HELP telemt_me_adaptive_floor_target_writers_total Runtime adaptive floor target writers total"
+        "# HELP tupoproxy_me_adaptive_floor_target_writers_total Runtime adaptive floor target writers total"
     );
     let _ = writeln!(
         out,
-        "# TYPE telemt_me_adaptive_floor_target_writers_total gauge"
+        "# TYPE tupoproxy_me_adaptive_floor_target_writers_total gauge"
     );
     let _ = writeln!(
         out,
-        "telemt_me_adaptive_floor_target_writers_total {}",
+        "tupoproxy_me_adaptive_floor_target_writers_total {}",
         if me_allows_normal {
             stats.get_me_floor_target_writers_total_gauge()
         } else {
@@ -3063,15 +3063,15 @@ async fn render_metrics(
     );
     let _ = writeln!(
         out,
-        "# HELP telemt_me_adaptive_floor_active_cap_configured Runtime configured active writer cap"
+        "# HELP tupoproxy_me_adaptive_floor_active_cap_configured Runtime configured active writer cap"
     );
     let _ = writeln!(
         out,
-        "# TYPE telemt_me_adaptive_floor_active_cap_configured gauge"
+        "# TYPE tupoproxy_me_adaptive_floor_active_cap_configured gauge"
     );
     let _ = writeln!(
         out,
-        "telemt_me_adaptive_floor_active_cap_configured {}",
+        "tupoproxy_me_adaptive_floor_active_cap_configured {}",
         if me_allows_normal {
             stats.get_me_floor_active_cap_configured_gauge()
         } else {
@@ -3080,15 +3080,15 @@ async fn render_metrics(
     );
     let _ = writeln!(
         out,
-        "# HELP telemt_me_adaptive_floor_active_cap_effective Runtime effective active writer cap"
+        "# HELP tupoproxy_me_adaptive_floor_active_cap_effective Runtime effective active writer cap"
     );
     let _ = writeln!(
         out,
-        "# TYPE telemt_me_adaptive_floor_active_cap_effective gauge"
+        "# TYPE tupoproxy_me_adaptive_floor_active_cap_effective gauge"
     );
     let _ = writeln!(
         out,
-        "telemt_me_adaptive_floor_active_cap_effective {}",
+        "tupoproxy_me_adaptive_floor_active_cap_effective {}",
         if me_allows_normal {
             stats.get_me_floor_active_cap_effective_gauge()
         } else {
@@ -3097,15 +3097,15 @@ async fn render_metrics(
     );
     let _ = writeln!(
         out,
-        "# HELP telemt_me_adaptive_floor_warm_cap_configured Runtime configured warm writer cap"
+        "# HELP tupoproxy_me_adaptive_floor_warm_cap_configured Runtime configured warm writer cap"
     );
     let _ = writeln!(
         out,
-        "# TYPE telemt_me_adaptive_floor_warm_cap_configured gauge"
+        "# TYPE tupoproxy_me_adaptive_floor_warm_cap_configured gauge"
     );
     let _ = writeln!(
         out,
-        "telemt_me_adaptive_floor_warm_cap_configured {}",
+        "tupoproxy_me_adaptive_floor_warm_cap_configured {}",
         if me_allows_normal {
             stats.get_me_floor_warm_cap_configured_gauge()
         } else {
@@ -3114,15 +3114,15 @@ async fn render_metrics(
     );
     let _ = writeln!(
         out,
-        "# HELP telemt_me_adaptive_floor_warm_cap_effective Runtime effective warm writer cap"
+        "# HELP tupoproxy_me_adaptive_floor_warm_cap_effective Runtime effective warm writer cap"
     );
     let _ = writeln!(
         out,
-        "# TYPE telemt_me_adaptive_floor_warm_cap_effective gauge"
+        "# TYPE tupoproxy_me_adaptive_floor_warm_cap_effective gauge"
     );
     let _ = writeln!(
         out,
-        "telemt_me_adaptive_floor_warm_cap_effective {}",
+        "tupoproxy_me_adaptive_floor_warm_cap_effective {}",
         if me_allows_normal {
             stats.get_me_floor_warm_cap_effective_gauge()
         } else {
@@ -3131,12 +3131,12 @@ async fn render_metrics(
     );
     let _ = writeln!(
         out,
-        "# HELP telemt_me_writers_active_current Current non-draining active ME writers"
+        "# HELP tupoproxy_me_writers_active_current Current non-draining active ME writers"
     );
-    let _ = writeln!(out, "# TYPE telemt_me_writers_active_current gauge");
+    let _ = writeln!(out, "# TYPE tupoproxy_me_writers_active_current gauge");
     let _ = writeln!(
         out,
-        "telemt_me_writers_active_current {}",
+        "tupoproxy_me_writers_active_current {}",
         if me_allows_normal {
             stats.get_me_writers_active_current_gauge()
         } else {
@@ -3145,12 +3145,12 @@ async fn render_metrics(
     );
     let _ = writeln!(
         out,
-        "# HELP telemt_me_writers_warm_current Current non-draining warm ME writers"
+        "# HELP tupoproxy_me_writers_warm_current Current non-draining warm ME writers"
     );
-    let _ = writeln!(out, "# TYPE telemt_me_writers_warm_current gauge");
+    let _ = writeln!(out, "# TYPE tupoproxy_me_writers_warm_current gauge");
     let _ = writeln!(
         out,
-        "telemt_me_writers_warm_current {}",
+        "tupoproxy_me_writers_warm_current {}",
         if me_allows_normal {
             stats.get_me_writers_warm_current_gauge()
         } else {
@@ -3159,12 +3159,12 @@ async fn render_metrics(
     );
     let _ = writeln!(
         out,
-        "# HELP telemt_me_floor_cap_block_total Reconnect attempts blocked by adaptive floor caps"
+        "# HELP tupoproxy_me_floor_cap_block_total Reconnect attempts blocked by adaptive floor caps"
     );
-    let _ = writeln!(out, "# TYPE telemt_me_floor_cap_block_total counter");
+    let _ = writeln!(out, "# TYPE tupoproxy_me_floor_cap_block_total counter");
     let _ = writeln!(
         out,
-        "telemt_me_floor_cap_block_total {}",
+        "tupoproxy_me_floor_cap_block_total {}",
         if me_allows_normal {
             stats.get_me_floor_cap_block_total()
         } else {
@@ -3173,12 +3173,12 @@ async fn render_metrics(
     );
     let _ = writeln!(
         out,
-        "# HELP telemt_me_floor_swap_idle_total Adaptive floor cap recovery via idle writer swap"
+        "# HELP tupoproxy_me_floor_swap_idle_total Adaptive floor cap recovery via idle writer swap"
     );
-    let _ = writeln!(out, "# TYPE telemt_me_floor_swap_idle_total counter");
+    let _ = writeln!(out, "# TYPE tupoproxy_me_floor_swap_idle_total counter");
     let _ = writeln!(
         out,
-        "telemt_me_floor_swap_idle_total {}",
+        "tupoproxy_me_floor_swap_idle_total {}",
         if me_allows_normal {
             stats.get_me_floor_swap_idle_total()
         } else {
@@ -3187,12 +3187,12 @@ async fn render_metrics(
     );
     let _ = writeln!(
         out,
-        "# HELP telemt_me_floor_swap_idle_failed_total Failed idle swap attempts under adaptive floor caps"
+        "# HELP tupoproxy_me_floor_swap_idle_failed_total Failed idle swap attempts under adaptive floor caps"
     );
-    let _ = writeln!(out, "# TYPE telemt_me_floor_swap_idle_failed_total counter");
+    let _ = writeln!(out, "# TYPE tupoproxy_me_floor_swap_idle_failed_total counter");
     let _ = writeln!(
         out,
-        "telemt_me_floor_swap_idle_failed_total {}",
+        "tupoproxy_me_floor_swap_idle_failed_total {}",
         if me_allows_normal {
             stats.get_me_floor_swap_idle_failed_total()
         } else {
@@ -3202,12 +3202,12 @@ async fn render_metrics(
 
     let _ = writeln!(
         out,
-        "# HELP telemt_secure_padding_invalid_total Invalid secure frame lengths"
+        "# HELP tupoproxy_secure_padding_invalid_total Invalid secure frame lengths"
     );
-    let _ = writeln!(out, "# TYPE telemt_secure_padding_invalid_total counter");
+    let _ = writeln!(out, "# TYPE tupoproxy_secure_padding_invalid_total counter");
     let _ = writeln!(
         out,
-        "telemt_secure_padding_invalid_total {}",
+        "tupoproxy_secure_padding_invalid_total {}",
         if me_allows_normal {
             stats.get_secure_padding_invalid()
         } else {
@@ -3217,12 +3217,12 @@ async fn render_metrics(
 
     let _ = writeln!(
         out,
-        "# HELP telemt_desync_total Total crypto-desync detections"
+        "# HELP tupoproxy_desync_total Total crypto-desync detections"
     );
-    let _ = writeln!(out, "# TYPE telemt_desync_total counter");
+    let _ = writeln!(out, "# TYPE tupoproxy_desync_total counter");
     let _ = writeln!(
         out,
-        "telemt_desync_total {}",
+        "tupoproxy_desync_total {}",
         if me_allows_normal {
             stats.get_desync_total()
         } else {
@@ -3232,12 +3232,12 @@ async fn render_metrics(
 
     let _ = writeln!(
         out,
-        "# HELP telemt_desync_full_logged_total Full forensic desync logs emitted"
+        "# HELP tupoproxy_desync_full_logged_total Full forensic desync logs emitted"
     );
-    let _ = writeln!(out, "# TYPE telemt_desync_full_logged_total counter");
+    let _ = writeln!(out, "# TYPE tupoproxy_desync_full_logged_total counter");
     let _ = writeln!(
         out,
-        "telemt_desync_full_logged_total {}",
+        "tupoproxy_desync_full_logged_total {}",
         if me_allows_normal {
             stats.get_desync_full_logged()
         } else {
@@ -3247,12 +3247,12 @@ async fn render_metrics(
 
     let _ = writeln!(
         out,
-        "# HELP telemt_desync_suppressed_total Suppressed desync forensic events"
+        "# HELP tupoproxy_desync_suppressed_total Suppressed desync forensic events"
     );
-    let _ = writeln!(out, "# TYPE telemt_desync_suppressed_total counter");
+    let _ = writeln!(out, "# TYPE tupoproxy_desync_suppressed_total counter");
     let _ = writeln!(
         out,
-        "telemt_desync_suppressed_total {}",
+        "tupoproxy_desync_suppressed_total {}",
         if me_allows_normal {
             stats.get_desync_suppressed()
         } else {
@@ -3262,12 +3262,12 @@ async fn render_metrics(
 
     let _ = writeln!(
         out,
-        "# HELP telemt_desync_frames_bucket_total Desync count by frames_ok bucket"
+        "# HELP tupoproxy_desync_frames_bucket_total Desync count by frames_ok bucket"
     );
-    let _ = writeln!(out, "# TYPE telemt_desync_frames_bucket_total counter");
+    let _ = writeln!(out, "# TYPE tupoproxy_desync_frames_bucket_total counter");
     let _ = writeln!(
         out,
-        "telemt_desync_frames_bucket_total{{bucket=\"0\"}} {}",
+        "tupoproxy_desync_frames_bucket_total{{bucket=\"0\"}} {}",
         if me_allows_normal {
             stats.get_desync_frames_bucket_0()
         } else {
@@ -3276,7 +3276,7 @@ async fn render_metrics(
     );
     let _ = writeln!(
         out,
-        "telemt_desync_frames_bucket_total{{bucket=\"1_2\"}} {}",
+        "tupoproxy_desync_frames_bucket_total{{bucket=\"1_2\"}} {}",
         if me_allows_normal {
             stats.get_desync_frames_bucket_1_2()
         } else {
@@ -3285,7 +3285,7 @@ async fn render_metrics(
     );
     let _ = writeln!(
         out,
-        "telemt_desync_frames_bucket_total{{bucket=\"3_10\"}} {}",
+        "tupoproxy_desync_frames_bucket_total{{bucket=\"3_10\"}} {}",
         if me_allows_normal {
             stats.get_desync_frames_bucket_3_10()
         } else {
@@ -3294,7 +3294,7 @@ async fn render_metrics(
     );
     let _ = writeln!(
         out,
-        "telemt_desync_frames_bucket_total{{bucket=\"gt_10\"}} {}",
+        "tupoproxy_desync_frames_bucket_total{{bucket=\"gt_10\"}} {}",
         if me_allows_normal {
             stats.get_desync_frames_bucket_gt_10()
         } else {
@@ -3304,12 +3304,12 @@ async fn render_metrics(
 
     let _ = writeln!(
         out,
-        "# HELP telemt_pool_swap_total Successful ME pool swaps"
+        "# HELP tupoproxy_pool_swap_total Successful ME pool swaps"
     );
-    let _ = writeln!(out, "# TYPE telemt_pool_swap_total counter");
+    let _ = writeln!(out, "# TYPE tupoproxy_pool_swap_total counter");
     let _ = writeln!(
         out,
-        "telemt_pool_swap_total {}",
+        "tupoproxy_pool_swap_total {}",
         if me_allows_normal {
             stats.get_pool_swap_total()
         } else {
@@ -3319,12 +3319,12 @@ async fn render_metrics(
 
     let _ = writeln!(
         out,
-        "# HELP telemt_pool_drain_active Active draining ME writers"
+        "# HELP tupoproxy_pool_drain_active Active draining ME writers"
     );
-    let _ = writeln!(out, "# TYPE telemt_pool_drain_active gauge");
+    let _ = writeln!(out, "# TYPE tupoproxy_pool_drain_active gauge");
     let _ = writeln!(
         out,
-        "telemt_pool_drain_active {}",
+        "tupoproxy_pool_drain_active {}",
         if me_allows_debug {
             stats.get_pool_drain_active()
         } else {
@@ -3334,12 +3334,12 @@ async fn render_metrics(
 
     let _ = writeln!(
         out,
-        "# HELP telemt_pool_force_close_total Forced close events for draining writers"
+        "# HELP tupoproxy_pool_force_close_total Forced close events for draining writers"
     );
-    let _ = writeln!(out, "# TYPE telemt_pool_force_close_total counter");
+    let _ = writeln!(out, "# TYPE tupoproxy_pool_force_close_total counter");
     let _ = writeln!(
         out,
-        "telemt_pool_force_close_total {}",
+        "tupoproxy_pool_force_close_total {}",
         if me_allows_normal {
             stats.get_pool_force_close_total()
         } else {
@@ -3349,12 +3349,12 @@ async fn render_metrics(
 
     let _ = writeln!(
         out,
-        "# HELP telemt_pool_stale_pick_total Stale writer fallback picks for new binds"
+        "# HELP tupoproxy_pool_stale_pick_total Stale writer fallback picks for new binds"
     );
-    let _ = writeln!(out, "# TYPE telemt_pool_stale_pick_total counter");
+    let _ = writeln!(out, "# TYPE tupoproxy_pool_stale_pick_total counter");
     let _ = writeln!(
         out,
-        "telemt_pool_stale_pick_total {}",
+        "tupoproxy_pool_stale_pick_total {}",
         if me_allows_normal {
             stats.get_pool_stale_pick_total()
         } else {
@@ -3364,12 +3364,12 @@ async fn render_metrics(
 
     let _ = writeln!(
         out,
-        "# HELP telemt_me_writer_removed_total Total ME writer removals"
+        "# HELP tupoproxy_me_writer_removed_total Total ME writer removals"
     );
-    let _ = writeln!(out, "# TYPE telemt_me_writer_removed_total counter");
+    let _ = writeln!(out, "# TYPE tupoproxy_me_writer_removed_total counter");
     let _ = writeln!(
         out,
-        "telemt_me_writer_removed_total {}",
+        "tupoproxy_me_writer_removed_total {}",
         if me_allows_debug {
             stats.get_me_writer_removed_total()
         } else {
@@ -3379,15 +3379,15 @@ async fn render_metrics(
 
     let _ = writeln!(
         out,
-        "# HELP telemt_me_writer_removed_unexpected_total Unexpected ME writer removals that triggered refill"
+        "# HELP tupoproxy_me_writer_removed_unexpected_total Unexpected ME writer removals that triggered refill"
     );
     let _ = writeln!(
         out,
-        "# TYPE telemt_me_writer_removed_unexpected_total counter"
+        "# TYPE tupoproxy_me_writer_removed_unexpected_total counter"
     );
     let _ = writeln!(
         out,
-        "telemt_me_writer_removed_unexpected_total {}",
+        "tupoproxy_me_writer_removed_unexpected_total {}",
         if me_allows_normal {
             stats.get_me_writer_removed_unexpected_total()
         } else {
@@ -3397,12 +3397,12 @@ async fn render_metrics(
 
     let _ = writeln!(
         out,
-        "# HELP telemt_me_refill_triggered_total Immediate ME refill runs started"
+        "# HELP tupoproxy_me_refill_triggered_total Immediate ME refill runs started"
     );
-    let _ = writeln!(out, "# TYPE telemt_me_refill_triggered_total counter");
+    let _ = writeln!(out, "# TYPE tupoproxy_me_refill_triggered_total counter");
     let _ = writeln!(
         out,
-        "telemt_me_refill_triggered_total {}",
+        "tupoproxy_me_refill_triggered_total {}",
         if me_allows_debug {
             stats.get_me_refill_triggered_total()
         } else {
@@ -3412,15 +3412,15 @@ async fn render_metrics(
 
     let _ = writeln!(
         out,
-        "# HELP telemt_me_refill_skipped_inflight_total Immediate ME refill skips due to inflight dedup"
+        "# HELP tupoproxy_me_refill_skipped_inflight_total Immediate ME refill skips due to inflight dedup"
     );
     let _ = writeln!(
         out,
-        "# TYPE telemt_me_refill_skipped_inflight_total counter"
+        "# TYPE tupoproxy_me_refill_skipped_inflight_total counter"
     );
     let _ = writeln!(
         out,
-        "telemt_me_refill_skipped_inflight_total {}",
+        "tupoproxy_me_refill_skipped_inflight_total {}",
         if me_allows_debug {
             stats.get_me_refill_skipped_inflight_total()
         } else {
@@ -3430,12 +3430,12 @@ async fn render_metrics(
 
     let _ = writeln!(
         out,
-        "# HELP telemt_me_refill_failed_total Immediate ME refill failures"
+        "# HELP tupoproxy_me_refill_failed_total Immediate ME refill failures"
     );
-    let _ = writeln!(out, "# TYPE telemt_me_refill_failed_total counter");
+    let _ = writeln!(out, "# TYPE tupoproxy_me_refill_failed_total counter");
     let _ = writeln!(
         out,
-        "telemt_me_refill_failed_total {}",
+        "tupoproxy_me_refill_failed_total {}",
         if me_allows_normal {
             stats.get_me_refill_failed_total()
         } else {
@@ -3445,15 +3445,15 @@ async fn render_metrics(
 
     let _ = writeln!(
         out,
-        "# HELP telemt_me_writer_restored_same_endpoint_total Refilled ME writer restored on the same endpoint"
+        "# HELP tupoproxy_me_writer_restored_same_endpoint_total Refilled ME writer restored on the same endpoint"
     );
     let _ = writeln!(
         out,
-        "# TYPE telemt_me_writer_restored_same_endpoint_total counter"
+        "# TYPE tupoproxy_me_writer_restored_same_endpoint_total counter"
     );
     let _ = writeln!(
         out,
-        "telemt_me_writer_restored_same_endpoint_total {}",
+        "tupoproxy_me_writer_restored_same_endpoint_total {}",
         if me_allows_normal {
             stats.get_me_writer_restored_same_endpoint_total()
         } else {
@@ -3463,15 +3463,15 @@ async fn render_metrics(
 
     let _ = writeln!(
         out,
-        "# HELP telemt_me_writer_restored_fallback_total Refilled ME writer restored via fallback endpoint"
+        "# HELP tupoproxy_me_writer_restored_fallback_total Refilled ME writer restored via fallback endpoint"
     );
     let _ = writeln!(
         out,
-        "# TYPE telemt_me_writer_restored_fallback_total counter"
+        "# TYPE tupoproxy_me_writer_restored_fallback_total counter"
     );
     let _ = writeln!(
         out,
-        "telemt_me_writer_restored_fallback_total {}",
+        "tupoproxy_me_writer_restored_fallback_total {}",
         if me_allows_normal {
             stats.get_me_writer_restored_fallback_total()
         } else {
@@ -3480,12 +3480,12 @@ async fn render_metrics(
     );
     let _ = writeln!(
         out,
-        "# HELP telemt_me_no_writer_failfast_total ME route failfast errors due to missing writer in bounded wait window"
+        "# HELP tupoproxy_me_no_writer_failfast_total ME route failfast errors due to missing writer in bounded wait window"
     );
-    let _ = writeln!(out, "# TYPE telemt_me_no_writer_failfast_total counter");
+    let _ = writeln!(out, "# TYPE tupoproxy_me_no_writer_failfast_total counter");
     let _ = writeln!(
         out,
-        "telemt_me_no_writer_failfast_total {}",
+        "tupoproxy_me_no_writer_failfast_total {}",
         if me_allows_normal {
             stats.get_me_no_writer_failfast_total()
         } else {
@@ -3494,12 +3494,12 @@ async fn render_metrics(
     );
     let _ = writeln!(
         out,
-        "# HELP telemt_me_hybrid_timeout_total ME hybrid route timeouts after bounded retry window"
+        "# HELP tupoproxy_me_hybrid_timeout_total ME hybrid route timeouts after bounded retry window"
     );
-    let _ = writeln!(out, "# TYPE telemt_me_hybrid_timeout_total counter");
+    let _ = writeln!(out, "# TYPE tupoproxy_me_hybrid_timeout_total counter");
     let _ = writeln!(
         out,
-        "telemt_me_hybrid_timeout_total {}",
+        "tupoproxy_me_hybrid_timeout_total {}",
         if me_allows_normal {
             stats.get_me_hybrid_timeout_total()
         } else {
@@ -3508,12 +3508,12 @@ async fn render_metrics(
     );
     let _ = writeln!(
         out,
-        "# HELP telemt_me_async_recovery_trigger_total Async ME recovery trigger attempts from route path"
+        "# HELP tupoproxy_me_async_recovery_trigger_total Async ME recovery trigger attempts from route path"
     );
-    let _ = writeln!(out, "# TYPE telemt_me_async_recovery_trigger_total counter");
+    let _ = writeln!(out, "# TYPE tupoproxy_me_async_recovery_trigger_total counter");
     let _ = writeln!(
         out,
-        "telemt_me_async_recovery_trigger_total {}",
+        "tupoproxy_me_async_recovery_trigger_total {}",
         if me_allows_normal {
             stats.get_me_async_recovery_trigger_total()
         } else {
@@ -3522,12 +3522,12 @@ async fn render_metrics(
     );
     let _ = writeln!(
         out,
-        "# HELP telemt_me_inline_recovery_total Legacy inline ME recovery attempts from route path"
+        "# HELP tupoproxy_me_inline_recovery_total Legacy inline ME recovery attempts from route path"
     );
-    let _ = writeln!(out, "# TYPE telemt_me_inline_recovery_total counter");
+    let _ = writeln!(out, "# TYPE tupoproxy_me_inline_recovery_total counter");
     let _ = writeln!(
         out,
-        "telemt_me_inline_recovery_total {}",
+        "tupoproxy_me_inline_recovery_total {}",
         if me_allows_normal {
             stats.get_me_inline_recovery_total()
         } else {
@@ -3548,56 +3548,56 @@ async fn render_metrics(
     };
     let _ = writeln!(
         out,
-        "# HELP telemt_me_writer_removed_unexpected_minus_restored_total Unexpected writer removals not yet compensated by restore"
+        "# HELP tupoproxy_me_writer_removed_unexpected_minus_restored_total Unexpected writer removals not yet compensated by restore"
     );
     let _ = writeln!(
         out,
-        "# TYPE telemt_me_writer_removed_unexpected_minus_restored_total gauge"
+        "# TYPE tupoproxy_me_writer_removed_unexpected_minus_restored_total gauge"
     );
     let _ = writeln!(
         out,
-        "telemt_me_writer_removed_unexpected_minus_restored_total {}",
+        "tupoproxy_me_writer_removed_unexpected_minus_restored_total {}",
         unresolved_writer_losses
     );
 
     let _ = writeln!(
         out,
-        "# HELP telemt_user_connections_total Per-user total connections"
+        "# HELP tupoproxy_user_connections_total Per-user total connections"
     );
-    let _ = writeln!(out, "# TYPE telemt_user_connections_total counter");
+    let _ = writeln!(out, "# TYPE tupoproxy_user_connections_total counter");
     let _ = writeln!(
         out,
-        "# HELP telemt_user_connections_current Per-user active connections"
+        "# HELP tupoproxy_user_connections_current Per-user active connections"
     );
-    let _ = writeln!(out, "# TYPE telemt_user_connections_current gauge");
+    let _ = writeln!(out, "# TYPE tupoproxy_user_connections_current gauge");
     let _ = writeln!(
         out,
-        "# HELP telemt_user_octets_from_client Per-user bytes received"
+        "# HELP tupoproxy_user_octets_from_client Per-user bytes received"
     );
-    let _ = writeln!(out, "# TYPE telemt_user_octets_from_client counter");
+    let _ = writeln!(out, "# TYPE tupoproxy_user_octets_from_client counter");
     let _ = writeln!(
         out,
-        "# HELP telemt_user_octets_to_client Per-user bytes sent"
+        "# HELP tupoproxy_user_octets_to_client Per-user bytes sent"
     );
-    let _ = writeln!(out, "# TYPE telemt_user_octets_to_client counter");
+    let _ = writeln!(out, "# TYPE tupoproxy_user_octets_to_client counter");
     let _ = writeln!(
         out,
-        "# HELP telemt_user_msgs_from_client Per-user messages received"
+        "# HELP tupoproxy_user_msgs_from_client Per-user messages received"
     );
-    let _ = writeln!(out, "# TYPE telemt_user_msgs_from_client counter");
+    let _ = writeln!(out, "# TYPE tupoproxy_user_msgs_from_client counter");
     let _ = writeln!(
         out,
-        "# HELP telemt_user_msgs_to_client Per-user messages sent"
+        "# HELP tupoproxy_user_msgs_to_client Per-user messages sent"
     );
-    let _ = writeln!(out, "# TYPE telemt_user_msgs_to_client counter");
+    let _ = writeln!(out, "# TYPE tupoproxy_user_msgs_to_client counter");
     let _ = writeln!(
         out,
-        "# HELP telemt_ip_reservation_rollback_total IP reservation rollbacks caused by later limit checks"
+        "# HELP tupoproxy_ip_reservation_rollback_total IP reservation rollbacks caused by later limit checks"
     );
-    let _ = writeln!(out, "# TYPE telemt_ip_reservation_rollback_total counter");
+    let _ = writeln!(out, "# TYPE tupoproxy_ip_reservation_rollback_total counter");
     let _ = writeln!(
         out,
-        "telemt_ip_reservation_rollback_total{{reason=\"tcp_limit\"}} {}",
+        "tupoproxy_ip_reservation_rollback_total{{reason=\"tcp_limit\"}} {}",
         if core_enabled {
             stats.get_ip_reservation_rollback_tcp_limit_total()
         } else {
@@ -3606,7 +3606,7 @@ async fn render_metrics(
     );
     let _ = writeln!(
         out,
-        "telemt_ip_reservation_rollback_total{{reason=\"quota_limit\"}} {}",
+        "tupoproxy_ip_reservation_rollback_total{{reason=\"quota_limit\"}} {}",
         if core_enabled {
             stats.get_ip_reservation_rollback_quota_limit_total()
         } else {
@@ -3616,67 +3616,67 @@ async fn render_metrics(
     let ip_memory = ip_tracker.memory_stats().await;
     let _ = writeln!(
         out,
-        "# HELP telemt_ip_tracker_users Number of users tracked by IP limiter state"
+        "# HELP tupoproxy_ip_tracker_users Number of users tracked by IP limiter state"
     );
-    let _ = writeln!(out, "# TYPE telemt_ip_tracker_users gauge");
+    let _ = writeln!(out, "# TYPE tupoproxy_ip_tracker_users gauge");
     let _ = writeln!(
         out,
-        "telemt_ip_tracker_users{{scope=\"active\"}} {}",
+        "tupoproxy_ip_tracker_users{{scope=\"active\"}} {}",
         ip_memory.active_users
     );
     let _ = writeln!(
         out,
-        "telemt_ip_tracker_users{{scope=\"recent\"}} {}",
+        "tupoproxy_ip_tracker_users{{scope=\"recent\"}} {}",
         ip_memory.recent_users
     );
     let _ = writeln!(
         out,
-        "# HELP telemt_ip_tracker_entries Number of IP entries tracked by limiter state"
+        "# HELP tupoproxy_ip_tracker_entries Number of IP entries tracked by limiter state"
     );
-    let _ = writeln!(out, "# TYPE telemt_ip_tracker_entries gauge");
+    let _ = writeln!(out, "# TYPE tupoproxy_ip_tracker_entries gauge");
     let _ = writeln!(
         out,
-        "telemt_ip_tracker_entries{{scope=\"active\"}} {}",
+        "tupoproxy_ip_tracker_entries{{scope=\"active\"}} {}",
         ip_memory.active_entries
     );
     let _ = writeln!(
         out,
-        "telemt_ip_tracker_entries{{scope=\"recent\"}} {}",
+        "tupoproxy_ip_tracker_entries{{scope=\"recent\"}} {}",
         ip_memory.recent_entries
     );
     let _ = writeln!(
         out,
-        "# HELP telemt_ip_tracker_cleanup_queue_len Deferred disconnect cleanup queue length"
+        "# HELP tupoproxy_ip_tracker_cleanup_queue_len Deferred disconnect cleanup queue length"
     );
-    let _ = writeln!(out, "# TYPE telemt_ip_tracker_cleanup_queue_len gauge");
+    let _ = writeln!(out, "# TYPE tupoproxy_ip_tracker_cleanup_queue_len gauge");
     let _ = writeln!(
         out,
-        "telemt_ip_tracker_cleanup_queue_len {}",
+        "tupoproxy_ip_tracker_cleanup_queue_len {}",
         ip_memory.cleanup_queue_len
     );
     let _ = writeln!(
         out,
-        "# HELP telemt_ip_tracker_cleanup_total Release cleanups deferred through the cleanup queue"
+        "# HELP tupoproxy_ip_tracker_cleanup_total Release cleanups deferred through the cleanup queue"
     );
-    let _ = writeln!(out, "# TYPE telemt_ip_tracker_cleanup_total counter");
+    let _ = writeln!(out, "# TYPE tupoproxy_ip_tracker_cleanup_total counter");
     let _ = writeln!(
         out,
-        "telemt_ip_tracker_cleanup_total{{path=\"deferred\"}} {}",
+        "tupoproxy_ip_tracker_cleanup_total{{path=\"deferred\"}} {}",
         ip_memory.cleanup_deferred_releases
     );
     let _ = writeln!(
         out,
-        "# HELP telemt_ip_tracker_cap_rejects_total New connection rejects caused by global IP tracker caps"
+        "# HELP tupoproxy_ip_tracker_cap_rejects_total New connection rejects caused by global IP tracker caps"
     );
-    let _ = writeln!(out, "# TYPE telemt_ip_tracker_cap_rejects_total counter");
+    let _ = writeln!(out, "# TYPE tupoproxy_ip_tracker_cap_rejects_total counter");
     let _ = writeln!(
         out,
-        "telemt_ip_tracker_cap_rejects_total{{scope=\"active\"}} {}",
+        "tupoproxy_ip_tracker_cap_rejects_total{{scope=\"active\"}} {}",
         ip_memory.active_cap_rejects
     );
     let _ = writeln!(
         out,
-        "telemt_ip_tracker_cap_rejects_total{{scope=\"recent\"}} {}",
+        "tupoproxy_ip_tracker_cap_rejects_total{{scope=\"recent\"}} {}",
         ip_memory.recent_cap_rejects
     );
 
@@ -3696,40 +3696,40 @@ async fn render_metrics(
             user_stats_emitted = user_stats_emitted.saturating_add(1);
             let _ = writeln!(
                 out,
-                "telemt_user_connections_total{{user=\"{}\"}} {}",
+                "tupoproxy_user_connections_total{{user=\"{}\"}} {}",
                 user,
                 s.connects.load(std::sync::atomic::Ordering::Relaxed)
             );
             let _ = writeln!(
                 out,
-                "telemt_user_connections_current{{user=\"{}\"}} {}",
+                "tupoproxy_user_connections_current{{user=\"{}\"}} {}",
                 user,
                 s.curr_connects.load(std::sync::atomic::Ordering::Relaxed)
             );
             let _ = writeln!(
                 out,
-                "telemt_user_octets_from_client{{user=\"{}\"}} {}",
+                "tupoproxy_user_octets_from_client{{user=\"{}\"}} {}",
                 user,
                 s.octets_from_client
                     .load(std::sync::atomic::Ordering::Relaxed)
             );
             let _ = writeln!(
                 out,
-                "telemt_user_octets_to_client{{user=\"{}\"}} {}",
+                "tupoproxy_user_octets_to_client{{user=\"{}\"}} {}",
                 user,
                 s.octets_to_client
                     .load(std::sync::atomic::Ordering::Relaxed)
             );
             let _ = writeln!(
                 out,
-                "telemt_user_msgs_from_client{{user=\"{}\"}} {}",
+                "tupoproxy_user_msgs_from_client{{user=\"{}\"}} {}",
                 user,
                 s.msgs_from_client
                     .load(std::sync::atomic::Ordering::Relaxed)
             );
             let _ = writeln!(
                 out,
-                "telemt_user_msgs_to_client{{user=\"{}\"}} {}",
+                "tupoproxy_user_msgs_to_client{{user=\"{}\"}} {}",
                 user,
                 s.msgs_to_client.load(std::sync::atomic::Ordering::Relaxed)
             );
@@ -3752,24 +3752,24 @@ async fn render_metrics(
 
         let _ = writeln!(
             out,
-            "# HELP telemt_user_unique_ips_current Per-user current number of unique active IPs"
+            "# HELP tupoproxy_user_unique_ips_current Per-user current number of unique active IPs"
         );
-        let _ = writeln!(out, "# TYPE telemt_user_unique_ips_current gauge");
+        let _ = writeln!(out, "# TYPE tupoproxy_user_unique_ips_current gauge");
         let _ = writeln!(
             out,
-            "# HELP telemt_user_unique_ips_recent_window Per-user unique IPs seen in configured observation window"
+            "# HELP tupoproxy_user_unique_ips_recent_window Per-user unique IPs seen in configured observation window"
         );
-        let _ = writeln!(out, "# TYPE telemt_user_unique_ips_recent_window gauge");
+        let _ = writeln!(out, "# TYPE tupoproxy_user_unique_ips_recent_window gauge");
         let _ = writeln!(
             out,
-            "# HELP telemt_user_unique_ips_limit Effective per-user unique IP limit (0 means unlimited)"
+            "# HELP tupoproxy_user_unique_ips_limit Effective per-user unique IP limit (0 means unlimited)"
         );
-        let _ = writeln!(out, "# TYPE telemt_user_unique_ips_limit gauge");
+        let _ = writeln!(out, "# TYPE tupoproxy_user_unique_ips_limit gauge");
         let _ = writeln!(
             out,
-            "# HELP telemt_user_unique_ips_utilization Per-user unique IP usage ratio (0 for unlimited)"
+            "# HELP tupoproxy_user_unique_ips_utilization Per-user unique IP usage ratio (0 for unlimited)"
         );
-        let _ = writeln!(out, "# TYPE telemt_user_unique_ips_utilization gauge");
+        let _ = writeln!(out, "# TYPE tupoproxy_user_unique_ips_utilization gauge");
 
         for user in unique_users {
             if unique_ip_emitted >= USER_LABELED_METRICS_MAX_USERS {
@@ -3794,23 +3794,23 @@ async fn render_metrics(
             };
             let _ = writeln!(
                 out,
-                "telemt_user_unique_ips_current{{user=\"{}\"}} {}",
+                "tupoproxy_user_unique_ips_current{{user=\"{}\"}} {}",
                 user, current
             );
             let _ = writeln!(
                 out,
-                "telemt_user_unique_ips_recent_window{{user=\"{}\"}} {}",
+                "tupoproxy_user_unique_ips_recent_window{{user=\"{}\"}} {}",
                 user,
                 recent_counts.get(&user).copied().unwrap_or(0)
             );
             let _ = writeln!(
                 out,
-                "telemt_user_unique_ips_limit{{user=\"{}\"}} {}",
+                "tupoproxy_user_unique_ips_limit{{user=\"{}\"}} {}",
                 user, limit
             );
             let _ = writeln!(
                 out,
-                "telemt_user_unique_ips_utilization{{user=\"{}\"}} {:.6}",
+                "tupoproxy_user_unique_ips_utilization{{user=\"{}\"}} {:.6}",
                 user, utilization
             );
         }
@@ -3818,12 +3818,12 @@ async fn render_metrics(
 
     let _ = writeln!(
         out,
-        "# HELP telemt_telemetry_user_series_suppressed User-labeled metric series suppression flag"
+        "# HELP tupoproxy_telemetry_user_series_suppressed User-labeled metric series suppression flag"
     );
-    let _ = writeln!(out, "# TYPE telemt_telemetry_user_series_suppressed gauge");
+    let _ = writeln!(out, "# TYPE tupoproxy_telemetry_user_series_suppressed gauge");
     let _ = writeln!(
         out,
-        "telemt_telemetry_user_series_suppressed {}",
+        "tupoproxy_telemetry_user_series_suppressed {}",
         if user_enabled && user_stats_suppressed == 0 && unique_ip_suppressed == 0 {
             0
         } else {
@@ -3832,27 +3832,27 @@ async fn render_metrics(
     );
     let _ = writeln!(
         out,
-        "# HELP telemt_telemetry_user_series_users User-labeled metric users by export status"
+        "# HELP tupoproxy_telemetry_user_series_users User-labeled metric users by export status"
     );
-    let _ = writeln!(out, "# TYPE telemt_telemetry_user_series_users gauge");
+    let _ = writeln!(out, "# TYPE tupoproxy_telemetry_user_series_users gauge");
     let _ = writeln!(
         out,
-        "telemt_telemetry_user_series_users{{family=\"stats\",status=\"emitted\"}} {}",
+        "tupoproxy_telemetry_user_series_users{{family=\"stats\",status=\"emitted\"}} {}",
         user_stats_emitted
     );
     let _ = writeln!(
         out,
-        "telemt_telemetry_user_series_users{{family=\"stats\",status=\"suppressed\"}} {}",
+        "tupoproxy_telemetry_user_series_users{{family=\"stats\",status=\"suppressed\"}} {}",
         user_stats_suppressed
     );
     let _ = writeln!(
         out,
-        "telemt_telemetry_user_series_users{{family=\"unique_ip\",status=\"emitted\"}} {}",
+        "tupoproxy_telemetry_user_series_users{{family=\"unique_ip\",status=\"emitted\"}} {}",
         unique_ip_emitted
     );
     let _ = writeln!(
         out,
-        "telemt_telemetry_user_series_users{{family=\"unique_ip\",status=\"suppressed\"}} {}",
+        "tupoproxy_telemetry_user_series_users{{family=\"unique_ip\",status=\"suppressed\"}} {}",
         unique_ip_suppressed
     );
 
@@ -3940,67 +3940,67 @@ mod tests {
         let output = render_metrics(&stats, shared_state.as_ref(), &config, &tracker, None).await;
 
         assert!(output.contains(&format!(
-            "telemt_build_info{{version=\"{}\"}} 1",
+            "tupoproxy_build_info{{version=\"{}\"}} 1",
             env!("CARGO_PKG_VERSION")
         )));
-        assert!(output.contains("telemt_connections_total 2"));
-        assert!(output.contains("telemt_connections_bad_total 1"));
+        assert!(output.contains("tupoproxy_connections_total 2"));
+        assert!(output.contains("tupoproxy_connections_bad_total 1"));
         assert!(output.contains(
-            "telemt_connections_bad_by_class_total{class=\"tls_handshake_bad_client\"} 1"
+            "tupoproxy_connections_bad_by_class_total{class=\"tls_handshake_bad_client\"} 1"
         ));
-        assert!(output.contains("telemt_handshake_timeouts_total 1"));
-        assert!(output.contains("telemt_handshake_failures_by_class_total{class=\"timeout\"} 1"));
-        assert!(output.contains("telemt_auth_expensive_checks_total 9"));
-        assert!(output.contains("telemt_auth_budget_exhausted_total 2"));
-        assert!(output.contains("telemt_upstream_connect_attempt_total 2"));
-        assert!(output.contains("telemt_upstream_connect_success_total 1"));
-        assert!(output.contains("telemt_upstream_connect_fail_total 1"));
-        assert!(output.contains("telemt_upstream_connect_failfast_hard_error_total 1"));
-        assert!(output.contains("telemt_upstream_connect_attempts_per_request{bucket=\"2\"} 1"));
+        assert!(output.contains("tupoproxy_handshake_timeouts_total 1"));
+        assert!(output.contains("tupoproxy_handshake_failures_by_class_total{class=\"timeout\"} 1"));
+        assert!(output.contains("tupoproxy_auth_expensive_checks_total 9"));
+        assert!(output.contains("tupoproxy_auth_budget_exhausted_total 2"));
+        assert!(output.contains("tupoproxy_upstream_connect_attempt_total 2"));
+        assert!(output.contains("tupoproxy_upstream_connect_success_total 1"));
+        assert!(output.contains("tupoproxy_upstream_connect_fail_total 1"));
+        assert!(output.contains("tupoproxy_upstream_connect_failfast_hard_error_total 1"));
+        assert!(output.contains("tupoproxy_upstream_connect_attempts_per_request{bucket=\"2\"} 1"));
         assert!(
             output
-                .contains("telemt_upstream_connect_duration_success_total{bucket=\"101_500ms\"} 1")
+                .contains("tupoproxy_upstream_connect_duration_success_total{bucket=\"101_500ms\"} 1")
         );
         assert!(
-            output.contains("telemt_upstream_connect_duration_fail_total{bucket=\"gt_1000ms\"} 1")
+            output.contains("tupoproxy_upstream_connect_duration_fail_total{bucket=\"gt_1000ms\"} 1")
         );
-        assert!(output.contains("telemt_me_rpc_proxy_req_signal_sent_total 1"));
-        assert!(output.contains("telemt_me_rpc_proxy_req_signal_failed_total 1"));
-        assert!(output.contains("telemt_me_rpc_proxy_req_signal_skipped_no_meta_total 1"));
-        assert!(output.contains("telemt_me_rpc_proxy_req_signal_response_total 1"));
-        assert!(output.contains("telemt_me_rpc_proxy_req_signal_close_sent_total 1"));
-        assert!(output.contains("telemt_me_idle_close_by_peer_total 1"));
-        assert!(output.contains("telemt_relay_idle_soft_mark_total 1"));
-        assert!(output.contains("telemt_relay_idle_hard_close_total 1"));
-        assert!(output.contains("telemt_relay_pressure_evict_total 1"));
-        assert!(output.contains("telemt_relay_protocol_desync_close_total 1"));
-        assert!(output.contains("telemt_me_d2c_batches_total 1"));
-        assert!(output.contains("telemt_me_d2c_batch_frames_total 3"));
-        assert!(output.contains("telemt_me_d2c_batch_bytes_total 2048"));
-        assert!(output.contains("telemt_me_d2c_flush_reason_total{reason=\"ack_immediate\"} 1"));
-        assert!(output.contains("telemt_me_d2c_data_frames_total 1"));
-        assert!(output.contains("telemt_me_d2c_ack_frames_total 1"));
-        assert!(output.contains("telemt_me_d2c_payload_bytes_total 1800"));
-        assert!(output.contains("telemt_me_d2c_write_mode_total{mode=\"coalesced\"} 1"));
-        assert!(output.contains("telemt_me_d2c_quota_reject_total{stage=\"post_write\"} 1"));
-        assert!(output.contains("telemt_me_d2c_frame_buf_shrink_total 1"));
-        assert!(output.contains("telemt_me_d2c_frame_buf_shrink_bytes_total 4096"));
-        assert!(output.contains("telemt_me_endpoint_quarantine_total 1"));
-        assert!(output.contains("telemt_me_endpoint_quarantine_unexpected_total 1"));
-        assert!(output.contains("telemt_me_endpoint_quarantine_draining_suppressed_total 1"));
-        assert!(output.contains("telemt_user_connections_total{user=\"alice\"} 1"));
-        assert!(output.contains("telemt_user_connections_current{user=\"alice\"} 1"));
-        assert!(output.contains("telemt_user_octets_from_client{user=\"alice\"} 1024"));
-        assert!(output.contains("telemt_user_octets_to_client{user=\"alice\"} 2048"));
-        assert!(output.contains("telemt_user_msgs_from_client{user=\"alice\"} 1"));
-        assert!(output.contains("telemt_user_msgs_to_client{user=\"alice\"} 2"));
-        assert!(output.contains("telemt_user_unique_ips_current{user=\"alice\"} 1"));
-        assert!(output.contains("telemt_user_unique_ips_recent_window{user=\"alice\"} 1"));
-        assert!(output.contains("telemt_user_unique_ips_limit{user=\"alice\"} 4"));
-        assert!(output.contains("telemt_user_unique_ips_utilization{user=\"alice\"} 0.250000"));
-        assert!(output.contains("telemt_ip_tracker_users{scope=\"active\"} 1"));
-        assert!(output.contains("telemt_ip_tracker_entries{scope=\"active\"} 1"));
-        assert!(output.contains("telemt_ip_tracker_cleanup_queue_len 0"));
+        assert!(output.contains("tupoproxy_me_rpc_proxy_req_signal_sent_total 1"));
+        assert!(output.contains("tupoproxy_me_rpc_proxy_req_signal_failed_total 1"));
+        assert!(output.contains("tupoproxy_me_rpc_proxy_req_signal_skipped_no_meta_total 1"));
+        assert!(output.contains("tupoproxy_me_rpc_proxy_req_signal_response_total 1"));
+        assert!(output.contains("tupoproxy_me_rpc_proxy_req_signal_close_sent_total 1"));
+        assert!(output.contains("tupoproxy_me_idle_close_by_peer_total 1"));
+        assert!(output.contains("tupoproxy_relay_idle_soft_mark_total 1"));
+        assert!(output.contains("tupoproxy_relay_idle_hard_close_total 1"));
+        assert!(output.contains("tupoproxy_relay_pressure_evict_total 1"));
+        assert!(output.contains("tupoproxy_relay_protocol_desync_close_total 1"));
+        assert!(output.contains("tupoproxy_me_d2c_batches_total 1"));
+        assert!(output.contains("tupoproxy_me_d2c_batch_frames_total 3"));
+        assert!(output.contains("tupoproxy_me_d2c_batch_bytes_total 2048"));
+        assert!(output.contains("tupoproxy_me_d2c_flush_reason_total{reason=\"ack_immediate\"} 1"));
+        assert!(output.contains("tupoproxy_me_d2c_data_frames_total 1"));
+        assert!(output.contains("tupoproxy_me_d2c_ack_frames_total 1"));
+        assert!(output.contains("tupoproxy_me_d2c_payload_bytes_total 1800"));
+        assert!(output.contains("tupoproxy_me_d2c_write_mode_total{mode=\"coalesced\"} 1"));
+        assert!(output.contains("tupoproxy_me_d2c_quota_reject_total{stage=\"post_write\"} 1"));
+        assert!(output.contains("tupoproxy_me_d2c_frame_buf_shrink_total 1"));
+        assert!(output.contains("tupoproxy_me_d2c_frame_buf_shrink_bytes_total 4096"));
+        assert!(output.contains("tupoproxy_me_endpoint_quarantine_total 1"));
+        assert!(output.contains("tupoproxy_me_endpoint_quarantine_unexpected_total 1"));
+        assert!(output.contains("tupoproxy_me_endpoint_quarantine_draining_suppressed_total 1"));
+        assert!(output.contains("tupoproxy_user_connections_total{user=\"alice\"} 1"));
+        assert!(output.contains("tupoproxy_user_connections_current{user=\"alice\"} 1"));
+        assert!(output.contains("tupoproxy_user_octets_from_client{user=\"alice\"} 1024"));
+        assert!(output.contains("tupoproxy_user_octets_to_client{user=\"alice\"} 2048"));
+        assert!(output.contains("tupoproxy_user_msgs_from_client{user=\"alice\"} 1"));
+        assert!(output.contains("tupoproxy_user_msgs_to_client{user=\"alice\"} 2"));
+        assert!(output.contains("tupoproxy_user_unique_ips_current{user=\"alice\"} 1"));
+        assert!(output.contains("tupoproxy_user_unique_ips_recent_window{user=\"alice\"} 1"));
+        assert!(output.contains("tupoproxy_user_unique_ips_limit{user=\"alice\"} 4"));
+        assert!(output.contains("tupoproxy_user_unique_ips_utilization{user=\"alice\"} 0.250000"));
+        assert!(output.contains("tupoproxy_ip_tracker_users{scope=\"active\"} 1"));
+        assert!(output.contains("tupoproxy_ip_tracker_entries{scope=\"active\"} 1"));
+        assert!(output.contains("tupoproxy_ip_tracker_cleanup_queue_len 0"));
     }
 
     #[tokio::test]
@@ -4059,6 +4059,7 @@ mod tests {
                         source: TlsProfileSource::Merged,
                         ..TlsBehaviorProfile::default()
                     },
+                    selected_fetch_profile: None,
                     fetched_at: SystemTime::now(),
                     domain: "primary.example".to_string(),
                 },
@@ -4067,42 +4068,42 @@ mod tests {
 
         let output = render_metrics(&stats, &shared_state, &config, &tracker, Some(&cache)).await;
 
-        assert!(output.contains("telemt_tls_front_profile_domains{status=\"configured\"} 2"));
-        assert!(output.contains("telemt_tls_front_profile_domains{status=\"emitted\"} 2"));
-        assert!(output.contains("telemt_tls_front_profile_domains{status=\"suppressed\"} 0"));
+        assert!(output.contains("tupoproxy_tls_front_profile_domains{status=\"configured\"} 2"));
+        assert!(output.contains("tupoproxy_tls_front_profile_domains{status=\"emitted\"} 2"));
+        assert!(output.contains("tupoproxy_tls_front_profile_domains{status=\"suppressed\"} 0"));
         assert!(
-            output.contains("telemt_tls_front_profile_info{domain=\"primary.example\",source=\"merged\",is_default=\"false\",has_cert_info=\"false\",has_cert_payload=\"true\"} 1")
+            output.contains("tupoproxy_tls_front_profile_info{domain=\"primary.example\",source=\"merged\",is_default=\"false\",has_cert_info=\"false\",has_cert_payload=\"true\"} 1")
         );
         assert!(
-            output.contains("telemt_tls_front_profile_info{domain=\"fallback.example\",source=\"default\",is_default=\"true\",has_cert_info=\"false\",has_cert_payload=\"false\"} 1")
+            output.contains("tupoproxy_tls_front_profile_info{domain=\"fallback.example\",source=\"default\",is_default=\"true\",has_cert_info=\"false\",has_cert_payload=\"false\"} 1")
         );
         assert!(
-            output.contains("telemt_tls_front_profile_quality_info{domain=\"primary.example\",quality=\"raw_strict\",key_share_group=\"x25519\"} 1")
+            output.contains("tupoproxy_tls_front_profile_quality_info{domain=\"primary.example\",quality=\"raw_strict\",key_share_group=\"x25519\"} 1")
         );
         assert!(
-            output.contains("telemt_tls_front_profile_quality_info{domain=\"fallback.example\",quality=\"fallback\",key_share_group=\"none\"} 1")
+            output.contains("tupoproxy_tls_front_profile_quality_info{domain=\"fallback.example\",quality=\"fallback\",key_share_group=\"none\"} 1")
         );
         assert!(output.contains(
-            "telemt_tls_front_profile_server_hello_bytes{domain=\"primary.example\"} 90"
+            "tupoproxy_tls_front_profile_server_hello_bytes{domain=\"primary.example\"} 90"
         ));
         assert!(output.contains(
-            "telemt_tls_front_profile_server_hello_extensions{domain=\"primary.example\"} 2"
+            "tupoproxy_tls_front_profile_server_hello_extensions{domain=\"primary.example\"} 2"
         ));
         assert!(
             output.contains(
-                "telemt_tls_front_profile_app_data_records{domain=\"primary.example\"} 2"
+                "tupoproxy_tls_front_profile_app_data_records{domain=\"primary.example\"} 2"
             )
         );
         assert!(
             output
-                .contains("telemt_tls_front_profile_ticket_records{domain=\"primary.example\"} 1")
+                .contains("tupoproxy_tls_front_profile_ticket_records{domain=\"primary.example\"} 1")
         );
         assert!(output.contains(
-            "telemt_tls_front_profile_change_cipher_spec_records{domain=\"primary.example\"} 1"
+            "tupoproxy_tls_front_profile_change_cipher_spec_records{domain=\"primary.example\"} 1"
         ));
         assert!(
             output.contains(
-                "telemt_tls_front_profile_app_data_bytes{domain=\"primary.example\"} 1536"
+                "tupoproxy_tls_front_profile_app_data_bytes{domain=\"primary.example\"} 1536"
             )
         );
     }
@@ -4114,13 +4115,13 @@ mod tests {
         let tracker = UserIpTracker::new();
         let config = ProxyConfig::default();
         let output = render_metrics(&stats, &shared_state, &config, &tracker, None).await;
-        assert!(output.contains("telemt_connections_total 0"));
-        assert!(output.contains("telemt_connections_bad_total 0"));
-        assert!(output.contains("telemt_handshake_timeouts_total 0"));
-        assert!(output.contains("telemt_auth_expensive_checks_total 0"));
-        assert!(output.contains("telemt_auth_budget_exhausted_total 0"));
-        assert!(output.contains("telemt_user_unique_ips_current{user="));
-        assert!(output.contains("telemt_user_unique_ips_recent_window{user="));
+        assert!(output.contains("tupoproxy_connections_total 0"));
+        assert!(output.contains("tupoproxy_connections_bad_total 0"));
+        assert!(output.contains("tupoproxy_handshake_timeouts_total 0"));
+        assert!(output.contains("tupoproxy_auth_expensive_checks_total 0"));
+        assert!(output.contains("tupoproxy_auth_budget_exhausted_total 0"));
+        assert!(output.contains("tupoproxy_user_unique_ips_current{user="));
+        assert!(output.contains("tupoproxy_user_unique_ips_recent_window{user="));
     }
 
     #[tokio::test]
@@ -4139,8 +4140,8 @@ mod tests {
 
         let output = render_metrics(&stats, &shared_state, &config, &tracker, None).await;
 
-        assert!(output.contains("telemt_user_unique_ips_limit{user=\"alice\"} 2"));
-        assert!(output.contains("telemt_user_unique_ips_utilization{user=\"alice\"} 0.500000"));
+        assert!(output.contains("tupoproxy_user_unique_ips_limit{user=\"alice\"} 2"));
+        assert!(output.contains("tupoproxy_user_unique_ips_utilization{user=\"alice\"} 0.500000"));
     }
 
     #[tokio::test]
@@ -4150,66 +4151,66 @@ mod tests {
         let tracker = UserIpTracker::new();
         let config = ProxyConfig::default();
         let output = render_metrics(&stats, &shared_state, &config, &tracker, None).await;
-        assert!(output.contains("# TYPE telemt_uptime_seconds gauge"));
-        assert!(output.contains("# TYPE telemt_connections_total counter"));
-        assert!(output.contains("# TYPE telemt_connections_bad_total counter"));
-        assert!(output.contains("# TYPE telemt_connections_bad_by_class_total counter"));
-        assert!(output.contains("# TYPE telemt_handshake_timeouts_total counter"));
-        assert!(output.contains("# TYPE telemt_handshake_failures_by_class_total counter"));
-        assert!(output.contains("# TYPE telemt_auth_expensive_checks_total counter"));
-        assert!(output.contains("# TYPE telemt_auth_budget_exhausted_total counter"));
-        assert!(output.contains("# TYPE telemt_upstream_connect_attempt_total counter"));
-        assert!(output.contains("# TYPE telemt_me_rpc_proxy_req_signal_sent_total counter"));
-        assert!(output.contains("# TYPE telemt_me_idle_close_by_peer_total counter"));
-        assert!(output.contains("# TYPE telemt_relay_idle_soft_mark_total counter"));
-        assert!(output.contains("# TYPE telemt_relay_idle_hard_close_total counter"));
-        assert!(output.contains("# TYPE telemt_relay_pressure_evict_total counter"));
-        assert!(output.contains("# TYPE telemt_relay_protocol_desync_close_total counter"));
-        assert!(output.contains("# TYPE telemt_me_d2c_batches_total counter"));
-        assert!(output.contains("# TYPE telemt_me_d2c_flush_reason_total counter"));
-        assert!(output.contains("# TYPE telemt_me_d2c_write_mode_total counter"));
-        assert!(output.contains("# TYPE telemt_me_d2c_batch_frames_bucket_total counter"));
-        assert!(output.contains("# TYPE telemt_me_d2c_flush_duration_us_bucket_total counter"));
-        assert!(output.contains("# TYPE telemt_me_endpoint_quarantine_total counter"));
-        assert!(output.contains("# TYPE telemt_me_endpoint_quarantine_unexpected_total counter"));
+        assert!(output.contains("# TYPE tupoproxy_uptime_seconds gauge"));
+        assert!(output.contains("# TYPE tupoproxy_connections_total counter"));
+        assert!(output.contains("# TYPE tupoproxy_connections_bad_total counter"));
+        assert!(output.contains("# TYPE tupoproxy_connections_bad_by_class_total counter"));
+        assert!(output.contains("# TYPE tupoproxy_handshake_timeouts_total counter"));
+        assert!(output.contains("# TYPE tupoproxy_handshake_failures_by_class_total counter"));
+        assert!(output.contains("# TYPE tupoproxy_auth_expensive_checks_total counter"));
+        assert!(output.contains("# TYPE tupoproxy_auth_budget_exhausted_total counter"));
+        assert!(output.contains("# TYPE tupoproxy_upstream_connect_attempt_total counter"));
+        assert!(output.contains("# TYPE tupoproxy_me_rpc_proxy_req_signal_sent_total counter"));
+        assert!(output.contains("# TYPE tupoproxy_me_idle_close_by_peer_total counter"));
+        assert!(output.contains("# TYPE tupoproxy_relay_idle_soft_mark_total counter"));
+        assert!(output.contains("# TYPE tupoproxy_relay_idle_hard_close_total counter"));
+        assert!(output.contains("# TYPE tupoproxy_relay_pressure_evict_total counter"));
+        assert!(output.contains("# TYPE tupoproxy_relay_protocol_desync_close_total counter"));
+        assert!(output.contains("# TYPE tupoproxy_me_d2c_batches_total counter"));
+        assert!(output.contains("# TYPE tupoproxy_me_d2c_flush_reason_total counter"));
+        assert!(output.contains("# TYPE tupoproxy_me_d2c_write_mode_total counter"));
+        assert!(output.contains("# TYPE tupoproxy_me_d2c_batch_frames_bucket_total counter"));
+        assert!(output.contains("# TYPE tupoproxy_me_d2c_flush_duration_us_bucket_total counter"));
+        assert!(output.contains("# TYPE tupoproxy_me_endpoint_quarantine_total counter"));
+        assert!(output.contains("# TYPE tupoproxy_me_endpoint_quarantine_unexpected_total counter"));
         assert!(
             output
-                .contains("# TYPE telemt_me_endpoint_quarantine_draining_suppressed_total counter")
+                .contains("# TYPE tupoproxy_me_endpoint_quarantine_draining_suppressed_total counter")
         );
-        assert!(output.contains("# TYPE telemt_me_writer_removed_total counter"));
+        assert!(output.contains("# TYPE tupoproxy_me_writer_removed_total counter"));
         assert!(
             output
-                .contains("# TYPE telemt_me_writer_removed_unexpected_minus_restored_total gauge")
+                .contains("# TYPE tupoproxy_me_writer_removed_unexpected_minus_restored_total gauge")
         );
-        assert!(output.contains("# TYPE telemt_user_unique_ips_current gauge"));
-        assert!(output.contains("# TYPE telemt_user_unique_ips_recent_window gauge"));
-        assert!(output.contains("# TYPE telemt_user_unique_ips_limit gauge"));
-        assert!(output.contains("# TYPE telemt_user_unique_ips_utilization gauge"));
-        assert!(output.contains("# TYPE telemt_stats_user_entries gauge"));
-        assert!(output.contains("# TYPE telemt_telemetry_user_series_users gauge"));
-        assert!(output.contains("# TYPE telemt_ip_tracker_users gauge"));
-        assert!(output.contains("# TYPE telemt_ip_tracker_entries gauge"));
-        assert!(output.contains("# TYPE telemt_ip_tracker_cleanup_queue_len gauge"));
-        assert!(output.contains("# TYPE telemt_ip_tracker_cleanup_total counter"));
-        assert!(output.contains("# TYPE telemt_ip_tracker_cap_rejects_total counter"));
-        assert!(output.contains("# TYPE telemt_tls_fetch_profile_cache_entries gauge"));
-        assert!(output.contains("# TYPE telemt_tls_fetch_profile_cache_cap_drops_total counter"));
-        assert!(output.contains("# TYPE telemt_tls_front_full_cert_budget_ips gauge"));
+        assert!(output.contains("# TYPE tupoproxy_user_unique_ips_current gauge"));
+        assert!(output.contains("# TYPE tupoproxy_user_unique_ips_recent_window gauge"));
+        assert!(output.contains("# TYPE tupoproxy_user_unique_ips_limit gauge"));
+        assert!(output.contains("# TYPE tupoproxy_user_unique_ips_utilization gauge"));
+        assert!(output.contains("# TYPE tupoproxy_stats_user_entries gauge"));
+        assert!(output.contains("# TYPE tupoproxy_telemetry_user_series_users gauge"));
+        assert!(output.contains("# TYPE tupoproxy_ip_tracker_users gauge"));
+        assert!(output.contains("# TYPE tupoproxy_ip_tracker_entries gauge"));
+        assert!(output.contains("# TYPE tupoproxy_ip_tracker_cleanup_queue_len gauge"));
+        assert!(output.contains("# TYPE tupoproxy_ip_tracker_cleanup_total counter"));
+        assert!(output.contains("# TYPE tupoproxy_ip_tracker_cap_rejects_total counter"));
+        assert!(output.contains("# TYPE tupoproxy_tls_fetch_profile_cache_entries gauge"));
+        assert!(output.contains("# TYPE tupoproxy_tls_fetch_profile_cache_cap_drops_total counter"));
+        assert!(output.contains("# TYPE tupoproxy_tls_front_full_cert_budget_ips gauge"));
         assert!(
-            output.contains("# TYPE telemt_tls_front_full_cert_budget_cap_drops_total counter")
+            output.contains("# TYPE tupoproxy_tls_front_full_cert_budget_cap_drops_total counter")
         );
-        assert!(output.contains("# TYPE telemt_tls_front_profile_domains gauge"));
-        assert!(output.contains("# TYPE telemt_tls_front_profile_info gauge"));
-        assert!(output.contains("# TYPE telemt_tls_front_profile_quality_info gauge"));
-        assert!(output.contains("# TYPE telemt_tls_front_profile_age_seconds gauge"));
-        assert!(output.contains("# TYPE telemt_tls_front_profile_server_hello_bytes gauge"));
-        assert!(output.contains("# TYPE telemt_tls_front_profile_server_hello_extensions gauge"));
-        assert!(output.contains("# TYPE telemt_tls_front_profile_app_data_records gauge"));
-        assert!(output.contains("# TYPE telemt_tls_front_profile_ticket_records gauge"));
+        assert!(output.contains("# TYPE tupoproxy_tls_front_profile_domains gauge"));
+        assert!(output.contains("# TYPE tupoproxy_tls_front_profile_info gauge"));
+        assert!(output.contains("# TYPE tupoproxy_tls_front_profile_quality_info gauge"));
+        assert!(output.contains("# TYPE tupoproxy_tls_front_profile_age_seconds gauge"));
+        assert!(output.contains("# TYPE tupoproxy_tls_front_profile_server_hello_bytes gauge"));
+        assert!(output.contains("# TYPE tupoproxy_tls_front_profile_server_hello_extensions gauge"));
+        assert!(output.contains("# TYPE tupoproxy_tls_front_profile_app_data_records gauge"));
+        assert!(output.contains("# TYPE tupoproxy_tls_front_profile_ticket_records gauge"));
         assert!(
-            output.contains("# TYPE telemt_tls_front_profile_change_cipher_spec_records gauge")
+            output.contains("# TYPE tupoproxy_tls_front_profile_change_cipher_spec_records gauge")
         );
-        assert!(output.contains("# TYPE telemt_tls_front_profile_app_data_bytes gauge"));
+        assert!(output.contains("# TYPE tupoproxy_tls_front_profile_app_data_bytes gauge"));
     }
 
     #[tokio::test]
@@ -4240,13 +4241,13 @@ mod tests {
         assert!(
             std::str::from_utf8(body.as_ref())
                 .unwrap()
-                .contains("telemt_connections_total 3")
+                .contains("tupoproxy_connections_total 3")
         );
         assert!(
             std::str::from_utf8(body.as_ref())
                 .unwrap()
                 .contains(&format!(
-                    "telemt_build_info{{version=\"{}\"}} 1",
+                    "tupoproxy_build_info{{version=\"{}\"}} 1",
                     env!("CARGO_PKG_VERSION")
                 ))
         );

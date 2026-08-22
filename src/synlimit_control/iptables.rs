@@ -318,10 +318,10 @@ mod tests {
 
     fn test_namespace() -> SynLimitNamespace {
         SynLimitNamespace {
-            nft_table: "telemt_synlimit_test".to_string(),
+            nft_table: "tupoproxy_synlimit_test".to_string(),
             iptables_chain: "TMT_SYN_TEST".to_string(),
             iptables_hashlimit_prefix: "TMTTEST".to_string(),
-            pf_anchor: "telemt_synlimit/test".to_string(),
+            pf_anchor: "tupoproxy_synlimit/test".to_string(),
         }
     }
 
@@ -366,10 +366,10 @@ mod tests {
             "iptables: No chain/target/match by that name."
         ));
         assert!(is_missing_command_or_iptables_rule(
-            "iptables: Chain TELEMT_SYNLIMIT does not exist."
+            "iptables: Chain TUPOPROXY_SYNLIMIT does not exist."
         ));
         assert!(is_missing_command_or_iptables_rule(
-            "Couldn't load target `TELEMT_SYNLIMIT': No such file or directory"
+            "Couldn't load target `TUPOPROXY_SYNLIMIT': No such file or directory"
         ));
         assert!(!is_missing_command_or_iptables_rule(
             "iptables: Permission denied"

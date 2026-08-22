@@ -25,7 +25,7 @@ use super::{
 
 // Shared maestro startup and main loop. `drop_after_bind` runs on Unix after listeners are bound
 // and privileged firewall setup completes; it is a no-op on other platforms.
-pub(super) async fn run_telemt_core(
+pub(super) async fn run_tupoproxy_core(
     privilege_drop_requested: bool,
     drop_after_bind: impl FnOnce(),
 ) -> std::result::Result<(), Box<dyn std::error::Error>> {

@@ -1,4 +1,4 @@
-//! Logging configuration for telemt.
+//! Logging configuration for tupoproxy.
 //!
 //! Supports multiple log destinations:
 //! - stderr (default, works with systemd journald)
@@ -194,7 +194,7 @@ fn log_file_dir(path: &Path) -> &Path {
 fn log_file_name(path: &Path) -> &str {
     path.file_name()
         .and_then(|s| s.to_str())
-        .unwrap_or("telemt")
+        .unwrap_or("tupoproxy")
 }
 
 fn to_tracing_rotation(rotation: LogRotation) -> tracing_appender::rolling::Rotation {
@@ -225,8 +225,8 @@ impl SyslogMakeWriter {
         static INIT: std::sync::Once = std::sync::Once::new();
         INIT.call_once(|| {
             unsafe {
-                // Open syslog with ident "telemt", LOG_PID, LOG_DAEMON facility
-                let ident = b"telemt\0".as_ptr() as *const libc::c_char;
+                // Open syslog with ident "tupoproxy", LOG_PID, LOG_DAEMON facility
+                let ident = b"tupoproxy\0".as_ptr() as *const libc::c_char;
                 libc::openlog(ident, libc::LOG_PID | libc::LOG_NDELAY, libc::LOG_DAEMON);
             }
         });

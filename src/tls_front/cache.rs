@@ -15,6 +15,7 @@ use crate::tls_front::types::{
     CachedTlsData, ParsedServerHello, TlsBehaviorProfile, TlsFetchResult, TlsProfileQuality,
     TlsProfileSource,
 };
+use crate::config::TlsFetchProfile;
 
 const FULL_CERT_SENT_SWEEP_INTERVAL_SECS: u64 = 30;
 const FULL_CERT_SENT_MAX_IPS: usize = 65_536;
@@ -107,6 +108,7 @@ impl TlsFrontCache {
             app_data_records_sizes: vec![default_len],
             total_app_data_len: default_len,
             behavior_profile: TlsBehaviorProfile::default(),
+            selected_fetch_profile: None,
             fetched_at: SystemTime::now(),
             domain: "default".to_string(),
         });
@@ -391,6 +393,32 @@ impl TlsFrontCache {
         }
     }
 
+    /// Replace persisted entries that were captured with a different explicit
+    /// credential profile. Old cache files without profile metadata are also
+    /// refreshed, but only for domains with an explicit selection.
+    pub(crate) async fn invalidate_profile_mismatches(
+        &self,
+        expected: &HashMap<String, TlsFetchProfile>,
+    ) {
+        let mut guard = self.memory.write().await;
+        for (domain, profile) in expected {
+            let mismatched = guard
+                .get(domain)
+                .is_some_and(|cached| {
+                    cached.domain != "default"
+                        && cached.selected_fetch_profile != Some(*profile)
+                });
+            if mismatched {
+                guard.insert(domain.clone(), self.default.clone());
+                debug!(
+                    domain = %domain,
+                    profile = profile.as_str(),
+                    "Discarded TLS cache entry captured with another fetch profile"
+                );
+            }
+        }
+    }
+
     async fn persist(&self, domain: &str, data: &CachedTlsData) {
         if tokio::fs::create_dir_all(&self.disk_path).await.is_err() {
             return;
@@ -425,6 +453,7 @@ impl TlsFrontCache {
             app_data_records_sizes,
             total_app_data_len,
             mut behavior_profile,
+            selected_fetch_profile,
             cert_info,
             cert_payload,
         } = fetched;
@@ -437,6 +466,7 @@ impl TlsFrontCache {
             app_data_records_sizes: app_data_records_sizes.clone(),
             total_app_data_len,
             behavior_profile,
+            selected_fetch_profile,
             fetched_at: SystemTime::now(),
             domain: domain.to_string(),
         };
@@ -529,6 +559,7 @@ mod tests {
             app_data_records_sizes: vec![1024],
             total_app_data_len: 1024,
             behavior_profile: TlsBehaviorProfile::default(),
+            selected_fetch_profile: None,
             fetched_at: SystemTime::now(),
             domain: domain.to_string(),
         }
@@ -573,6 +604,24 @@ mod tests {
             cache.default_profile_domains(&domains).await,
             vec!["pending.example".to_string()]
         );
+    }
+
+    #[tokio::test]
+    async fn explicit_fingerprint_invalidates_cache_from_another_fetch_profile() {
+        let domain = "profile.example".to_string();
+        let cache = TlsFrontCache::new(std::slice::from_ref(&domain), 1024, "tlsfront-test-cache");
+        let mut cached = cached_with_cert_info(&domain, None, Vec::new());
+        cached.selected_fetch_profile = Some(TlsFetchProfile::ModernChromeLike);
+        cache.set(&domain, cached).await;
+
+        cache
+            .invalidate_profile_mismatches(&HashMap::from([(
+                domain.clone(),
+                TlsFetchProfile::ModernFirefoxLike,
+            )]))
+            .await;
+
+        assert_eq!(cache.get(&domain).await.domain, "default");
     }
 
     #[tokio::test]

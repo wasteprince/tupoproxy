@@ -108,7 +108,7 @@ async fn subtle_integration_parallel_same_dc_logs_one_line() {
         .expect("unknown dc test lock must be available");
     clear_unknown_dc_log_cache_for_testing();
 
-    let rel_dir = format!("target/telemt-direct-relay-same-{}", std::process::id());
+    let rel_dir = format!("target/tupoproxy-direct-relay-same-{}", std::process::id());
     let rel_file = format!("{rel_dir}/unknown-dc.log");
     let abs_dir = std::env::current_dir()
         .expect("cwd must be available")
@@ -153,7 +153,7 @@ async fn subtle_integration_parallel_unique_dcs_log_unique_lines() {
         .expect("unknown dc test lock must be available");
     clear_unknown_dc_log_cache_for_testing();
 
-    let rel_dir = format!("target/telemt-direct-relay-unique-{}", std::process::id());
+    let rel_dir = format!("target/tupoproxy-direct-relay-unique-{}", std::process::id());
     let rel_file = format!("{rel_dir}/unknown-dc.log");
     let abs_dir = std::env::current_dir()
         .expect("cwd must be available")

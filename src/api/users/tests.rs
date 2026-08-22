@@ -170,6 +170,10 @@ async fn users_from_config_returns_tls_link_for_each_tls_domain() {
         "front-b.example.com".to_string(),
         "front-a.example.com".to_string(),
     ];
+    cfg.censorship.tls_fingerprints.insert(
+        "front-b.example.com".to_string(),
+        crate::config::TlsFingerprintProfile::Firefox,
+    );
 
     let stats = Stats::new();
     let tracker = UserIpTracker::new();
@@ -208,6 +212,7 @@ async fn users_from_config_returns_tls_link_for_each_tls_domain() {
             .tls_domains
             .iter()
             .any(|entry| entry.domain == "front-b.example.com"
+                && entry.fingerprint == Some("firefox")
                 && entry.link.ends_with(&hex::encode("front-b.example.com")))
     );
     assert!(

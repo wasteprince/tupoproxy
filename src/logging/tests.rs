@@ -12,11 +12,11 @@ fn test_parse_log_cli_options_default() {
 
 #[test]
 fn test_parse_log_cli_options_file() {
-    let args = vec!["--log-file".to_string(), "/var/log/telemt.log".to_string()];
+    let args = vec!["--log-file".to_string(), "/var/log/tupoproxy.log".to_string()];
     let options = parse_log_cli_options(&args).unwrap();
     match resolve_log_destination(&LoggingConfig::default(), &options).unwrap() {
         LogDestination::File { options } => {
-            assert_eq!(options.path, "/var/log/telemt.log");
+            assert_eq!(options.path, "/var/log/tupoproxy.log");
             assert_eq!(options.rotation, LogRotation::Never);
         }
         _ => panic!("Expected File destination"),
@@ -25,11 +25,11 @@ fn test_parse_log_cli_options_file() {
 
 #[test]
 fn test_parse_log_cli_options_file_daily() {
-    let args = vec!["--log-file-daily=/var/log/telemt".to_string()];
+    let args = vec!["--log-file-daily=/var/log/tupoproxy".to_string()];
     let options = parse_log_cli_options(&args).unwrap();
     match resolve_log_destination(&LoggingConfig::default(), &options).unwrap() {
         LogDestination::File { options } => {
-            assert_eq!(options.path, "/var/log/telemt");
+            assert_eq!(options.path, "/var/log/tupoproxy");
             assert_eq!(options.rotation, LogRotation::Daily);
         }
         _ => panic!("Expected File destination"),
@@ -39,7 +39,7 @@ fn test_parse_log_cli_options_file_daily() {
 #[test]
 fn test_parse_log_cli_options_bounds() {
     let args = vec![
-        "--log-file=/var/log/telemt.log".to_string(),
+        "--log-file=/var/log/tupoproxy.log".to_string(),
         "--log-rotation=hourly".to_string(),
         "--log-max-size-bytes=1024".to_string(),
         "--log-max-files=3".to_string(),

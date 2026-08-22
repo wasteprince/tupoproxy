@@ -271,6 +271,7 @@ const TIMEOUTS_CONFIG_KEYS: &[&str] = &[
 const CENSORSHIP_CONFIG_KEYS: &[&str] = &[
     "tls_domain",
     "tls_domains",
+    "tls_fingerprints",
     "unknown_sni_action",
     "tls_fetch_scope",
     "tls_fetch",

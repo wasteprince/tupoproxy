@@ -1449,6 +1449,7 @@ fn emulated_server_hello_never_places_alpn_in_server_hello_extensions() {
             source: TlsProfileSource::Default,
             ..TlsBehaviorProfile::default()
         },
+        selected_fetch_profile: None,
         fetched_at: SystemTime::now(),
         domain: "example.com".to_string(),
     };

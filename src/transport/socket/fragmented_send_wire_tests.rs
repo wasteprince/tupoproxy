@@ -114,8 +114,8 @@ async fn run_server(addr: SocketAddr, fragment_size: u16, fake_cert_len: usize) 
     client_hello.extend_from_slice(&header);
     client_hello.resize(5 + body_len, 0);
     server.read_exact(&mut client_hello[5..]).await.unwrap();
-    let barrier = std::env::var("TELEMT_WIRE_BARRIER").unwrap();
-    let release = std::env::var("TELEMT_WIRE_RELEASE").unwrap();
+    let barrier = std::env::var("TUPOPROXY_WIRE_BARRIER").unwrap();
+    let release = std::env::var("TUPOPROXY_WIRE_RELEASE").unwrap();
     std::fs::write(&barrier, b"ready").unwrap();
     wait_for_file(Path::new(&release)).await;
 
@@ -160,7 +160,7 @@ async fn run_server(addr: SocketAddr, fragment_size: u16, fake_cert_len: usize) 
     // SAFETY: the write half still owns the accepted socket while it is borrowed.
     let borrowed_fd = unsafe { BorrowedFd::borrow_raw(raw_fd) };
     let mss_after = socket2::SockRef::from(&borrowed_fd).tcp_mss().unwrap();
-    let metadata = std::env::var("TELEMT_WIRE_SERVER_META").unwrap();
+    let metadata = std::env::var("TUPOPROXY_WIRE_SERVER_META").unwrap();
     std::fs::write(
         metadata,
         format!("configured_bulk_mss=1400\nmss_before={mss_before}\nmss_after={mss_after}\n"),
@@ -197,7 +197,7 @@ async fn run_client(addr: SocketAddr) {
         offset = end;
     }
     let initial_response_bytes = bulk_record_start.expect("bulk TLS record missing");
-    let metadata = std::env::var("TELEMT_WIRE_CLIENT_META").unwrap();
+    let metadata = std::env::var("TUPOPROXY_WIRE_CLIENT_META").unwrap();
     std::fs::write(
         metadata,
         format!(
@@ -211,24 +211,24 @@ async fn run_client(addr: SocketAddr) {
 #[tokio::test]
 #[ignore = "requires privileged netns/veth packet-capture harness"]
 async fn fake_tls_fragmentation_wire_role() {
-    let role = std::env::var("TELEMT_WIRE_ROLE").expect("TELEMT_WIRE_ROLE is required");
-    let addr = std::env::var("TELEMT_WIRE_ADDR")
+    let role = std::env::var("TUPOPROXY_WIRE_ROLE").expect("TUPOPROXY_WIRE_ROLE is required");
+    let addr = std::env::var("TUPOPROXY_WIRE_ADDR")
         .unwrap_or_else(|_| "198.18.0.1:24443".to_string())
         .parse()
         .unwrap();
     match role.as_str() {
         "server" => {
-            let fragment_size = std::env::var("TELEMT_WIRE_FRAGMENT")
+            let fragment_size = std::env::var("TUPOPROXY_WIRE_FRAGMENT")
                 .unwrap()
                 .parse()
                 .unwrap();
-            let fake_cert_len = std::env::var("TELEMT_WIRE_FAKE_CERT_LEN")
+            let fake_cert_len = std::env::var("TUPOPROXY_WIRE_FAKE_CERT_LEN")
                 .unwrap()
                 .parse()
                 .unwrap();
             run_server(addr, fragment_size, fake_cert_len).await;
         }
         "client" => run_client(addr).await,
-        _ => panic!("TELEMT_WIRE_ROLE must be server or client"),
+        _ => panic!("TUPOPROXY_WIRE_ROLE must be server or client"),
     }
 }

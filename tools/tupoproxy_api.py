@@ -1,9 +1,9 @@
 """
-Telemt Control API Python Client
-Full-coverage client for https://github.com/telemt/telemt
+Tupoproxy Control API Python Client
+Full-coverage client for https://github.com/wasteprince/tupoproxy
 
 Usage:
-    client = TelemtAPI("http://127.0.0.1:9091", auth_header="your-secret")
+    client = TupoproxyAPI("http://127.0.0.1:9091", auth_header="your-secret")
     client.health()
     client.create_user("alice", max_tcp_conns=10)
     client.patch_user("alice", data_quota_bytes=1_000_000_000)
@@ -24,7 +24,7 @@ from urllib.request import Request, urlopen
 # Exceptions
 # ---------------------------------------------------------------------------
 
-class TelemtAPIError(Exception):
+class TupoproxyAPIError(Exception):
     """Raised when the API returns an error envelope or a transport error."""
 
     def __init__(self, message: str, code: str | None = None,
@@ -35,7 +35,7 @@ class TelemtAPIError(Exception):
         self.request_id = request_id
 
     def __repr__(self) -> str:
-        return (f"TelemtAPIError(message={str(self)!r}, code={self.code!r}, "
+        return (f"TupoproxyAPIError(message={str(self)!r}, code={self.code!r}, "
                 f"http_status={self.http_status}, request_id={self.request_id})")
 
 
@@ -58,9 +58,9 @@ class APIResponse:
 # Main client
 # ---------------------------------------------------------------------------
 
-class TelemtAPI:
+class TupoproxyAPI:
     """
-    HTTP client for the Telemt Control API.
+    HTTP client for the tupoproxy Control API.
 
     Parameters
     ----------
@@ -133,22 +133,22 @@ class TelemtAPI:
             try:
                 payload = json.loads(raw)
             except Exception:
-                raise TelemtAPIError(
+                raise TupoproxyAPIError(
                     str(exc), http_status=exc.code
                 ) from exc
             err = payload.get("error", {})
-            raise TelemtAPIError(
+            raise TupoproxyAPIError(
                 err.get("message", str(exc)),
                 code=err.get("code"),
                 http_status=exc.code,
                 request_id=payload.get("request_id"),
             ) from exc
         except URLError as exc:
-            raise TelemtAPIError(str(exc)) from exc
+            raise TupoproxyAPIError(str(exc)) from exc
 
         if not payload.get("ok"):
             err = payload.get("error", {})
-            raise TelemtAPIError(
+            raise TupoproxyAPIError(
                 err.get("message", "unknown error"),
                 code=err.get("code"),
                 request_id=payload.get("request_id"),
@@ -467,8 +467,8 @@ def _build_parser():
     import argparse
 
     p = argparse.ArgumentParser(
-        prog="telemt_api.py",
-        description="Telemt Control API CLI",
+        prog="tupoproxy_api.py",
+        description="tupoproxy Control API CLI",
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 COMMANDS (read)
@@ -511,12 +511,12 @@ USER OPTIONS (for create / patch)
   --max-ips N         Max unique source IPs
 
 EXAMPLES
-  telemt_api.py health
-  telemt_api.py -u http://10.0.0.1:9091 -a mysecret users
-  telemt_api.py create alice --max-conns 5 --quota 10000000000
-  telemt_api.py patch  alice --expires 2027-01-01T00:00:00Z
-  telemt_api.py delete alice
-  telemt_api.py events --limit 20
+  tupoproxy_api.py health
+  tupoproxy_api.py -u http://10.0.0.1:9091 -a mysecret users
+  tupoproxy_api.py create alice --max-conns 5 --quota 10000000000
+  tupoproxy_api.py patch  alice --expires 2027-01-01T00:00:00Z
+  tupoproxy_api.py delete alice
+  tupoproxy_api.py events --limit 20
         """,
     )
 
@@ -564,10 +564,10 @@ if __name__ == "__main__":
         sys.exit(0)
 
     if cmd == "gen-secret":
-        print(TelemtAPI.generate_secret())
+        print(TupoproxyAPI.generate_secret())
         sys.exit(0)
 
-    api = TelemtAPI(args.url, auth_header=args.auth, timeout=args.timeout)
+    api = TupoproxyAPI(args.url, auth_header=args.auth, timeout=args.timeout)
 
     try:
         # -- read endpoints --------------------------------------------------
@@ -722,7 +722,7 @@ if __name__ == "__main__":
                   file=sys.stderr)
             sys.exit(1)
 
-    except TelemtAPIError as exc:
+    except TupoproxyAPIError as exc:
         print(f"API error [{exc.http_status}] {exc.code}: {exc}", file=sys.stderr)
         sys.exit(1)
     except KeyboardInterrupt:

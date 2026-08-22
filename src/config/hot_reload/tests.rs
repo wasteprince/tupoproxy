@@ -176,7 +176,7 @@ fn listener_synlimit_fields_are_process_owned() {
 fn reload_applies_hot_change_on_first_observed_snapshot() {
     let initial_tag = "11111111111111111111111111111111";
     let final_tag = "22222222222222222222222222222222";
-    let path = temp_config_path("telemt_hot_reload_stable");
+    let path = temp_config_path("tupoproxy_hot_reload_stable");
 
     write_reload_config(&path, Some(initial_tag), None);
     let initial_cfg = Arc::new(ProxyConfig::load(&path).unwrap());
@@ -201,7 +201,7 @@ fn reload_applies_hot_change_on_first_observed_snapshot() {
 fn reload_keeps_hot_apply_when_non_hot_fields_change() {
     let initial_tag = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
     let final_tag = "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb";
-    let path = temp_config_path("telemt_hot_reload_mixed");
+    let path = temp_config_path("tupoproxy_hot_reload_mixed");
 
     write_reload_config(&path, Some(initial_tag), None);
     let initial_cfg = Arc::new(ProxyConfig::load(&path).unwrap());
@@ -261,7 +261,7 @@ fn classify_timeouts_change_requires_restart() {
 fn reload_recovers_after_parse_error_on_next_attempt() {
     let initial_tag = "cccccccccccccccccccccccccccccccc";
     let final_tag = "dddddddddddddddddddddddddddddddd";
-    let path = temp_config_path("telemt_hot_reload_parse_recovery");
+    let path = temp_config_path("tupoproxy_hot_reload_parse_recovery");
 
     write_reload_config(&path, Some(initial_tag), None);
     let initial_cfg = Arc::new(ProxyConfig::load(&path).unwrap());

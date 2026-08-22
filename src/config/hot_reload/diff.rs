@@ -87,7 +87,9 @@ pub(super) fn warn_non_hot_changes(old: &ProxyConfig, new: &ProxyConfig, non_hot
     }
     if old.censorship.tls_domain != new.censorship.tls_domain
         || old.censorship.tls_domains != new.censorship.tls_domains
+        || old.censorship.tls_fingerprints != new.censorship.tls_fingerprints
         || old.censorship.tls_fetch_scope != new.censorship.tls_fetch_scope
+        || old.censorship.tls_fetch != new.censorship.tls_fetch
         || old.censorship.mask != new.censorship.mask
         || old.censorship.mask_dynamic != new.censorship.mask_dynamic
         || old.censorship.mask_host != new.censorship.mask_host
@@ -236,7 +238,7 @@ pub struct ChangeClassification {
     pub restart_required: bool,
 }
 
-/// Classify old->new using Telemt's OWN reload rule: overlay the hot fields and
+/// Classify old->new using tupoproxy's OWN reload rule: overlay the hot fields and
 /// see if anything non-hot remains different. This guarantees `restart_required`
 /// matches actual runtime behavior and never drifts as new fields are added.
 pub fn classify_config_changes(old: &ProxyConfig, new: &ProxyConfig) -> ChangeClassification {

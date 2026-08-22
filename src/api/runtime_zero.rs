@@ -143,7 +143,7 @@ pub(super) fn build_system_info_data(
     let last_config_reload_epoch_secs =
         (last_reload_epoch_secs > 0).then_some(last_reload_epoch_secs);
 
-    let git_commit = option_env!("TELEMT_GIT_COMMIT")
+    let git_commit = option_env!("TUPOPROXY_GIT_COMMIT")
         .or(option_env!("VERGEN_GIT_SHA"))
         .or(option_env!("GIT_COMMIT"))
         .map(ToString::to_string);

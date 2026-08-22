@@ -58,6 +58,11 @@ pub(in crate::api::users) fn build_user_links(
                 );
                 tls_domain_links.push(TlsDomainLink {
                     domain: (*domain).to_string(),
+                    fingerprint: cfg
+                        .censorship
+                        .tls_fingerprints
+                        .get(*domain)
+                        .map(|profile| profile.as_str()),
                     link,
                 });
             }

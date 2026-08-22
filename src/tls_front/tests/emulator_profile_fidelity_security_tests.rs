@@ -33,6 +33,7 @@ fn make_cached() -> CachedTlsData {
             source: TlsProfileSource::Merged,
             ..TlsBehaviorProfile::default()
         },
+        selected_fetch_profile: None,
         fetched_at: SystemTime::now(),
         domain: "example.com".to_string(),
     }

@@ -105,7 +105,7 @@ pub(super) fn compute_snapshot_revision(loaded: &LoadedConfig) -> String {
 
 pub(super) fn compute_source_revision(graph: &ConfigSourceGraph) -> String {
     let mut hasher = Sha256::new();
-    hasher.update(b"telemt-config-manifest-v1\0");
+    hasher.update(b"tupoproxy-config-manifest-v1\0");
     for (path, content) in &graph.source_contents {
         let path = path.as_os_str().as_encoded_bytes();
         hasher.update((path.len() as u64).to_le_bytes());
@@ -284,7 +284,7 @@ pub(super) async fn save_config_to_disk(
 /// Top-level config tables that may be edited via the config API.
 ///
 /// Intentionally excluded (defense-in-depth, enforces the spec's per-node
-/// identity invariant at the Telemt layer too):
+/// identity invariant at the tupoproxy layer too):
 ///
 ///   - `access`    : owned by the users API.
 ///   - `network`   : carries per-node identity (`ipv4`/`ipv6`).

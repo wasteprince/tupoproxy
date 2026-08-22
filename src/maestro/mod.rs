@@ -1,4 +1,4 @@
-//! telemt — Telegram MTProto Proxy
+//! tupoproxy — Telegram MTProto Proxy
 
 #![allow(unused_assignments)]
 
@@ -41,7 +41,7 @@ use crate::config::{ProxyConfig, SynLimitMode};
 #[cfg(unix)]
 use crate::daemon::{DaemonOptions, PidFile, drop_privileges};
 
-/// Runs the full telemt runtime startup pipeline and blocks until shutdown.
+/// Runs the full tupoproxy runtime startup pipeline and blocks until shutdown.
 ///
 /// On Unix, daemon options should be handled before calling this function
 /// because daemonization must happen before the Tokio runtime starts.
@@ -52,7 +52,7 @@ pub async fn run_with_daemon(
     run_inner(daemon_opts).await
 }
 
-/// Runs the full telemt runtime startup pipeline and blocks until shutdown.
+/// Runs the full tupoproxy runtime startup pipeline and blocks until shutdown.
 ///
 /// This is the main entry point for non-daemon mode or library callers.
 #[allow(dead_code)]
@@ -96,7 +96,7 @@ async fn run_inner(
     let _pid_file = if daemon_opts.daemonize || daemon_opts.pid_file.is_some() {
         let mut pf = PidFile::new(daemon_opts.pid_file_path());
         if let Err(e) = pf.acquire() {
-            eprintln!("[telemt] {}", e);
+            eprintln!("[tupoproxy] {}", e);
             std::process::exit(1);
         }
         Some(pf)
@@ -107,7 +107,7 @@ async fn run_inner(
     let user = daemon_opts.user.clone();
     let group = daemon_opts.group.clone();
 
-    orchestrator::run_telemt_core(user.is_some() || group.is_some(), || {
+    orchestrator::run_tupoproxy_core(user.is_some() || group.is_some(), || {
         if (user.is_some() || group.is_some())
             && let Err(e) = drop_privileges(user.as_deref(), group.as_deref(), _pid_file.as_ref())
         {
@@ -120,7 +120,7 @@ async fn run_inner(
 
 #[cfg(not(unix))]
 async fn run_inner() -> std::result::Result<(), Box<dyn std::error::Error>> {
-    orchestrator::run_telemt_core(false, || {}).await
+    orchestrator::run_tupoproxy_core(false, || {}).await
 }
 
 #[cfg(test)]
