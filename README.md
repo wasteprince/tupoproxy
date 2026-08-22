@@ -72,7 +72,7 @@ HAProxy не расшифровывает TLS: он читает SNI и пере
 ### Автоматическая установка
 
 ```bash
-curl --fail --location --show-error --output install.sh https://raw.githubusercontent.com/wasteprince/tupoproxy/main/install.sh
+curl --fail --location --show-error --output install.sh https://github.com/wasteprince/tupoproxy/raw/refs/heads/main/install.sh
 test -s install.sh
 sudo bash install.sh
 ```
@@ -168,7 +168,7 @@ sudo bash install.sh --domain proxy.example.com --port 9443 \
 Установить готовый бинарник без изменения серверной конфигурации:
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/wasteprince/tupoproxy/main/install.sh \
+curl -fsSL https://github.com/wasteprince/tupoproxy/raw/refs/heads/main/install.sh \
   | sudo bash -s -- --binary-only
 tupoproxy --version
 ```

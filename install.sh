@@ -64,7 +64,7 @@ Examples:
   sudo bash install.sh --domain proxy.example.com --email admin@example.com \
     --port 8443 --acme-mode dns --dns-provider cloudflare \
     --dns-credentials /root/cloudflare.ini
-  curl -fsSL https://raw.githubusercontent.com/wasteprince/tupoproxy/main/install.sh \
+  curl -fsSL https://github.com/wasteprince/tupoproxy/raw/refs/heads/main/install.sh \
     | sudo bash -s -- --domain proxy.example.com --email admin@example.com
 EOF
 }
