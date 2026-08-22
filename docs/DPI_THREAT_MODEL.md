@@ -26,10 +26,11 @@ block, IP allow-list, or total connectivity shutdown.
 - Persisted cover profiles carry their probe-profile identity. A configuration
   change invalidates incompatible cached data before readiness checks.
 - The automated deployment uses two names: an owned origin in the Telegram
-  `server` parameter and a separately hosted HTTPS decoy in the credential
-  SNI. Unknown or invalid decoy traffic is relayed to the decoy's actual TLS
-  endpoint with its publicly valid certificate. The public proxy port and the
-  decoy HTTPS port are independently configurable and verified.
+  `server` parameter and a decoy in the credential SNI. The decoy may be an
+  existing external HTTP/2 site or an isolated same-server endpoint with its
+  own certificate. Unknown or invalid traffic is relayed to that real TLS
+  endpoint. The public proxy port and decoy port remain independently
+  configurable and are verified against recursive routing.
 - The automated deployment negotiates HTTP/2 on the real fallback, serves a
   per-installation origin cover page with normal static-file cache semantics,
   and verifies both public scanner-visible routes after startup. This removes

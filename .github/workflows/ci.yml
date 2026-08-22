@@ -26,6 +26,7 @@ jobs:
           sudo apt-get install --yes shellcheck
           shellcheck -x install.sh install-source.sh uninstall.sh
           bash install.sh --help | grep -F -- '--tls-domain-port PORT'
+          bash install.sh --help | grep -F -- '--tls-cert-fullchain PATH'
           bash uninstall.sh --help | grep -F -- '--purge-certificate'
           test_dir="$(mktemp -d)"
           set +e

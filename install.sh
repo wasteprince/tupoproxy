@@ -19,8 +19,14 @@ SECRET=""
 AD_TAG=""
 CERT_FULLCHAIN=""
 CERT_KEY=""
+TLS_CERT_FULLCHAIN=""
+TLS_CERT_KEY=""
 CERTIFICATE_PATHS_SET=0
 CERTIFICATE_MANAGED=0
+TLS_CERTIFICATE_PATHS_SET=0
+TLS_CERTIFICATE_MANAGED=0
+TLS_DECOY_SHARES_ADDRESS=0
+TLS_DECOY_LOCAL=0
 ACME_MODE="auto"
 ACME_WEBROOT=""
 DNS_PROVIDER=""
@@ -59,6 +65,9 @@ Optional:
   --ad-tag HEX           32-hex sponsored-channel tag from @MTProxybot
   --cert-fullchain PATH  Existing PEM certificate chain
   --cert-key PATH        Existing PEM private key
+  --tls-cert-fullchain PATH
+                         Existing PEM chain for a same-server TLS decoy
+  --tls-cert-key PATH    Existing PEM key for a same-server TLS decoy
   --acme-mode MODE       auto|standalone|nginx|apache|webroot|dns|manual-dns
   --acme-webroot PATH    Existing public webroot (requires --acme-mode webroot)
   --dns-provider NAME    Certbot DNS plugin, for example cloudflare or route53
@@ -170,6 +179,18 @@ while (($#)); do
             (($# >= 2)) || die "--cert-key requires a value"
             CERT_KEY="$2"
             CERTIFICATE_PATHS_SET=1
+            shift 2
+            ;;
+        --tls-cert-fullchain)
+            (($# >= 2)) || die "--tls-cert-fullchain requires a value"
+            TLS_CERT_FULLCHAIN="$2"
+            TLS_CERTIFICATE_PATHS_SET=1
+            shift 2
+            ;;
+        --tls-cert-key)
+            (($# >= 2)) || die "--tls-cert-key requires a value"
+            TLS_CERT_KEY="$2"
+            TLS_CERTIFICATE_PATHS_SET=1
             shift 2
             ;;
         --acme-mode)
@@ -312,6 +333,18 @@ load_existing_installation() {
         saved_value="$(installation_value 'Certificate managed')"
         [[ "$saved_value" == "yes" ]] && CERTIFICATE_MANAGED=1
     fi
+    if [[ -z "$TLS_CERT_FULLCHAIN" && -z "$TLS_CERT_KEY" ]]; then
+        saved_fullchain="$(installation_value 'TLS decoy certificate chain')"
+        saved_key="$(installation_value 'TLS decoy certificate key')"
+        if [[ -r "$saved_fullchain" && -r "$saved_key" ]]; then
+            TLS_CERT_FULLCHAIN="$saved_fullchain"
+            TLS_CERT_KEY="$saved_key"
+        fi
+    fi
+    if ((!TLS_CERTIFICATE_PATHS_SET)); then
+        saved_value="$(installation_value 'TLS decoy certificate managed')"
+        [[ "$saved_value" == "yes" ]] && TLS_CERTIFICATE_MANAGED=1
+    fi
 }
 
 validate_domain() {
@@ -348,23 +381,37 @@ validate_domain_routes() {
 
     for address in "${decoy_addresses[@]}"; do
         if printf '%s\n' "${origin_addresses[@]}" | grep -Fqx "$address"; then
-            die "TLS decoy ${TLS_DOMAIN} shares address ${address} with origin ${DOMAIN}; use a separately hosted HTTPS domain"
+            TLS_DECOY_SHARES_ADDRESS=1
+            break
         fi
     done
 }
 
-validate_tls_decoy() {
+tls_decoy_is_ready() {
     local tls_probe
 
-    note "Checking the separate FakeTLS decoy"
     if ! tls_probe="$(timeout 15 openssl s_client \
         -connect "${TLS_DOMAIN}:${TLS_DOMAIN_PORT}" -servername "$TLS_DOMAIN" -alpn h2 \
         -verify_hostname "$TLS_DOMAIN" -verify_return_error -CApath /etc/ssl/certs \
         </dev/null 2>/dev/null)"; then
-        die "TLS decoy ${TLS_DOMAIN} must expose trusted HTTPS on TCP/${TLS_DOMAIN_PORT}"
+        return 1
     fi
-    grep -Fq 'ALPN protocol: h2' <<<"$tls_probe" \
-        || die "TLS decoy ${TLS_DOMAIN} must support HTTP/2 (ALPN h2)"
+    grep -Fq 'ALPN protocol: h2' <<<"$tls_probe"
+}
+
+detect_tls_decoy_mode() {
+    note "Checking the FakeTLS decoy"
+    if tls_decoy_is_ready; then
+        note "Using the existing HTTPS decoy at ${TLS_DOMAIN}:${TLS_DOMAIN_PORT}"
+        TLS_DECOY_LOCAL=0
+        return 0
+    fi
+    if ((TLS_DECOY_SHARES_ADDRESS)); then
+        TLS_DECOY_LOCAL=1
+        note "The decoy shares this VPS and has no ready HTTPS endpoint; tupoproxy will create an isolated one"
+        return 0
+    fi
+    die "TLS decoy ${TLS_DOMAIN} must expose trusted HTTP/2 HTTPS on TCP/${TLS_DOMAIN_PORT}"
 }
 
 validate_ad_tag() {
@@ -397,7 +444,21 @@ validate_inputs() {
         [[ "$CERT_FULLCHAIN" =~ ^/[A-Za-z0-9_./-]+$ && "$CERT_KEY" =~ ^/[A-Za-z0-9_./-]+$ ]] \
             || die "certificate paths must be absolute and contain only letters, digits, '_', '-', '.', and '/'"
         [[ -r "$CERT_FULLCHAIN" && -r "$CERT_KEY" ]] || die "provided certificate files are not readable"
-    else
+    fi
+    if [[ -n "$TLS_CERT_FULLCHAIN" || -n "$TLS_CERT_KEY" ]]; then
+        if ((!TLS_DECOY_LOCAL)); then
+            ((!TLS_CERTIFICATE_PATHS_SET)) \
+                || die "--tls-cert-fullchain and --tls-cert-key are only used for a same-server decoy"
+        else
+            [[ -n "$TLS_CERT_FULLCHAIN" && -n "$TLS_CERT_KEY" ]] \
+                || die "--tls-cert-fullchain and --tls-cert-key must be provided together"
+            [[ "$TLS_CERT_FULLCHAIN" =~ ^/[A-Za-z0-9_./-]+$ && "$TLS_CERT_KEY" =~ ^/[A-Za-z0-9_./-]+$ ]] \
+                || die "TLS decoy certificate paths must be safe absolute paths"
+            [[ -r "$TLS_CERT_FULLCHAIN" && -r "$TLS_CERT_KEY" ]] \
+                || die "provided TLS decoy certificate files are not readable"
+        fi
+    fi
+    if [[ -z "$CERT_FULLCHAIN" || ("$TLS_DECOY_LOCAL" == "1" && -z "$TLS_CERT_FULLCHAIN") ]]; then
         [[ -n "$EMAIL" ]] || die "ACME e-mail address is required"
         [[ "$EMAIL" =~ ^[^[:space:]@]+@[^[:space:]@]+\.[^[:space:]@]+$ ]] \
             || die "invalid ACME e-mail address"
@@ -422,12 +483,24 @@ validate_inputs() {
         [[ "$CLOUDFLARE_API_TOKEN" =~ ^[A-Za-z0-9_.-]{20,256}$ ]] \
             || die "invalid Cloudflare API token format"
     fi
-    if [[ "$ACME_MODE" == "existing" && -z "$CERT_FULLCHAIN" ]]; then
-        die "the internal 'existing' ACME mode requires --cert-fullchain and --cert-key"
+    if [[ "$ACME_MODE" == "existing" \
+        && (-z "$CERT_FULLCHAIN" || ("$TLS_DECOY_LOCAL" == "1" && -z "$TLS_CERT_FULLCHAIN")) ]]; then
+        die "ACME mode existing requires certificate paths for the origin and local decoy"
     fi
     if [[ "$ACME_MODE" == "webroot" ]]; then
         [[ "$ACME_WEBROOT" =~ ^/[A-Za-z0-9_./-]+$ && -d "$ACME_WEBROOT" ]] \
             || die "--acme-webroot must point to an existing absolute directory"
+    fi
+}
+
+validate_existing_certificates() {
+    if [[ -n "$CERT_FULLCHAIN" ]]; then
+        openssl x509 -in "$CERT_FULLCHAIN" -noout -checkhost "$DOMAIN" >/dev/null \
+            || die "the origin certificate does not cover ${DOMAIN}"
+    fi
+    if ((TLS_DECOY_LOCAL)) && [[ -n "$TLS_CERT_FULLCHAIN" ]]; then
+        openssl x509 -in "$TLS_CERT_FULLCHAIN" -noout -checkhost "$TLS_DOMAIN" >/dev/null \
+            || die "the TLS decoy certificate does not cover ${TLS_DOMAIN}"
     fi
 }
 
@@ -528,10 +601,16 @@ choose_public_port() {
     local candidate
     systemctl stop tupoproxy-edge.service 2>/dev/null || true
     if [[ -n "$PUBLIC_PORT" ]]; then
+        if ((TLS_DECOY_SHARES_ADDRESS)) && [[ "$PUBLIC_PORT" == "$TLS_DOMAIN_PORT" ]]; then
+            die "the proxy and TLS decoy share an address, so their ports must be different"
+        fi
         port_is_listening "$PUBLIC_PORT" && die "requested public port ${PUBLIC_PORT} is already in use"
         return 0
     fi
     for candidate in 443 8443 2053 2083 2087 2096; do
+        if ((TLS_DECOY_SHARES_ADDRESS)) && [[ "$candidate" == "$TLS_DOMAIN_PORT" ]]; then
+            continue
+        fi
         if ! port_is_listening "$candidate"; then
             PUBLIC_PORT="$candidate"
             if [[ "$candidate" != "443" ]]; then
@@ -544,7 +623,7 @@ choose_public_port() {
 }
 
 ensure_internal_ports_are_safe() {
-    local proxy_port=18443 cover_port=19443 api_port=9091
+    local proxy_port=18443 cover_port=19443 decoy_cover_port=20443 api_port=9091
     systemctl stop tupoproxy.service tupoproxy-cover.service 2>/dev/null || true
     if port_is_listening "$proxy_port"; then
         die "internal port ${proxy_port} is already in use"
@@ -554,6 +633,14 @@ ensure_internal_ports_are_safe() {
     fi
     if port_is_listening "$api_port"; then
         die "local API port ${api_port} is already in use"
+    fi
+    if ((TLS_DECOY_LOCAL)); then
+        if port_is_listening "$decoy_cover_port"; then
+            die "internal TLS decoy cover port ${decoy_cover_port} is already in use"
+        fi
+        if port_is_listening "$TLS_DOMAIN_PORT"; then
+            die "same-server TLS decoy port ${TLS_DOMAIN_PORT} is already in use; choose another one"
+        fi
     fi
 }
 
@@ -588,7 +675,8 @@ prompt_dns_settings() {
 
 choose_acme_mode() {
     local details
-    if [[ -n "$CERT_FULLCHAIN" ]]; then
+    if [[ -n "$CERT_FULLCHAIN" \
+        && ("$TLS_DECOY_LOCAL" != "1" || -n "$TLS_CERT_FULLCHAIN") ]]; then
         ACME_MODE="existing"
         return 0
     fi
@@ -638,16 +726,30 @@ install_acme_plugin() {
     esac
 }
 
-configure_acme() {
+prepare_dns_credentials() {
     local managed_credentials="/etc/letsencrypt/tupoproxy-dns.ini"
+    [[ "$ACME_MODE" == "dns" ]] || return 0
+
+    install -d -m 0700 /etc/letsencrypt
+    if [[ "$DNS_PROVIDER" == "cloudflare" && -n "$CLOUDFLARE_API_TOKEN" ]]; then
+        printf 'dns_cloudflare_api_token = %s\n' "$CLOUDFLARE_API_TOKEN" >"$managed_credentials"
+        chmod 0600 "$managed_credentials"
+        DNS_CREDENTIALS="$managed_credentials"
+    elif [[ -n "$DNS_CREDENTIALS" && "$DNS_CREDENTIALS" != "$managed_credentials" ]]; then
+        install -m 0600 "$DNS_CREDENTIALS" "$managed_credentials"
+        DNS_CREDENTIALS="$managed_credentials"
+    fi
+}
+
+request_certificate() {
+    local cert_domain="$1"
     local dns_option
     local -a certbot_args
 
-    if [[ -n "$CERT_FULLCHAIN" ]]; then
-        return 0
-    fi
-
-    certbot_args=(certonly --agree-tos --keep-until-expiring --email "$EMAIL" -d "$DOMAIN")
+    certbot_args=(
+        certonly --agree-tos --keep-until-expiring --email "$EMAIL"
+        --cert-name "$cert_domain" -d "$cert_domain"
+    )
     case "$ACME_MODE" in
         standalone)
             port_is_listening 80 && die "port 80 became occupied; use DNS validation or select another ACME mode"
@@ -668,46 +770,55 @@ configure_acme() {
                 --webroot-path "$ACME_WEBROOT" --preferred-challenges http
             ;;
         dns)
-            install -d -m 0700 /etc/letsencrypt
             dns_option="--dns-${DNS_PROVIDER}"
-            if [[ "$DNS_PROVIDER" == "cloudflare" && -n "$CLOUDFLARE_API_TOKEN" ]]; then
-                printf 'dns_cloudflare_api_token = %s\n' "$CLOUDFLARE_API_TOKEN" >"$managed_credentials"
-                chmod 0600 "$managed_credentials"
-                DNS_CREDENTIALS="$managed_credentials"
-            elif [[ -n "$DNS_CREDENTIALS" && "$DNS_CREDENTIALS" != "$managed_credentials" ]]; then
-                install -m 0600 "$DNS_CREDENTIALS" "$managed_credentials"
-                DNS_CREDENTIALS="$managed_credentials"
-            fi
-
             certbot_args+=(--non-interactive "$dns_option")
-            if [[ "$DNS_PROVIDER" != "route53" ]]; then
-                certbot_args+=("${dns_option}-propagation-seconds" "$DNS_PROPAGATION_SECONDS")
-            fi
             if [[ "$DNS_PROVIDER" != "route53" ]]; then
                 [[ -n "$DNS_CREDENTIALS" ]] \
                     || die "DNS credentials are required for provider ${DNS_PROVIDER}"
-                certbot_args+=("${dns_option}-credentials" "$DNS_CREDENTIALS")
+                certbot_args+=(
+                    "${dns_option}-propagation-seconds" "$DNS_PROPAGATION_SECONDS"
+                    "${dns_option}-credentials" "$DNS_CREDENTIALS"
+                )
             fi
             certbot "${certbot_args[@]}"
             ;;
         manual-dns)
             [[ -r /dev/tty ]] || die "manual DNS validation requires an interactive terminal"
-            note "Certbot will show a TXT record; add it in your DNS panel and continue"
+            note "Certbot will show a TXT record for ${cert_domain}; add it in your DNS panel and continue"
             certbot "${certbot_args[@]}" --manual --preferred-challenges dns </dev/tty
             ;;
         *) die "internal error: unresolved ACME mode ${ACME_MODE}" ;;
     esac
+}
 
-    CERT_FULLCHAIN="/etc/letsencrypt/live/${DOMAIN}/fullchain.pem"
-    CERT_KEY="/etc/letsencrypt/live/${DOMAIN}/privkey.pem"
-    [[ -r "$CERT_FULLCHAIN" && -r "$CERT_KEY" ]] || die "certificate issuance did not produce readable files"
-    CERTIFICATE_MANAGED=1
+configure_acme() {
+    prepare_dns_credentials
+
+    if [[ -z "$CERT_FULLCHAIN" ]]; then
+        request_certificate "$DOMAIN"
+        CERT_FULLCHAIN="/etc/letsencrypt/live/${DOMAIN}/fullchain.pem"
+        CERT_KEY="/etc/letsencrypt/live/${DOMAIN}/privkey.pem"
+        CERTIFICATE_MANAGED=1
+    fi
+    [[ -r "$CERT_FULLCHAIN" && -r "$CERT_KEY" ]] \
+        || die "origin certificate issuance did not produce readable files"
+
+    if ((TLS_DECOY_LOCAL)) && [[ -z "$TLS_CERT_FULLCHAIN" ]]; then
+        request_certificate "$TLS_DOMAIN"
+        TLS_CERT_FULLCHAIN="/etc/letsencrypt/live/${TLS_DOMAIN}/fullchain.pem"
+        TLS_CERT_KEY="/etc/letsencrypt/live/${TLS_DOMAIN}/privkey.pem"
+        TLS_CERTIFICATE_MANAGED=1
+    fi
+    if ((TLS_DECOY_LOCAL)); then
+        [[ -r "$TLS_CERT_FULLCHAIN" && -r "$TLS_CERT_KEY" ]] \
+            || die "TLS decoy certificate issuance did not produce readable files"
+    fi
 }
 
 configure_cover_site() {
     local cover_root="/var/www/tupoproxy-cover"
     local seed_file="$CONFIG_DIR/cover-site.seed"
-    local site_seed theme_index accent page_background panel_background heading copy
+    local site_seed theme_index accent page_background panel_background heading copy decoy_server
 
     install -d -m 0750 "$CONFIG_DIR"
     install -d -m 0755 /run/tupoproxy-cover
@@ -773,6 +884,24 @@ configure_cover_site() {
 </body>
 </html>
 EOF
+    cat >"$cover_root/decoy.html" <<EOF
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>${TLS_DOMAIN}</title>
+    <link rel="stylesheet" href="/site-${site_seed:0:8}.css">
+</head>
+<body>
+    <main>
+        <p class="domain">${TLS_DOMAIN}</p>
+        <h1>${heading}</h1>
+        <p class="copy">${copy}</p>
+    </main>
+</body>
+</html>
+EOF
     cat >"$cover_root/site-${site_seed:0:8}.css" <<EOF
 :root { color-scheme: light; font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
 * { box-sizing: border-box; }
@@ -786,8 +915,38 @@ EOF
 User-agent: *
 Allow: /
 EOF
-    chmod 0644 "$cover_root/index.html" "$cover_root/site-${site_seed:0:8}.css" \
-        "$cover_root/robots.txt"
+    chmod 0644 "$cover_root/index.html" "$cover_root/decoy.html" \
+        "$cover_root/site-${site_seed:0:8}.css" "$cover_root/robots.txt"
+
+    decoy_server=""
+    if ((TLS_DECOY_LOCAL)); then
+        decoy_server="$(cat <<EOF
+
+    server {
+        listen 127.0.0.1:20443 ssl http2;
+        server_name ${TLS_DOMAIN};
+
+        ssl_certificate "${TLS_CERT_FULLCHAIN}";
+        ssl_certificate_key "${TLS_CERT_KEY}";
+        ssl_protocols TLSv1.2 TLSv1.3;
+        ssl_session_cache shared:TUPOPROXY_DECOY:10m;
+        ssl_session_timeout 1d;
+        ssl_session_tickets on;
+
+        add_header X-Content-Type-Options "nosniff" always;
+        root "${cover_root}";
+
+        location = / {
+            try_files /decoy.html =404;
+        }
+
+        location / {
+            try_files \$uri =404;
+        }
+    }
+EOF
+)"
+    fi
 
     cat > "$CONFIG_DIR/nginx-cover.conf" <<EOF
 # Managed by tupoproxy install.sh
@@ -830,6 +989,7 @@ http {
             try_files \$uri =404;
         }
     }
+${decoy_server}
 }
 EOF
 
@@ -844,9 +1004,13 @@ EOF
 
 configure_proxy() {
     local ad_tag_line=""
+    local mask_host_line=""
     [[ -n "$SECRET" ]] || SECRET="$(openssl rand -hex 16)"
     if [[ -n "$AD_TAG" ]]; then
         ad_tag_line="ad_tag = \"${AD_TAG}\""
+    fi
+    if ((TLS_DECOY_LOCAL)); then
+        mask_host_line="mask_host = \"127.0.0.1\""
     fi
 
     getent group tupoproxy >/dev/null 2>&1 || groupadd --system tupoproxy
@@ -893,6 +1057,7 @@ tls_domain = "${TLS_DOMAIN}"
 tls_fingerprints = { "${TLS_DOMAIN}" = "${PROFILE}" }
 mask = true
 mask_dynamic = true
+${mask_host_line}
 mask_port = ${TLS_DOMAIN_PORT}
 unknown_sni_action = "mask"
 tls_emulation = true
@@ -907,6 +1072,20 @@ EOF
 }
 
 configure_services() {
+    local decoy_edge=""
+    if ((TLS_DECOY_LOCAL)); then
+        decoy_edge="$(cat <<EOF
+
+frontend tupoproxy_local_decoy
+    bind 127.0.0.1:${TLS_DOMAIN_PORT}
+    default_backend tupoproxy_decoy_cover
+
+backend tupoproxy_decoy_cover
+    server decoy 127.0.0.1:20443 check
+EOF
+)"
+    fi
+
     cat > /etc/systemd/system/tupoproxy-cover.service <<EOF
 [Unit]
 Description=tupoproxy isolated HTTPS cover
@@ -1007,6 +1186,7 @@ backend tupoproxy_backend
 
 backend tupoproxy_cover
     server cover 127.0.0.1:19443 check
+${decoy_edge}
 EOF
     chown root:tupoproxy "$CONFIG_DIR/haproxy.cfg"
     chmod 0640 "$CONFIG_DIR/haproxy.cfg"
@@ -1066,7 +1246,7 @@ restart_service_or_die() {
 }
 
 verify_public_cover() {
-    local cover_body tls_probe decoy_probe
+    local cover_body tls_probe decoy_probe local_decoy_probe
 
     note "Verifying the public HTTPS camouflage path"
     if ! cover_body="$(curl --fail --silent --show-error --insecure --noproxy '*' \
@@ -1094,6 +1274,17 @@ verify_public_cover() {
     fi
     grep -Fq 'ALPN protocol: h2' <<<"$decoy_probe" \
         || die "FakeTLS decoy ${TLS_DOMAIN} does not negotiate HTTP/2"
+
+    if ((TLS_DECOY_LOCAL)); then
+        if ! local_decoy_probe="$(timeout 15 openssl s_client \
+            -connect "127.0.0.1:${TLS_DOMAIN_PORT}" -servername "$TLS_DOMAIN" -alpn h2 \
+            -verify_hostname "$TLS_DOMAIN" -verify_return_error -CApath /etc/ssl/certs \
+            </dev/null 2>/dev/null)"; then
+            die "same-server TLS decoy failed on isolated TCP/${TLS_DOMAIN_PORT}"
+        fi
+        grep -Fq 'ALPN protocol: h2' <<<"$local_decoy_probe" \
+            || die "same-server TLS decoy does not negotiate HTTP/2"
+    fi
 }
 
 prompt_bot_registration() {
@@ -1142,6 +1333,7 @@ tupoproxy installation
 Domain: ${DOMAIN}
 TLS decoy domain: ${TLS_DOMAIN}
 TLS decoy port: ${TLS_DOMAIN_PORT}
+TLS decoy local: $([[ "$TLS_DECOY_LOCAL" == "1" ]] && printf 'yes' || printf 'no')
 ACME e-mail: ${EMAIL}
 Public port: ${PUBLIC_PORT}
 TLS profile: ${PROFILE}
@@ -1151,6 +1343,9 @@ Advertising tag: ${AD_TAG}
 Certificate chain: ${CERT_FULLCHAIN}
 Certificate key: ${CERT_KEY}
 Certificate managed: $([[ "$CERTIFICATE_MANAGED" == "1" ]] && printf 'yes' || printf 'no')
+TLS decoy certificate chain: ${TLS_CERT_FULLCHAIN}
+TLS decoy certificate key: ${TLS_CERT_KEY}
+TLS decoy certificate managed: $([[ "$TLS_CERTIFICATE_MANAGED" == "1" ]] && printf 'yes' || printf 'no')
 
 @MTProxybot registration:
 When the bot says "Now please specify its secret in hex format.", send:
@@ -1175,6 +1370,11 @@ write_summary() {
     printf 'Public endpoint: %s:%s\n' "$DOMAIN" "$PUBLIC_PORT"
     printf 'FakeTLS decoy SNI: %s\n' "$TLS_DOMAIN"
     printf 'FakeTLS decoy HTTPS port: %s\n' "$TLS_DOMAIN_PORT"
+    if ((TLS_DECOY_LOCAL)); then
+        printf 'FakeTLS decoy mode: isolated on this VPS\n'
+    else
+        printf 'FakeTLS decoy mode: existing external HTTPS site\n'
+    fi
     printf 'TLS profile: %s\n' "$PROFILE"
     if [[ -n "$AD_TAG" ]]; then
         printf 'Sponsored-channel tag: configured\n'
@@ -1200,12 +1400,8 @@ if ((!BINARY_ONLY)); then
     prompt_tls_domain_port
     validate_tls_domain_port
     validate_domain_routes
-    if [[ -z "$CERT_FULLCHAIN" ]]; then
-        prompt_value EMAIL "ACME e-mail"
-    fi
     prompt_public_port
     prompt_setup_options
-    validate_inputs
 fi
 
 note "Installing operating-system dependencies"
@@ -1225,7 +1421,12 @@ else
 fi
 
 if ((!BINARY_ONLY)); then
-    validate_tls_decoy
+    detect_tls_decoy_mode
+    if [[ -z "$CERT_FULLCHAIN" || ("$TLS_DECOY_LOCAL" == "1" && -z "$TLS_CERT_FULLCHAIN") ]]; then
+        prompt_value EMAIL "ACME e-mail"
+    fi
+    validate_inputs
+    validate_existing_certificates
 fi
 
 note "Installing the prebuilt static binary"
@@ -1244,6 +1445,7 @@ install_acme_plugin
 
 note "Preparing certificate and HTTPS cover"
 configure_acme
+validate_existing_certificates
 configure_cover_site
 
 note "Writing tupoproxy and edge configurations"

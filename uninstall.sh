@@ -14,9 +14,12 @@ readonly SERVICES=(tupoproxy-edge.service tupoproxy.service tupoproxy-cover.serv
 ASSUME_YES=0
 PURGE_CERTIFICATE=0
 DOMAIN=""
+TLS_DOMAIN=""
 PUBLIC_PORT=""
 CERTIFICATE_CHAIN=""
 CERTIFICATE_MANAGED=""
+TLS_CERTIFICATE_CHAIN=""
+TLS_CERTIFICATE_MANAGED=""
 
 usage() {
     cat <<'EOF'
@@ -24,8 +27,8 @@ Usage: sudo bash uninstall.sh [options]
 
 Options:
   --yes                Do not ask for confirmation
-  --purge-certificate  Also delete the Let's Encrypt certificate named after
-                       the installed proxy domain
+  --purge-certificate  Also delete the Let's Encrypt certificates managed for
+                       the proxy and its same-server TLS decoy
   -h, --help           Show this help
 
 The script removes the tupoproxy services, binary, configuration, runtime
@@ -88,12 +91,18 @@ installation_value() {
 
 load_installation_metadata() {
     DOMAIN="$(installation_value Domain)"
+    TLS_DOMAIN="$(installation_value 'TLS decoy domain')"
     PUBLIC_PORT="$(installation_value 'Public port')"
     CERTIFICATE_CHAIN="$(installation_value 'Certificate chain')"
     CERTIFICATE_MANAGED="$(installation_value 'Certificate managed')"
+    TLS_CERTIFICATE_CHAIN="$(installation_value 'TLS decoy certificate chain')"
+    TLS_CERTIFICATE_MANAGED="$(installation_value 'TLS decoy certificate managed')"
 
     if [[ -n "$DOMAIN" && ! "$DOMAIN" =~ ^([A-Za-z0-9]([A-Za-z0-9-]{0,61}[A-Za-z0-9])?\.)+[A-Za-z]{2,63}$ ]]; then
         die "refusing to use invalid domain metadata from ${CONFIG_DIR}/INSTALLATION.txt"
+    fi
+    if [[ -n "$TLS_DOMAIN" && ! "$TLS_DOMAIN" =~ ^([A-Za-z0-9]([A-Za-z0-9-]{0,61}[A-Za-z0-9])?\.)+[A-Za-z]{2,63}$ ]]; then
+        die "refusing to use invalid TLS decoy metadata from ${CONFIG_DIR}/INSTALLATION.txt"
     fi
     if [[ -n "$PUBLIC_PORT" ]]; then
         [[ "$PUBLIC_PORT" =~ ^[0-9]+$ ]] \
@@ -133,18 +142,34 @@ remove_managed_tree() {
 }
 
 purge_certificate() {
+    local managed_count=0
     ((PURGE_CERTIFICATE)) || return 0
-    [[ -n "$DOMAIN" ]] \
-        || die "cannot purge a certificate because installation metadata has no domain"
-    [[ "$CERTIFICATE_MANAGED" == "yes" ]] \
-        || die "the installer did not record this certificate as managed; remove it manually"
-    [[ "$CERTIFICATE_CHAIN" == "/etc/letsencrypt/live/${DOMAIN}/fullchain.pem" ]] \
-        || die "certificate was not managed under the expected Let's Encrypt path; remove it manually"
+    if [[ "$CERTIFICATE_MANAGED" == "yes" ]]; then
+        [[ -n "$DOMAIN" ]] \
+            || die "cannot purge the managed origin certificate without domain metadata"
+        [[ "$CERTIFICATE_CHAIN" == "/etc/letsencrypt/live/${DOMAIN}/fullchain.pem" ]] \
+            || die "origin certificate was not managed under the expected Let's Encrypt path"
+        managed_count=$((managed_count + 1))
+    fi
+    if [[ "$TLS_CERTIFICATE_MANAGED" == "yes" ]]; then
+        [[ -n "$TLS_DOMAIN" ]] \
+            || die "cannot purge the managed TLS decoy certificate without domain metadata"
+        [[ "$TLS_CERTIFICATE_CHAIN" == "/etc/letsencrypt/live/${TLS_DOMAIN}/fullchain.pem" ]] \
+            || die "TLS decoy certificate was not managed under the expected Let's Encrypt path"
+        managed_count=$((managed_count + 1))
+    fi
+    ((managed_count > 0)) \
+        || die "the installer did not record any managed certificates; remove custom certificates manually"
     command -v certbot >/dev/null 2>&1 \
         || die "certbot is required to purge the managed certificate"
 
-    note "Deleting the explicitly requested Let's Encrypt certificate"
-    certbot delete --non-interactive --cert-name "$DOMAIN"
+    note "Deleting the explicitly requested Let's Encrypt certificates"
+    if [[ "$CERTIFICATE_MANAGED" == "yes" ]]; then
+        certbot delete --non-interactive --cert-name "$DOMAIN"
+    fi
+    if [[ "$TLS_CERTIFICATE_MANAGED" == "yes" ]]; then
+        certbot delete --non-interactive --cert-name "$TLS_DOMAIN"
+    fi
     rm -f -- "$DNS_CREDENTIALS"
 }
 
@@ -201,6 +226,9 @@ printf '\n============================================================\n'
 printf 'tupoproxy has been removed.\n'
 if ((!PURGE_CERTIFICATE)) && [[ -n "$CERTIFICATE_CHAIN" ]]; then
     printf 'Preserved certificate: %s\n' "$CERTIFICATE_CHAIN"
+fi
+if ((!PURGE_CERTIFICATE)) && [[ -n "$TLS_CERTIFICATE_CHAIN" ]]; then
+    printf 'Preserved TLS decoy certificate: %s\n' "$TLS_CERTIFICATE_CHAIN"
 fi
 if ((!PURGE_CERTIFICATE)) && [[ -e "$DNS_CREDENTIALS" ]]; then
     printf 'Preserved renewal credentials: %s\n' "$DNS_CREDENTIALS"
