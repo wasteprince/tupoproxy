@@ -11,7 +11,7 @@
 </p>
 
 <p align="center">
-  <a href="#быстрый-старт">Быстрый старт</a>
+  <a href="#быстрый-старт-одна-команда">Установка одной командой</a>
   ·
   <a href="deploy/README.md">Схема для сервера</a>
   ·
@@ -64,33 +64,49 @@ HAProxy не расшифровывает TLS: он читает SNI и пере
 `9443`. tupoproxy слушает только `127.0.0.1:8443`, поэтому не мешает другим
 проектам и не забирает сертификаты.
 
-## Быстрый старт
+## Быстрый старт: одна команда
 
 Нужен сервер с Debian 12+/Ubuntu 22.04+ и домен с `A`/`AAAA`, указывающим на
 сервер. Rust, Cargo и ручная установка пакетов не нужны.
 
-### Автоматическая установка
+Войдите на сервер как `root` и вставьте одну команду:
 
 ```bash
-curl --fail --location --show-error --output install.sh https://github.com/wasteprince/tupoproxy/raw/refs/heads/main/install.sh
-test -s install.sh
-sudo bash install.sh
+curl --fail --location --show-error https://github.com/wasteprince/tupoproxy/raw/refs/heads/main/install.sh | bash
 ```
 
-Первая команда только скачивает файл и показывает прогресс. Установку запускает
-третья команда — после неё сразу появится приглашение для ввода данных. Мастер
-попросит домен, e-mail для Let's Encrypt и желаемый порт прокси. Если
-оставить порт пустым, он возьмёт `443`, а когда тот занят — первый свободный из
-`8443`, `2053`, `2083`, `2087`, `2096`.
+Если вы вошли не как `root`, используйте одну команду с `sudo`:
+
+```bash
+curl --fail --location --show-error https://github.com/wasteprince/tupoproxy/raw/refs/heads/main/install.sh | sudo bash
+```
+
+Сразу после запуска мастер последовательно спросит:
+
+1. Домен прокси.
+2. E-mail для Let's Encrypt.
+3. Публичный порт — можно нажать Enter для автоматического выбора.
+4. TLS-фингерпринт — можно нажать Enter и оставить `chrome`.
+5. Имя пользователя credential — можно нажать Enter и оставить `user`.
+
+После ответов больше ничего делать не нужно. Установщик сам скачает готовый
+бинарник, поставит зависимости, получит сертификат, создаст secret, настроит
+cover-сайт, HAProxy, systemd и firewall, запустит всё и выведет готовую
+Telegram-ссылку. Результат также сохранится в
+`/etc/tupoproxy/INSTALLATION.txt`.
+
+Если порт `443` занят, скрипт автоматически выберет первый свободный из `8443`,
+`2053`, `2083`, `2087`, `2096`. Если занят порт выдачи сертификата, мастер
+переключится на существующий nginx/Apache либо предложит DNS-проверку, не
+останавливая чужой проект.
+
+### Автоматическая установка без вопросов
 
 Полностью неинтерактивный вариант:
 
 ```bash
-sudo bash install.sh \
-  --domain proxy.example.com \
-  --email admin@example.com \
-  --port 8443 \
-  --profile chrome
+curl --fail --location --show-error https://github.com/wasteprince/tupoproxy/raw/refs/heads/main/install.sh | sudo bash -s -- \
+  --domain proxy.example.com --email admin@example.com --port 8443 --profile chrome
 ```
 
 Скрипт сам:

@@ -211,6 +211,17 @@ prompt_public_port() {
     PUBLIC_PORT="$value"
 }
 
+prompt_setup_options() {
+    local value
+    [[ "$SETUP_WIZARD" == "1" ]] || return
+
+    read -r -p "TLS fingerprint (chrome/firefox/compat/legacy) [chrome]: " value </dev/tty
+    [[ -z "$value" ]] || PROFILE="${value,,}"
+
+    read -r -p "Telegram credential user [user]: " value </dev/tty
+    [[ -z "$value" ]] || PROXY_USER="$value"
+}
+
 installation_value() {
     local label="$1"
     local summary_file="$CONFIG_DIR/INSTALLATION.txt"
@@ -868,6 +879,7 @@ if ((!BINARY_ONLY)); then
         prompt_value EMAIL "ACME e-mail"
     fi
     prompt_public_port
+    prompt_setup_options
     validate_inputs
 fi
 
