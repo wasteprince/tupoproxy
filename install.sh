@@ -33,6 +33,7 @@ PROFILE_SET=0
 PROXY_USER_SET=0
 NGINX_WAS_INSTALLED=0
 HAPROXY_WAS_INSTALLED=0
+AD_TAG_CHANGED=0
 
 usage() {
     cat <<'EOF'
@@ -228,9 +229,6 @@ prompt_setup_options() {
 
     read -r -p "Telegram credential user [user]: " value </dev/tty
     [[ -z "$value" ]] || PROXY_USER="$value"
-
-    read -r -p "Sponsored-channel ad tag from @MTProxybot (32 hex, Enter to skip): " value </dev/tty
-    [[ -z "$value" ]] || AD_TAG="$value"
 }
 
 installation_value() {
@@ -274,6 +272,15 @@ validate_domain() {
     DOMAIN="${DOMAIN,,}"
 }
 
+validate_ad_tag() {
+    [[ -n "$AD_TAG" ]] || return 0
+    [[ "$AD_TAG" =~ ^[A-Fa-f0-9]{32}$ ]] \
+        || die "ad tag must be exactly 32 hex characters from @MTProxybot"
+    [[ "${AD_TAG,,}" != "00000000000000000000000000000000" ]] \
+        || die "an all-zero ad tag has no effect; use the tag issued by @MTProxybot"
+    AD_TAG="${AD_TAG,,}"
+}
+
 validate_inputs() {
     case "$PROFILE" in
         chrome|firefox|compat|legacy) ;;
@@ -288,13 +295,7 @@ validate_inputs() {
         [[ "$SECRET" =~ ^[A-Fa-f0-9]{32}$ ]] || die "secret must be exactly 32 hex characters"
         SECRET="${SECRET,,}"
     fi
-    if [[ -n "$AD_TAG" ]]; then
-        [[ "$AD_TAG" =~ ^[A-Fa-f0-9]{32}$ ]] \
-            || die "ad tag must be exactly 32 hex characters from @MTProxybot"
-        [[ "${AD_TAG,,}" != "00000000000000000000000000000000" ]] \
-            || die "an all-zero ad tag has no effect; use the tag issued by @MTProxybot"
-        AD_TAG="${AD_TAG,,}"
-    fi
+    validate_ad_tag
     if [[ -n "$CERT_FULLCHAIN" || -n "$CERT_KEY" ]]; then
         [[ -n "$CERT_FULLCHAIN" && -n "$CERT_KEY" ]] \
             || die "--cert-fullchain and --cert-key must be provided together"
@@ -859,10 +860,45 @@ open_firewall_ports() {
     fi
 }
 
-write_summary() {
-    local domain_hex telegram_link
+prompt_bot_registration() {
+    local value
+    [[ "$SETUP_WIZARD" == "1" && -z "$AD_TAG" ]] || return 0
+
+    printf '\n============================================================\n' >/dev/tty
+    printf '@MTProxybot registration\n' >/dev/tty
+    printf 'Proxy address for the bot (host:port): %s:%s\n' "$DOMAIN" "$PUBLIC_PORT" >/dev/tty
+    printf 'When @MTProxybot says:\n' >/dev/tty
+    printf 'Now please specify its secret in hex format.\n' >/dev/tty
+    printf 'send exactly this 32-character secret (without ee or the domain):\n' >/dev/tty
+    printf '%s\n' "$SECRET" >/dev/tty
+    printf '============================================================\n' >/dev/tty
+    while true; do
+        read -r -p "Paste the advertising tag returned by @MTProxybot (Enter to skip): " value </dev/tty
+        [[ -n "$value" ]] || return 0
+        if [[ ! "$value" =~ ^[A-Fa-f0-9]{32}$ ]]; then
+            printf 'The tag must contain exactly 32 hex characters. Try again.\n' >/dev/tty
+            continue
+        fi
+        if [[ "${value,,}" == "00000000000000000000000000000000" ]]; then
+            printf 'The all-zero tag is not valid. Paste the tag issued by @MTProxybot.\n' >/dev/tty
+            continue
+        fi
+        AD_TAG="${value,,}"
+        break
+    done
+    AD_TAG_CHANGED=1
+}
+
+telegram_proxy_link() {
+    local domain_hex
     domain_hex="$(printf '%s' "$DOMAIN" | od -An -tx1 | tr -d ' \n')"
-    telegram_link="tg://proxy?server=${DOMAIN}&port=${PUBLIC_PORT}&secret=ee${SECRET}${domain_hex}"
+    printf 'tg://proxy?server=%s&port=%s&secret=ee%s%s' \
+        "$DOMAIN" "$PUBLIC_PORT" "$SECRET" "$domain_hex"
+}
+
+save_summary() {
+    local telegram_link
+    telegram_link="$(telegram_proxy_link)"
     cat > "$CONFIG_DIR/INSTALLATION.txt" <<EOF
 tupoproxy installation
 Domain: ${DOMAIN}
@@ -875,6 +911,10 @@ Advertising tag: ${AD_TAG}
 Certificate chain: ${CERT_FULLCHAIN}
 Certificate key: ${CERT_KEY}
 
+@MTProxybot registration:
+When the bot says "Now please specify its secret in hex format.", send:
+${SECRET}
+
 Telegram link:
 ${telegram_link}
 
@@ -882,6 +922,12 @@ Logs:
 journalctl -u tupoproxy -f
 EOF
     chmod 0600 "$CONFIG_DIR/INSTALLATION.txt"
+}
+
+write_summary() {
+    local telegram_link
+    telegram_link="$(telegram_proxy_link)"
+    save_summary
 
     printf '\n============================================================\n'
     printf 'tupoproxy is installed\n'
@@ -891,6 +937,9 @@ EOF
         printf 'Sponsored-channel tag: configured\n'
     fi
     printf 'Certificate mode: %s\n' "$ACME_MODE"
+    printf 'When @MTProxybot says "Now please specify its secret in hex format.", send:\n'
+    printf '%s\n' "$SECRET"
+    printf '(32 hex characters; without ee or the domain)\n'
     printf 'Telegram link:\n%s\n' "$telegram_link"
     printf 'Saved securely in %s/INSTALLATION.txt\n' "$CONFIG_DIR"
     printf '============================================================\n'
@@ -963,6 +1012,18 @@ else
     systemctl --quiet is-active tupoproxy-edge.service || die "tupoproxy edge did not start"
     if [[ "$ACME_MODE" != "manual-dns" ]]; then
         systemctl enable --now certbot.timer >/dev/null 2>&1 || true
+    fi
+fi
+
+save_summary
+prompt_bot_registration
+if ((AD_TAG_CHANGED)); then
+    note "Applying the advertising tag from @MTProxybot"
+    configure_proxy
+    if ((!NO_START)); then
+        systemctl restart tupoproxy.service
+        systemctl --quiet is-active tupoproxy.service \
+            || die "tupoproxy service did not restart after applying the advertising tag"
     fi
 fi
 
