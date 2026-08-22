@@ -34,6 +34,7 @@ PROXY_USER_SET=0
 NGINX_WAS_INSTALLED=0
 HAPROXY_WAS_INSTALLED=0
 AD_TAG_CHANGED=0
+INTERACTIVE_MODE=0
 
 usage() {
     cat <<'EOF'
@@ -90,6 +91,10 @@ on_error() {
     exit "$status"
 }
 trap 'on_error "$LINENO" "$BASH_COMMAND"' ERR
+
+if (($# == 0)); then
+    INTERACTIVE_MODE=1
+fi
 
 while (($#)); do
     case "$1" in
@@ -862,7 +867,9 @@ open_firewall_ports() {
 
 prompt_bot_registration() {
     local value
-    [[ "$SETUP_WIZARD" == "1" && -z "$AD_TAG" ]] || return 0
+    if [[ -n "$AD_TAG" || ("$SETUP_WIZARD" != "1" && "$INTERACTIVE_MODE" != "1") ]]; then
+        return 0
+    fi
 
     printf '\n============================================================\n' >/dev/tty
     printf '@MTProxybot registration\n' >/dev/tty
