@@ -14,6 +14,7 @@ PROFILE="chrome"
 PROXY_USER="user"
 PUBLIC_PORT=""
 SECRET=""
+AD_TAG=""
 CERT_FULLCHAIN=""
 CERT_KEY=""
 ACME_MODE="auto"
@@ -46,6 +47,7 @@ Optional:
   --user NAME            Credential label (default: user)
   --port PORT            Public TCP port (default: 443, or a free fallback)
   --secret HEX           Existing 16-byte secret (default: generated)
+  --ad-tag HEX           32-hex sponsored-channel tag from @MTProxybot
   --cert-fullchain PATH  Existing PEM certificate chain
   --cert-key PATH        Existing PEM private key
   --acme-mode MODE       auto|standalone|nginx|apache|webroot|dns|manual-dns
@@ -64,7 +66,7 @@ Examples:
   sudo bash install.sh --domain proxy.example.com --email admin@example.com \
     --port 8443 --acme-mode dns --dns-provider cloudflare \
     --dns-credentials /root/cloudflare.ini
-  curl -fsSL https://github.com/wasteprince/tupoproxy/raw/refs/heads/main/install.sh \
+  curl -fsSL https://github.com/wasteprince/tupoproxy/releases/latest/download/install.sh \
     | sudo bash -s -- --domain proxy.example.com --email admin@example.com
 EOF
 }
@@ -119,6 +121,11 @@ while (($#)); do
         --secret)
             (($# >= 2)) || die "--secret requires a value"
             SECRET="$2"
+            shift 2
+            ;;
+        --ad-tag)
+            (($# >= 2)) || die "--ad-tag requires a value"
+            AD_TAG="$2"
             shift 2
             ;;
         --cert-fullchain)
@@ -220,6 +227,9 @@ prompt_setup_options() {
 
     read -r -p "Telegram credential user [user]: " value </dev/tty
     [[ -z "$value" ]] || PROXY_USER="$value"
+
+    read -r -p "Sponsored-channel ad tag from @MTProxybot (32 hex, Enter to skip): " value </dev/tty
+    [[ -z "$value" ]] || AD_TAG="$value"
 }
 
 installation_value() {
@@ -237,6 +247,7 @@ load_existing_installation() {
     [[ -n "$EMAIL" ]] || EMAIL="$(installation_value 'ACME e-mail')"
     [[ -n "$PUBLIC_PORT" ]] || PUBLIC_PORT="$(installation_value 'Public port')"
     [[ -n "$SECRET" ]] || SECRET="$(installation_value Secret)"
+    [[ -n "$AD_TAG" ]] || AD_TAG="$(installation_value 'Advertising tag')"
     if ((!PROFILE_SET)); then
         saved_value="$(installation_value 'TLS profile')"
         [[ -z "$saved_value" ]] || PROFILE="$saved_value"
@@ -275,6 +286,13 @@ validate_inputs() {
     if [[ -n "$SECRET" ]]; then
         [[ "$SECRET" =~ ^[A-Fa-f0-9]{32}$ ]] || die "secret must be exactly 32 hex characters"
         SECRET="${SECRET,,}"
+    fi
+    if [[ -n "$AD_TAG" ]]; then
+        [[ "$AD_TAG" =~ ^[A-Fa-f0-9]{32}$ ]] \
+            || die "ad tag must be exactly 32 hex characters from @MTProxybot"
+        [[ "${AD_TAG,,}" != "00000000000000000000000000000000" ]] \
+            || die "an all-zero ad tag has no effect; use the tag issued by @MTProxybot"
+        AD_TAG="${AD_TAG,,}"
     fi
     if [[ -n "$CERT_FULLCHAIN" || -n "$CERT_KEY" ]]; then
         [[ -n "$CERT_FULLCHAIN" && -n "$CERT_KEY" ]] \
@@ -631,10 +649,14 @@ EOF
 }
 
 configure_proxy() {
+    local ad_tag_line=""
     if ! getent ahosts "$DOMAIN" >/dev/null 2>&1; then
         die "domain ${DOMAIN} does not resolve; create its DNS A/AAAA record first"
     fi
     [[ -n "$SECRET" ]] || SECRET="$(openssl rand -hex 16)"
+    if [[ -n "$AD_TAG" ]]; then
+        ad_tag_line="ad_tag = \"${AD_TAG}\""
+    fi
 
     getent group tupoproxy >/dev/null 2>&1 || groupadd --system tupoproxy
     if ! getent passwd tupoproxy >/dev/null 2>&1; then
@@ -649,6 +671,7 @@ configure_proxy() {
 [general]
 use_middle_proxy = true
 log_level = "normal"
+${ad_tag_line}
 
 [general.modes]
 classic = false
@@ -847,6 +870,7 @@ Public port: ${PUBLIC_PORT}
 TLS profile: ${PROFILE}
 Credential user: ${PROXY_USER}
 Secret: ${SECRET}
+Advertising tag: ${AD_TAG}
 Certificate chain: ${CERT_FULLCHAIN}
 Certificate key: ${CERT_KEY}
 
@@ -862,6 +886,9 @@ EOF
     printf 'tupoproxy is installed\n'
     printf 'Public endpoint: %s:%s\n' "$DOMAIN" "$PUBLIC_PORT"
     printf 'TLS profile: %s\n' "$PROFILE"
+    if [[ -n "$AD_TAG" ]]; then
+        printf 'Sponsored-channel tag: configured\n'
+    fi
     printf 'Certificate mode: %s\n' "$ACME_MODE"
     printf 'Telegram link:\n%s\n' "$telegram_link"
     printf 'Saved securely in %s/INSTALLATION.txt\n' "$CONFIG_DIR"

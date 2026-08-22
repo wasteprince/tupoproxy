@@ -72,13 +72,13 @@ HAProxy не расшифровывает TLS: он читает SNI и пере
 Войдите на сервер как `root` и вставьте одну команду:
 
 ```bash
-curl --fail --location --show-error https://github.com/wasteprince/tupoproxy/raw/refs/heads/main/install.sh | bash
+curl -fL https://github.com/wasteprince/tupoproxy/releases/latest/download/install.sh | bash
 ```
 
 Если вы вошли не как `root`, используйте одну команду с `sudo`:
 
 ```bash
-curl --fail --location --show-error https://github.com/wasteprince/tupoproxy/raw/refs/heads/main/install.sh | sudo bash
+curl -fL https://github.com/wasteprince/tupoproxy/releases/latest/download/install.sh | sudo bash
 ```
 
 Сразу после запуска мастер последовательно спросит:
@@ -88,10 +88,11 @@ curl --fail --location --show-error https://github.com/wasteprince/tupoproxy/raw
 3. Публичный порт — можно нажать Enter для автоматического выбора.
 4. TLS-фингерпринт — можно нажать Enter и оставить `chrome`.
 5. Имя пользователя credential — можно нажать Enter и оставить `user`.
+6. Рекламный `ad_tag` от `@MTProxybot` — можно вставить сразу или пропустить.
 
 После ответов больше ничего делать не нужно. Установщик сам скачает готовый
 бинарник, поставит зависимости, получит сертификат, создаст secret, настроит
-cover-сайт, HAProxy, systemd и firewall, запустит всё и выведет готовую
+cover-сайт, HAProxy и systemd, откроет порт в активном UFW, запустит всё и выведет готовую
 Telegram-ссылку. Результат также сохранится в
 `/etc/tupoproxy/INSTALLATION.txt`.
 
@@ -105,9 +106,16 @@ Telegram-ссылку. Результат также сохранится в
 Полностью неинтерактивный вариант:
 
 ```bash
-curl --fail --location --show-error https://github.com/wasteprince/tupoproxy/raw/refs/heads/main/install.sh | sudo bash -s -- \
-  --domain proxy.example.com --email admin@example.com --port 8443 --profile chrome
+curl -fL https://github.com/wasteprince/tupoproxy/releases/latest/download/install.sh | sudo bash -s -- \
+  --domain proxy.example.com --email admin@example.com --port 8443 --profile chrome \
+  --ad-tag 00112233445566778899aabbccddeeff
 ```
+
+Рекламный тег должен содержать ровно 32 hex-символа и выдаётся ботом
+[`@MTProxybot`](https://t.me/MTProxybot). Он сохраняется как `general.ad_tag` и
+применяется ко всем пользователям, у которых нет отдельного тега. В
+`tg://proxy`-ссылку тег не вставляется: сервер передаёт его Telegram отдельно
+через MTProto middle-proxy.
 
 Скрипт сам:
 
@@ -184,7 +192,7 @@ sudo bash install.sh --domain proxy.example.com --port 9443 \
 Установить готовый бинарник без изменения серверной конфигурации:
 
 ```bash
-curl -fsSL https://github.com/wasteprince/tupoproxy/raw/refs/heads/main/install.sh \
+curl -fsSL https://github.com/wasteprince/tupoproxy/releases/latest/download/install.sh \
   | sudo bash -s -- --binary-only
 tupoproxy --version
 ```
