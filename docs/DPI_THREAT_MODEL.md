@@ -9,10 +9,10 @@ block, IP allow-list, or total connectivity shutdown.
 | Signal or action | Evidence | Server-side response |
 | --- | --- | --- |
 | Destination IP, subnet, and port blocks | General network capability; reported during MTProxy waves | Use TCP/443, multiple clean addresses, and operational rotation. No payload obfuscation can repair an IP-layer block. |
-| TLS SNI parsing followed by RST/drop/throttling | Controlled TSPU measurements and OONI observations of resets/timeouts in 2026 | Use a real controlled SNI whose DNS points to the proxy and expose a genuine HTTPS fallback. |
+| TLS SNI parsing followed by RST/drop/throttling | Controlled TSPU measurements and OONI observations of resets/timeouts in 2026 | Separate the connection origin from the credential decoy SNI and expose a genuine HTTPS fallback for both roles. |
 | Telegram FakeTLS ClientHello JA3/JA4 | A 2026 Telegram Desktop issue reports a static client fingerprint; its proposed fix is a closed client-side proof of concept, not an independently confirmed DPI rule | Keep clients current. The stock proxy server cannot rewrite bytes already sent by the client. |
 | Reassembly of a split ClientHello | Stateful DPI behavior and 2026 field reports | Do not treat MSS/fragmentation as the primary defense. Keep it optional only for older non-reassembling paths. |
-| Fake server flight, record sizes, and fixed downstream shape | Active-probe and implementation analysis | Mirror a real origin ServerHello, vary downstream record sizes by credential SNI, and forward invalid authentication to the real origin. |
+| Fake server flight, record sizes, and fixed downstream shape | Active-probe and implementation analysis | Mirror the real decoy ServerHello, vary downstream record sizes by credential SNI, and forward invalid authentication to the real decoy. |
 | Repeated `(SNI, IP, port, fingerprint)` flow correlation | Field report; not yet reproduced by a public controlled study | Use several real credential SNIs and, where possible, more than one address. Avoid unrelated third-party SNI. |
 | Length/timing statistics after the handshake | Generic encrypted-traffic classification literature and field reports | Padded-intermediate mode and bounded record-shape variation reduce static sizes, but cannot make a Telegram session semantically identical to web browsing. |
 | Mobile allow-lists or all-TCP outage | Operator reports and protocol limits | A proxy cannot work without IP connectivity. A separate permitted VPN/tunnel or another network is required. |
@@ -25,14 +25,16 @@ block, IP allow-list, or total connectivity shutdown.
   phased TLS record-size schedule. It does not claim to alter client JA4.
 - Persisted cover profiles carry their probe-profile identity. A configuration
   change invalidates incompatible cached data before readiness checks.
-- Unknown or invalid traffic can be relayed to an actual TLS virtual host with
-  a publicly valid certificate, which is stronger against active probing than
-  a synthetic certificate-only response.
+- The automated deployment uses two names: an owned origin in the Telegram
+  `server` parameter and a separately hosted HTTPS decoy in the credential
+  SNI. Unknown or invalid decoy traffic is relayed to the decoy's actual TLS
+  endpoint with its publicly valid certificate. The public proxy port and the
+  decoy HTTPS port are independently configurable and verified.
 - The automated deployment negotiates HTTP/2 on the real fallback, serves a
-  per-installation cover page with normal static-file cache semantics, and
-  verifies the public scanner-visible route after startup. This removes the
-  former shared `Welcome` response and ALPN mismatch between authenticated and
-  fallback paths.
+  per-installation origin cover page with normal static-file cache semantics,
+  and verifies both public scanner-visible routes after startup. This removes
+  the former shared `Welcome` response and ALPN mismatch between authenticated
+  and fallback paths.
 - TLS response framing varies independently of MTProto encryption. Cryptographic
   primitives are not replaced with experimental algorithms.
 - The HAProxy deployment keeps normal sites and ACME independent while

@@ -40,7 +40,7 @@
 | Выбор TLS-профиля | SNI из credential выбирает `chrome`, `firefox`, `compat` или `legacy` |
 | Настоящий TLS-образец | Прокси получает поведение реального домена и проверяет профиль дискового кэша |
 | Изменяемая форма трафика | Границы исходящих TLS-record меняются по фазам и для каждого подключения |
-| Защита от проб | Неверная авторизация уходит на уникальный HTTPS-сайт с HTTP/2 без общего баннера прокси |
+| Защита от проб | Неверная авторизация уходит на настоящий внешний decoy-сайт с его сертификатом и HTTP/2 |
 | Совместный порт 443 | HAProxy разводит трафик по SNI, не забирая сайты у nginx/Caddy |
 | Нормальный ACME | Автовыбор HTTP-01, nginx/Apache, webroot или DNS-01 без остановки чужого сервиса |
 | Работа поверх VPN | Обычный TCP/443 без обязательной фильтрации по сети клиента |
@@ -51,23 +51,26 @@
 ```mermaid
 flowchart LR
     A[Telegram или браузер] -->|TCP 443| H[HAProxy<br>маршрутизация по SNI]
-    H -->|SNI из credential<br>PROXY v2| T[tupoproxy<br>127.0.0.1:8443]
-    H -->|остальные SNI| N[nginx или Caddy<br>127.0.0.1:9443]
+    H -->|decoy SNI из credential<br>PROXY v2| T[tupoproxy<br>127.0.0.1:8443]
+    H -->|origin SNI и остальные| N[nginx<br>127.0.0.1:19443]
     T -->|валидный ee credential| G[Дата-центр Telegram]
-    T -->|браузер или неверный ключ| N
-    N --> C[Настоящий сайт-прикрытие<br>валидный сертификат]
+    T -->|браузер или неверный ключ| D[Внешний decoy HTTPS<br>настоящий сертификат]
+    N --> C[Origin cover-сайт<br>свой сертификат]
     E[ACME HTTP-01] -->|TCP 80| N
 ```
 
 HAProxy не расшифровывает TLS: он читает SNI и передаёт исходный поток дальше.
-Существующие сайты продолжают работать через nginx/Caddy на локальном порту
-`9443`. tupoproxy слушает только `127.0.0.1:8443`, поэтому не мешает другим
+Origin-сайт обслуживается отдельным nginx на локальном порту `19443`, а
+tupoproxy слушает только `127.0.0.1:18443`, поэтому не мешает другим
 проектам и не забирает сертификаты.
 
 ## Быстрый старт: одна команда
 
-Нужен сервер с Debian 12+/Ubuntu 22.04+ и домен с `A`/`AAAA`, указывающим на
-сервер. Rust, Cargo и ручная установка пакетов не нужны.
+Нужен сервер с Debian 12+/Ubuntu 22.04+, origin-домен с `A`/`AAAA`, указывающим
+на сервер, и отдельный FakeTLS decoy-домен. Decoy должен быть настоящим
+стабильным HTTPS-сайтом на другом адресе с валидным сертификатом и HTTP/2;
+лучше использовать свой обычный сайт, размещённый отдельно. Rust, Cargo и
+ручная установка пакетов не нужны.
 
 Войдите на сервер как `root` и вставьте одну команду:
 
@@ -83,12 +86,14 @@ curl -fL https://github.com/wasteprince/tupoproxy/releases/latest/download/insta
 
 Сразу после запуска мастер последовательно спросит:
 
-1. Домен прокси.
-2. E-mail для Let's Encrypt.
-3. Публичный порт — можно нажать Enter для автоматического выбора.
-4. TLS-фингерпринт — можно нажать Enter и оставить `chrome`.
-5. Имя пользователя credential — можно нажать Enter и оставить `user`.
-6. После запуска прокси покажет отдельный 32-символьный secret для
+1. Настоящий origin-домен прокси, указывающий на VPS.
+2. Отдельный FakeTLS decoy-домен, размещённый не на этом VPS.
+3. HTTPS-порт decoy — обычно `443`, но разрешён любой рабочий порт.
+4. E-mail для Let's Encrypt.
+5. Публичный порт прокси — любой свободный `1–65535`.
+6. TLS-фингерпринт — можно нажать Enter и оставить `chrome`.
+7. Имя пользователя credential — можно нажать Enter и оставить `user`.
+8. После запуска прокси покажет отдельный 32-символьный secret для
    `@MTProxybot`, а затем предложит вставить выданный ботом рекламный `ad_tag`
    или пропустить этот шаг.
 
@@ -98,9 +103,10 @@ cover-сайт, HAProxy и systemd, откроет порт в активном 
 Telegram-ссылку. Результат также сохранится в
 `/etc/tupoproxy/INSTALLATION.txt`.
 
-После запуска скрипт сам обращается к публичному порту как обычный HTTPS-клиент,
-проверяет страницу-прикрытие и согласование `h2`. Установка завершается успешно
-только тогда, когда маршрут, доступный активному сканеру, действительно работает.
+После запуска скрипт сам проверяет оба scanner-visible маршрута через публичный
+порт: origin должен отдавать собственный cover-сайт, а невалидный ClientHello с
+decoy SNI — настоящий сертификат внешнего decoy-сайта и `h2`. Установка
+завершается успешно только тогда, когда оба маршрута действительно работают.
 
 ### Регистрация прокси в `@MTProxybot` во время установки
 
@@ -136,9 +142,36 @@ Now please specify its secret in hex format.
 
 ```bash
 curl -fL https://github.com/wasteprince/tupoproxy/releases/latest/download/install.sh | sudo bash -s -- \
-  --domain proxy.example.com --email admin@example.com --port 8443 --profile chrome \
+  --domain proxy.example.com --tls-domain www.example.org \
+  --tls-domain-port 443 --email admin@example.com \
+  --port 8443 --profile chrome \
   --ad-tag 00112233445566778899aabbccddeeff
 ```
+
+### Полное удаление
+
+Интерактивное удаление одной командой:
+
+```bash
+curl -fL https://github.com/wasteprince/tupoproxy/releases/latest/download/uninstall.sh | sudo bash
+```
+
+Скрипт попросит напечатать `DELETE`, затем остановит и удалит сервисы,
+бинарник, конфигурацию с secret, state, cover-сайт, systemd units, пользователя
+и группу `tupoproxy`, renewal hook и правило UFW для выбранного порта. Общие
+пакеты nginx, HAProxy и Certbot не удаляются.
+
+Сертификат и DNS-credentials по умолчанию сохраняются, потому что они могут
+использоваться другим сайтом. Удалить также сертификат, выпущенный установщиком:
+
+```bash
+curl -fL https://github.com/wasteprince/tupoproxy/releases/latest/download/uninstall.sh \
+  | sudo bash -s -- --purge-certificate
+```
+
+Для удаления без вопроса подтверждения добавьте `--yes`. Параметр
+`--purge-certificate` намеренно не применяется автоматически к сертификату,
+переданному через `--cert-fullchain`/`--cert-key`.
 
 Рекламный тег должен содержать ровно 32 hex-символа и выдаётся ботом
 [`@MTProxybot`](https://t.me/MTProxybot). Он сохраняется как `general.ad_tag` и
@@ -165,8 +198,14 @@ curl -fL https://github.com/wasteprince/tupoproxy/releases/latest/download/insta
 Порт прокси выбирается независимо от сертификата:
 
 ```bash
-sudo bash install.sh --domain proxy.example.com --email admin@example.com --port 9443
+sudo bash install.sh --domain proxy.example.com --tls-domain www.example.org \
+  --email admin@example.com --port 9443
 ```
+
+`--port` — публичный порт tupoproxy. Отдельный `--tls-domain-port` — порт
+внешнего decoy-сайта, куда отправляются неавторизованные проверки. Он тоже
+может быть любым, но на нём decoy обязан реально отдавать доверенный HTTPS и
+согласовывать `h2`.
 
 В режиме `auto` установщик использует существующий nginx или Apache для
 HTTP-01. Если `80` занят другим сервисом либо входящие `80/443` закрыты,
@@ -178,6 +217,7 @@ Cloudflare с API Token, ограниченным правом `Zone:DNS:Edit` �
 read -r -s -p 'Cloudflare API token: ' TUPOPROXY_CLOUDFLARE_API_TOKEN; echo
 sudo env TUPOPROXY_CLOUDFLARE_API_TOKEN="$TUPOPROXY_CLOUDFLARE_API_TOKEN" \
   bash install.sh --domain proxy.example.com --email admin@example.com \
+  --tls-domain www.example.org \
   --port 9443 --acme-mode dns --dns-provider cloudflare
 unset TUPOPROXY_CLOUDFLARE_API_TOKEN
 ```
@@ -187,7 +227,8 @@ unset TUPOPROXY_CLOUDFLARE_API_TOKEN
 Для большинства из них передайте подготовленный INI-файл:
 
 ```bash
-sudo bash install.sh --domain proxy.example.com --email admin@example.com \
+sudo bash install.sh --domain proxy.example.com --tls-domain www.example.org \
+  --email admin@example.com \
   --acme-mode dns --dns-provider digitalocean \
   --dns-credentials /root/digitalocean.ini
 ```
@@ -196,7 +237,8 @@ sudo bash install.sh --domain proxy.example.com --email admin@example.com \
 доступен режим без DNS API:
 
 ```bash
-sudo bash install.sh --domain proxy.example.com --email admin@example.com \
+sudo bash install.sh --domain proxy.example.com --tls-domain www.example.org \
+  --email admin@example.com \
   --acme-mode webroot --acme-webroot /var/www/example
 ```
 
@@ -205,7 +247,8 @@ sudo bash install.sh --domain proxy.example.com --email admin@example.com \
 продолжится. Такой сертификат нельзя продлевать автоматически.
 
 ```bash
-sudo bash install.sh --domain proxy.example.com --email admin@example.com \
+sudo bash install.sh --domain proxy.example.com --tls-domain www.example.org \
+  --email admin@example.com \
   --port 9443 --acme-mode manual-dns
 ```
 
@@ -213,7 +256,7 @@ sudo bash install.sh --domain proxy.example.com --email admin@example.com \
 вообще не проверяется:
 
 ```bash
-sudo bash install.sh --domain proxy.example.com --port 9443 \
+sudo bash install.sh --domain proxy.example.com --tls-domain www.example.org --port 9443 \
   --cert-fullchain /etc/letsencrypt/live/proxy.example.com/fullchain.pem \
   --cert-key /etc/letsencrypt/live/proxy.example.com/privkey.pem
 ```
@@ -262,15 +305,15 @@ cd tupoproxy
 
 | Назначение | Значение в примере |
 |---|---|
-| Публичный адрес ссылок | `proxy.example.com` |
-| SNI профиля Chrome | `chrome.proxy.example.com` |
-| SNI профиля Firefox | `firefox.proxy.example.com` |
+| Origin и публичный адрес ссылок | `proxy.example.com` |
+| Отдельный FakeTLS decoy SNI | `www.example.org` |
 | Публичный порт | `443` |
 | Локальный порт tupoproxy | `127.0.0.1:8443` |
 | Локальный HTTPS-сайт | `127.0.0.1:9443` |
 
-Создайте DNS-записи `A`, а при наличии IPv6 — `AAAA`, для всех используемых
-имён. Они должны указывать на один сервер. Сначала дождитесь обновления DNS.
+Создайте DNS-записи `A`, а при наличии IPv6 — `AAAA`, только для origin. Decoy
+должен быть настоящим HTTPS-сайтом на другом адресе; он не должен указывать на
+сервер tupoproxy. Сначала дождитесь обновления DNS.
 
 ### Установить HAProxy, nginx и Certbot
 
@@ -285,8 +328,7 @@ sudo install -d -m 0755 /var/www/acme /var/www/tupoproxy-cover
 
 ```bash
 sudo certbot certonly --webroot -w /var/www/acme \
-  -d chrome.proxy.example.com \
-  -d firefox.proxy.example.com
+  -d proxy.example.com
 ```
 
 Адаптируйте [`deploy/nginx-cover.conf.example`](deploy/nginx-cover.conf.example)
@@ -352,26 +394,27 @@ sudo -u tupoproxy /usr/local/bin/tupoproxy \
   healthcheck /etc/tupoproxy/config.toml --mode ready
 
 openssl s_client -connect IP_СЕРВЕРА:443 \
-  -servername chrome.proxy.example.com </dev/null
+  -servername www.example.org -alpn h2 </dev/null
 
-curl --resolve chrome.proxy.example.com:443:IP_СЕРВЕРА \
-  https://chrome.proxy.example.com/
+curl --resolve proxy.example.com:443:IP_СЕРВЕРА \
+  https://proxy.example.com/
 
 sudo journalctl -u tupoproxy -n 100 --no-pager
 ```
 
-В браузерной проверке должен открываться настоящий сайт-прикрытие с валидным
-сертификатом. Ссылки для Telegram выводятся в журнал при запуске.
+`openssl` должен показать сертификат внешнего decoy и `ALPN protocol: h2`, а
+`curl` — локальный origin cover-сайт с собственным сертификатом. Ссылки для
+Telegram выводятся в журнал при запуске.
 
 ## Выбор TLS-фингерпринта через credential
 
 ```toml
 [censorship]
-tls_domain = "chrome.proxy.example.com"
+tls_domain = "www.example.org"
 tls_fingerprints = {
-  "chrome.proxy.example.com" = "chrome",
-  "firefox.proxy.example.com" = "firefox",
-  "safe.proxy.example.com" = "compat"
+  "www.example.org" = "chrome",
+  "www.example.net" = "firefox",
+  "www.example.edu" = "compat"
 }
 ```
 
@@ -388,7 +431,7 @@ tls_fingerprints = {
 ee + 16-байтовый secret + hex(SNI)
 ```
 
-Например, SNI `firefox.proxy.example.com` выбирает `firefox`. Дополнительные
+Например, SNI `www.example.net` выбирает `firefox`. Дополнительные
 нестандартные байты не добавляются. Выбор влияет на серверный образец TLS и
 исходящие record, но не меняет ClientHello, созданный приложением Telegram.
 

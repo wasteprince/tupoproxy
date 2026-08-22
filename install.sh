@@ -9,6 +9,8 @@ readonly CONFIG_DIR="${CONFIG_DIR:-/etc/tupoproxy}"
 readonly STATE_DIR="${STATE_DIR:-/var/lib/tupoproxy}"
 
 DOMAIN=""
+TLS_DOMAIN=""
+TLS_DOMAIN_PORT="443"
 EMAIL=""
 PROFILE="chrome"
 PROXY_USER="user"
@@ -17,6 +19,8 @@ SECRET=""
 AD_TAG=""
 CERT_FULLCHAIN=""
 CERT_KEY=""
+CERTIFICATE_PATHS_SET=0
+CERTIFICATE_MANAGED=0
 ACME_MODE="auto"
 ACME_WEBROOT=""
 DNS_PROVIDER=""
@@ -30,6 +34,7 @@ CREATED_POLICY_RC_D=0
 APT_UPDATED=0
 SETUP_WIZARD=0
 PROFILE_SET=0
+TLS_DOMAIN_PORT_SET=0
 PROXY_USER_SET=0
 NGINX_WAS_INSTALLED=0
 HAPROXY_WAS_INSTALLED=0
@@ -41,11 +46,13 @@ usage() {
 Usage: sudo bash install.sh [options]
 
 Required interactively or as flags:
-  --domain NAME          Domain used in the Telegram ee credential
+  --domain NAME          Origin domain pointing to this server
+  --tls-domain NAME      Separate HTTPS decoy encoded in the ee credential
   --email ADDRESS        ACME account e-mail (not needed with --cert-*)
 
 Optional:
   --profile NAME         chrome|firefox|compat|legacy (default: chrome)
+  --tls-domain-port PORT HTTPS port of the separate decoy (default: 443)
   --user NAME            Credential label (default: user)
   --port PORT            Public TCP port (default: 443, or a free fallback)
   --secret HEX           Existing 16-byte secret (default: generated)
@@ -64,12 +71,15 @@ Optional:
   -h, --help             Show this help
 
 Examples:
-  sudo bash install.sh --domain proxy.example.com --email admin@example.com
-  sudo bash install.sh --domain proxy.example.com --email admin@example.com \
+  sudo bash install.sh --domain proxy.example.com --tls-domain www.example.org \
+    --email admin@example.com
+  sudo bash install.sh --domain proxy.example.com --tls-domain www.example.org \
+    --email admin@example.com \
     --port 8443 --acme-mode dns --dns-provider cloudflare \
     --dns-credentials /root/cloudflare.ini
   curl -fsSL https://github.com/wasteprince/tupoproxy/releases/latest/download/install.sh \
-    | sudo bash -s -- --domain proxy.example.com --email admin@example.com
+    | sudo bash -s -- --domain proxy.example.com --tls-domain www.example.org \
+      --email admin@example.com
 EOF
 }
 
@@ -107,6 +117,17 @@ while (($#)); do
             DOMAIN="$2"
             shift 2
             ;;
+        --tls-domain)
+            (($# >= 2)) || die "--tls-domain requires a value"
+            TLS_DOMAIN="$2"
+            shift 2
+            ;;
+        --tls-domain-port)
+            (($# >= 2)) || die "--tls-domain-port requires a value"
+            TLS_DOMAIN_PORT="$2"
+            TLS_DOMAIN_PORT_SET=1
+            shift 2
+            ;;
         --email)
             (($# >= 2)) || die "--email requires a value"
             EMAIL="$2"
@@ -142,11 +163,13 @@ while (($#)); do
         --cert-fullchain)
             (($# >= 2)) || die "--cert-fullchain requires a value"
             CERT_FULLCHAIN="$2"
+            CERTIFICATE_PATHS_SET=1
             shift 2
             ;;
         --cert-key)
             (($# >= 2)) || die "--cert-key requires a value"
             CERT_KEY="$2"
+            CERTIFICATE_PATHS_SET=1
             shift 2
             ;;
         --acme-mode)
@@ -229,6 +252,13 @@ prompt_public_port() {
     PUBLIC_PORT="$value"
 }
 
+prompt_tls_domain_port() {
+    local value
+    [[ "$SETUP_WIZARD" == "1" ]] || return 0
+    read -r -p "FakeTLS decoy HTTPS port [${TLS_DOMAIN_PORT}]: " value </dev/tty
+    [[ -z "$value" ]] || TLS_DOMAIN_PORT="$value"
+}
+
 prompt_setup_options() {
     local value
     [[ "$SETUP_WIZARD" == "1" ]] || return 0
@@ -252,6 +282,11 @@ load_existing_installation() {
     [[ -r "$CONFIG_DIR/INSTALLATION.txt" ]] || return 0
 
     [[ -n "$DOMAIN" ]] || DOMAIN="$(installation_value Domain)"
+    [[ -n "$TLS_DOMAIN" ]] || TLS_DOMAIN="$(installation_value 'TLS decoy domain')"
+    if ((!TLS_DOMAIN_PORT_SET)); then
+        saved_value="$(installation_value 'TLS decoy port')"
+        [[ -z "$saved_value" ]] || TLS_DOMAIN_PORT="$saved_value"
+    fi
     [[ -n "$EMAIL" ]] || EMAIL="$(installation_value 'ACME e-mail')"
     [[ -n "$PUBLIC_PORT" ]] || PUBLIC_PORT="$(installation_value 'Public port')"
     [[ -n "$SECRET" ]] || SECRET="$(installation_value Secret)"
@@ -273,12 +308,63 @@ load_existing_installation() {
             CERT_KEY="$saved_key"
         fi
     fi
+    if ((!CERTIFICATE_PATHS_SET)); then
+        saved_value="$(installation_value 'Certificate managed')"
+        [[ "$saved_value" == "yes" ]] && CERTIFICATE_MANAGED=1
+    fi
 }
 
 validate_domain() {
     [[ "$DOMAIN" =~ ^([A-Za-z0-9]([A-Za-z0-9-]{0,61}[A-Za-z0-9])?\.)+[A-Za-z]{2,63}$ ]] \
         || die "invalid domain: $DOMAIN"
     DOMAIN="${DOMAIN,,}"
+}
+
+validate_tls_domain() {
+    [[ "$TLS_DOMAIN" =~ ^([A-Za-z0-9]([A-Za-z0-9-]{0,61}[A-Za-z0-9])?\.)+[A-Za-z]{2,63}$ ]] \
+        || die "invalid TLS decoy domain: $TLS_DOMAIN"
+    TLS_DOMAIN="${TLS_DOMAIN,,}"
+    [[ "$TLS_DOMAIN" != "$DOMAIN" ]] \
+        || die "the TLS decoy domain must be different from the origin domain"
+}
+
+validate_tls_domain_port() {
+    [[ "$TLS_DOMAIN_PORT" =~ ^[0-9]+$ ]] \
+        || die "TLS decoy port must be numeric"
+    ((TLS_DOMAIN_PORT >= 1 && TLS_DOMAIN_PORT <= 65535)) \
+        || die "TLS decoy port must be between 1 and 65535"
+}
+
+validate_domain_routes() {
+    local address
+    local -a origin_addresses decoy_addresses
+
+    mapfile -t origin_addresses < <(getent ahosts "$DOMAIN" | awk '{print $1}' | sort -u)
+    ((${#origin_addresses[@]} > 0)) \
+        || die "domain ${DOMAIN} does not resolve; create its DNS A/AAAA record first"
+    mapfile -t decoy_addresses < <(getent ahosts "$TLS_DOMAIN" | awk '{print $1}' | sort -u)
+    ((${#decoy_addresses[@]} > 0)) \
+        || die "TLS decoy domain ${TLS_DOMAIN} does not resolve"
+
+    for address in "${decoy_addresses[@]}"; do
+        if printf '%s\n' "${origin_addresses[@]}" | grep -Fqx "$address"; then
+            die "TLS decoy ${TLS_DOMAIN} shares address ${address} with origin ${DOMAIN}; use a separately hosted HTTPS domain"
+        fi
+    done
+}
+
+validate_tls_decoy() {
+    local tls_probe
+
+    note "Checking the separate FakeTLS decoy"
+    if ! tls_probe="$(timeout 15 openssl s_client \
+        -connect "${TLS_DOMAIN}:${TLS_DOMAIN_PORT}" -servername "$TLS_DOMAIN" -alpn h2 \
+        -verify_hostname "$TLS_DOMAIN" -verify_return_error -CApath /etc/ssl/certs \
+        </dev/null 2>/dev/null)"; then
+        die "TLS decoy ${TLS_DOMAIN} must expose trusted HTTPS on TCP/${TLS_DOMAIN_PORT}"
+    fi
+    grep -Fq 'ALPN protocol: h2' <<<"$tls_probe" \
+        || die "TLS decoy ${TLS_DOMAIN} must support HTTP/2 (ALPN h2)"
 }
 
 validate_ad_tag() {
@@ -615,6 +701,7 @@ configure_acme() {
     CERT_FULLCHAIN="/etc/letsencrypt/live/${DOMAIN}/fullchain.pem"
     CERT_KEY="/etc/letsencrypt/live/${DOMAIN}/privkey.pem"
     [[ -r "$CERT_FULLCHAIN" && -r "$CERT_KEY" ]] || die "certificate issuance did not produce readable files"
+    CERTIFICATE_MANAGED=1
 }
 
 configure_cover_site() {
@@ -757,9 +844,6 @@ EOF
 
 configure_proxy() {
     local ad_tag_line=""
-    if ! getent ahosts "$DOMAIN" >/dev/null 2>&1; then
-        die "domain ${DOMAIN} does not resolve; create its DNS A/AAAA record first"
-    fi
     [[ -n "$SECRET" ]] || SECRET="$(openssl rand -hex 16)"
     if [[ -n "$AD_TAG" ]]; then
         ad_tag_line="ad_tag = \"${AD_TAG}\""
@@ -805,12 +889,11 @@ listen = "127.0.0.1:9091"
 whitelist = ["127.0.0.1/32", "::1/128"]
 
 [censorship]
-tls_domain = "${DOMAIN}"
-tls_fingerprints = { "${DOMAIN}" = "${PROFILE}" }
+tls_domain = "${TLS_DOMAIN}"
+tls_fingerprints = { "${TLS_DOMAIN}" = "${PROFILE}" }
 mask = true
-mask_dynamic = false
-mask_host = "127.0.0.1"
-mask_port = 19443
+mask_dynamic = true
+mask_port = ${TLS_DOMAIN_PORT}
 unknown_sni_action = "mask"
 tls_emulation = true
 tls_front_dir = "${STATE_DIR}/tlsfront"
@@ -915,7 +998,7 @@ frontend tupoproxy_public
     bind :${PUBLIC_PORT}
     tcp-request inspect-delay 5s
     tcp-request content accept if { req.ssl_hello_type 1 }
-    acl credential_sni req.ssl_sni -i ${DOMAIN}
+    acl credential_sni req.ssl_sni -i ${TLS_DOMAIN}
     use_backend tupoproxy_backend if credential_sni
     default_backend tupoproxy_cover
 
@@ -983,7 +1066,7 @@ restart_service_or_die() {
 }
 
 verify_public_cover() {
-    local cover_body tls_probe
+    local cover_body tls_probe decoy_probe
 
     note "Verifying the public HTTPS camouflage path"
     if ! cover_body="$(curl --fail --silent --show-error --insecure --noproxy '*' \
@@ -1002,6 +1085,15 @@ verify_public_cover() {
     fi
     grep -Fq 'ALPN protocol: h2' <<<"$tls_probe" \
         || die "public HTTPS cover did not negotiate HTTP/2"
+
+    if ! decoy_probe="$(timeout 15 openssl s_client \
+        -connect "127.0.0.1:${PUBLIC_PORT}" -servername "$TLS_DOMAIN" -alpn h2 \
+        -verify_hostname "$TLS_DOMAIN" -verify_return_error -CApath /etc/ssl/certs \
+        </dev/null 2>/dev/null)"; then
+        die "FakeTLS decoy fallback failed for ${TLS_DOMAIN} through the public port"
+    fi
+    grep -Fq 'ALPN protocol: h2' <<<"$decoy_probe" \
+        || die "FakeTLS decoy ${TLS_DOMAIN} does not negotiate HTTP/2"
 }
 
 prompt_bot_registration() {
@@ -1037,7 +1129,7 @@ prompt_bot_registration() {
 
 telegram_proxy_link() {
     local domain_hex
-    domain_hex="$(printf '%s' "$DOMAIN" | od -An -tx1 | tr -d ' \n')"
+    domain_hex="$(printf '%s' "$TLS_DOMAIN" | od -An -tx1 | tr -d ' \n')"
     printf 'tg://proxy?server=%s&port=%s&secret=ee%s%s' \
         "$DOMAIN" "$PUBLIC_PORT" "$SECRET" "$domain_hex"
 }
@@ -1048,6 +1140,8 @@ save_summary() {
     cat > "$CONFIG_DIR/INSTALLATION.txt" <<EOF
 tupoproxy installation
 Domain: ${DOMAIN}
+TLS decoy domain: ${TLS_DOMAIN}
+TLS decoy port: ${TLS_DOMAIN_PORT}
 ACME e-mail: ${EMAIL}
 Public port: ${PUBLIC_PORT}
 TLS profile: ${PROFILE}
@@ -1056,6 +1150,7 @@ Secret: ${SECRET}
 Advertising tag: ${AD_TAG}
 Certificate chain: ${CERT_FULLCHAIN}
 Certificate key: ${CERT_KEY}
+Certificate managed: $([[ "$CERTIFICATE_MANAGED" == "1" ]] && printf 'yes' || printf 'no')
 
 @MTProxybot registration:
 When the bot says "Now please specify its secret in hex format.", send:
@@ -1078,6 +1173,8 @@ write_summary() {
     printf '\n============================================================\n'
     printf 'tupoproxy is installed\n'
     printf 'Public endpoint: %s:%s\n' "$DOMAIN" "$PUBLIC_PORT"
+    printf 'FakeTLS decoy SNI: %s\n' "$TLS_DOMAIN"
+    printf 'FakeTLS decoy HTTPS port: %s\n' "$TLS_DOMAIN_PORT"
     printf 'TLS profile: %s\n' "$PROFILE"
     if [[ -n "$AD_TAG" ]]; then
         printf 'Sponsored-channel tag: configured\n'
@@ -1098,6 +1195,11 @@ if ((!BINARY_ONLY)); then
     load_existing_installation
     prompt_value DOMAIN "Proxy domain"
     validate_domain
+    prompt_value TLS_DOMAIN "Separate FakeTLS decoy domain"
+    validate_tls_domain
+    prompt_tls_domain_port
+    validate_tls_domain_port
+    validate_domain_routes
     if [[ -z "$CERT_FULLCHAIN" ]]; then
         prompt_value EMAIL "ACME e-mail"
     fi
@@ -1120,6 +1222,10 @@ else
     if ((!HAPROXY_WAS_INSTALLED)); then
         systemctl disable --now haproxy.service >/dev/null 2>&1 || true
     fi
+fi
+
+if ((!BINARY_ONLY)); then
+    validate_tls_decoy
 fi
 
 note "Installing the prebuilt static binary"

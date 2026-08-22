@@ -28,17 +28,16 @@ listen = "127.0.0.1:9091"
 whitelist = ["127.0.0.1/32", "::1/128"]
 
 [censorship]
-tls_domain = "chrome.proxy.example.com"
+tls_domain = "www.example.org"
 tls_fingerprints = {
-  "chrome.proxy.example.com" = "chrome",
-  "firefox.proxy.example.com" = "firefox"
+  "www.example.org" = "chrome"
 }
 
-# Invalid credentials and active probes receive the real cover site's TLS.
+# Invalid credentials and active probes are relayed to the real decoy HTTPS
+# origin selected by the configured SNI.
 mask = true
-mask_dynamic = false
-mask_host = "127.0.0.1"
-mask_port = 9443
+mask_dynamic = true
+mask_port = 443
 unknown_sni_action = "mask"
 
 tls_emulation = true

@@ -24,7 +24,9 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install --yes shellcheck
-          shellcheck -x install.sh install-source.sh
+          shellcheck -x install.sh install-source.sh uninstall.sh
+          bash install.sh --help | grep -F -- '--tls-domain-port PORT'
+          bash uninstall.sh --help | grep -F -- '--purge-certificate'
           test_dir="$(mktemp -d)"
           set +e
           output="$(sudo env CONFIG_DIR="${test_dir}/not-installed" bash install.sh \

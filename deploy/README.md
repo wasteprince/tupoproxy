@@ -9,28 +9,43 @@ HAProxy, systemd и формирует Telegram-ссылку. Если публ�
 DNS-плагином Certbot или универсальный интерактивный режим
 `--acme-mode manual-dns`.
 
+Полностью удалить файлы и сервисы автоматической установки можно отдельной
+однострочной командой:
+
+```sh
+curl -fL https://github.com/wasteprince/tupoproxy/releases/latest/download/uninstall.sh | sudo bash
+```
+
+Сертификат и общие системные пакеты при этом сохраняются. Для явно управляемого
+Let's Encrypt-сертификата доступен параметр `--purge-certificate`.
+
 Ниже описана расширенная ручная схема для случаев, когда tupoproxy должен
 делить один публичный `443` с существующими сайтами по SNI:
 
 1. HAProxy занимает публичный TCP/443 и только проверяет SNI, не завершая TLS.
-2. SNI из credential направляются в tupoproxy на `127.0.0.1:8443` с PROXY v2.
-3. Все остальные SNI идут в существующий HTTPS-роутер на `127.0.0.1:9443`.
-4. Неуспешная авторизация в прокси маскируется тем же настоящим HTTPS-сайтом.
+2. Отдельный decoy SNI из credential направляется в tupoproxy на
+   `127.0.0.1:8443` с PROXY v2.
+3. Origin SNI идёт в существующий HTTPS-роутер на `127.0.0.1:9443`.
+4. Неуспешная авторизация в прокси динамически пересылается на настоящий
+   внешний decoy HTTPS-сайт с его сертификатом.
 5. Существующий веб-сервер сохраняет публичный порт 80 для ACME HTTP-01.
    DNS-01 также поддерживается и не требует входящего ACME-порта.
 
-Замените все значения `example.com`, создайте DNS-записи `A`/`AAAA`,
-указывающие на сервер, и выпустите SAN- или wildcard-сертификат для всех SNI
-из credential. Перед публикацией прокси-ссылок проверьте HTTPS-маршрут:
+Замените `proxy.example.com` своим origin-доменом с `A`/`AAAA` на сервер.
+`www.example.org` замените отдельным настоящим HTTPS-доменом, размещённым на
+другом адресе и поддерживающим HTTP/2. Сертификат на VPS нужен только для
+origin-домена. В примере decoy слушает `443`; `censorship.mask_port` можно
+заменить любым реально работающим HTTPS-портом decoy. Перед публикацией
+прокси-ссылок проверьте оба маршрута:
 
 ```sh
-curl --resolve chrome.proxy.example.com:443:SERVER_IP https://chrome.proxy.example.com/
-openssl s_client -connect SERVER_IP:443 -servername chrome.proxy.example.com -alpn h2 </dev/null
+curl --resolve proxy.example.com:443:SERVER_IP https://proxy.example.com/
+openssl s_client -connect SERVER_IP:443 -servername www.example.org -alpn h2 </dev/null
 ```
 
-Вторая команда должна вывести `ALPN protocol: h2`. Это проверяет, что
-неавторизованный ClientHello получает тот же класс современного HTTPS-ответа,
-который используется серверным FakeTLS-профилем.
+Вторая команда должна вывести сертификат внешнего decoy-домена и
+`ALPN protocol: h2`. Это проверяет scanner-visible fallback для
+неавторизованного ClientHello.
 
 Telegram получает credential в стандартном совместимом формате:
 `ee + 16-байтовый secret + hex(SNI)`. tupoproxy выбирает серверный профиль по

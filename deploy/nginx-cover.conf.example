@@ -2,7 +2,7 @@
 # binds port 80 and therefore cannot interfere with certificate renewal.
 server {
     listen 80;
-    server_name chrome.proxy.example.com firefox.proxy.example.com;
+    server_name proxy.example.com;
 
     location ^~ /.well-known/acme-challenge/ {
         root /var/www/acme;
@@ -13,10 +13,11 @@ server {
     }
 }
 
-# HAProxy and tupoproxy's mask fallback both reach this real TLS endpoint.
+# HAProxy sends the owned origin SNI to this local TLS endpoint. Invalid
+# credential traffic is masked to the separately hosted decoy instead.
 server {
     listen 127.0.0.1:9443 ssl http2;
-    server_name chrome.proxy.example.com firefox.proxy.example.com;
+    server_name proxy.example.com;
 
     ssl_certificate /etc/letsencrypt/live/proxy.example.com/fullchain.pem;
     ssl_certificate_key /etc/letsencrypt/live/proxy.example.com/privkey.pem;
