@@ -836,11 +836,15 @@ Requires=tupoproxy-cover.service tupoproxy.service
 
 [Service]
 Type=notify
-ExecStart=/usr/sbin/haproxy -Ws -f ${CONFIG_DIR}/haproxy.cfg -p /run/tupoproxy-edge.pid
+ExecStart=/usr/sbin/haproxy -Ws -f ${CONFIG_DIR}/haproxy.cfg -p /run/tupoproxy-edge/haproxy.pid
 ExecReload=/bin/kill -USR2 \$MAINPID
 Restart=on-failure
 RestartSec=5s
 RuntimeDirectory=tupoproxy-edge
+RuntimeDirectoryMode=0755
+PIDFile=/run/tupoproxy-edge/haproxy.pid
+KillMode=mixed
+SuccessExitStatus=143
 NoNewPrivileges=true
 ProtectHome=true
 ProtectSystem=strict
@@ -863,6 +867,19 @@ open_firewall_ports() {
         esac
         ufw allow "${PUBLIC_PORT}/tcp"
     fi
+}
+
+restart_service_or_die() {
+    local service="$1"
+    if systemctl restart "$service"; then
+        return 0
+    fi
+
+    printf '\n----- %s status -----\n' "$service" >&2
+    systemctl --no-pager --full status "$service" >&2 || true
+    printf '\n----- %s recent journal -----\n' "$service" >&2
+    journalctl --no-pager --full -n 80 -u "$service" >&2 || true
+    die "${service} failed to start; diagnostics are printed above"
 }
 
 prompt_bot_registration() {
@@ -1010,9 +1027,9 @@ if ((NO_START)); then
     note "Configuration complete; services were not started (--no-start)"
 else
     note "Starting tupoproxy"
-    systemctl restart tupoproxy-cover.service
-    systemctl restart tupoproxy.service
-    systemctl restart tupoproxy-edge.service
+    restart_service_or_die tupoproxy-cover.service
+    restart_service_or_die tupoproxy.service
+    restart_service_or_die tupoproxy-edge.service
     sleep 2
     systemctl --quiet is-active tupoproxy-cover.service || die "tupoproxy cover service did not start"
     systemctl --quiet is-active tupoproxy.service || die "tupoproxy service did not start"
@@ -1028,7 +1045,7 @@ if ((AD_TAG_CHANGED)); then
     note "Applying the advertising tag from @MTProxybot"
     configure_proxy
     if ((!NO_START)); then
-        systemctl restart tupoproxy.service
+        restart_service_or_die tupoproxy.service
         systemctl --quiet is-active tupoproxy.service \
             || die "tupoproxy service did not restart after applying the advertising tag"
     fi
