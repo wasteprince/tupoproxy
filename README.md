@@ -72,20 +72,21 @@ HAProxy не расшифровывает TLS: он читает SNI и пере
 ### Автоматическая установка
 
 ```bash
-curl -fsSLo install.sh \
-  https://raw.githubusercontent.com/wasteprince/tupoproxy/main/install.sh
-chmod +x install.sh
-sudo ./install.sh
+curl --fail --location --show-error --output install.sh https://raw.githubusercontent.com/wasteprince/tupoproxy/main/install.sh
+test -s install.sh
+sudo bash install.sh
 ```
 
-Мастер попросит домен, e-mail для Let's Encrypt и желаемый порт прокси. Если
+Первая команда только скачивает файл и показывает прогресс. Установку запускает
+третья команда — после неё сразу появится приглашение для ввода данных. Мастер
+попросит домен, e-mail для Let's Encrypt и желаемый порт прокси. Если
 оставить порт пустым, он возьмёт `443`, а когда тот занят — первый свободный из
 `8443`, `2053`, `2083`, `2087`, `2096`.
 
 Полностью неинтерактивный вариант:
 
 ```bash
-sudo ./install.sh \
+sudo bash install.sh \
   --domain proxy.example.com \
   --email admin@example.com \
   --port 8443 \
@@ -109,7 +110,7 @@ sudo ./install.sh \
 Порт прокси выбирается независимо от сертификата:
 
 ```bash
-sudo ./install.sh --domain proxy.example.com --email admin@example.com --port 9443
+sudo bash install.sh --domain proxy.example.com --email admin@example.com --port 9443
 ```
 
 В режиме `auto` установщик использует существующий nginx или Apache для
@@ -121,7 +122,7 @@ Cloudflare с API Token, ограниченным правом `Zone:DNS:Edit` �
 ```bash
 read -r -s -p 'Cloudflare API token: ' TUPOPROXY_CLOUDFLARE_API_TOKEN; echo
 sudo env TUPOPROXY_CLOUDFLARE_API_TOKEN="$TUPOPROXY_CLOUDFLARE_API_TOKEN" \
-  ./install.sh --domain proxy.example.com --email admin@example.com \
+  bash install.sh --domain proxy.example.com --email admin@example.com \
   --port 9443 --acme-mode dns --dns-provider cloudflare
 unset TUPOPROXY_CLOUDFLARE_API_TOKEN
 ```
@@ -131,7 +132,7 @@ unset TUPOPROXY_CLOUDFLARE_API_TOKEN
 Для большинства из них передайте подготовленный INI-файл:
 
 ```bash
-sudo ./install.sh --domain proxy.example.com --email admin@example.com \
+sudo bash install.sh --domain proxy.example.com --email admin@example.com \
   --acme-mode dns --dns-provider digitalocean \
   --dns-credentials /root/digitalocean.ini
 ```
@@ -140,7 +141,7 @@ sudo ./install.sh --domain proxy.example.com --email admin@example.com \
 доступен режим без DNS API:
 
 ```bash
-sudo ./install.sh --domain proxy.example.com --email admin@example.com \
+sudo bash install.sh --domain proxy.example.com --email admin@example.com \
   --acme-mode webroot --acme-webroot /var/www/example
 ```
 
@@ -149,7 +150,7 @@ sudo ./install.sh --domain proxy.example.com --email admin@example.com \
 продолжится. Такой сертификат нельзя продлевать автоматически.
 
 ```bash
-sudo ./install.sh --domain proxy.example.com --email admin@example.com \
+sudo bash install.sh --domain proxy.example.com --email admin@example.com \
   --port 9443 --acme-mode manual-dns
 ```
 
@@ -157,7 +158,7 @@ sudo ./install.sh --domain proxy.example.com --email admin@example.com \
 вообще не проверяется:
 
 ```bash
-sudo ./install.sh --domain proxy.example.com --port 9443 \
+sudo bash install.sh --domain proxy.example.com --port 9443 \
   --cert-fullchain /etc/letsencrypt/live/proxy.example.com/fullchain.pem \
   --cert-key /etc/letsencrypt/live/proxy.example.com/privkey.pem
 ```
@@ -194,6 +195,15 @@ cd tupoproxy
 
 Пример ниже рассчитан на Debian/Ubuntu, nginx и systemd. Все значения
 `example.com` обязательно заменяются:
+
+Эта секция использует файлы из репозитория. Сначала перейдите в каталог
+клонированного проекта — относительные пути `deploy/...` не существуют в
+`/root` или домашнем каталоге сами по себе:
+
+```bash
+git clone https://github.com/wasteprince/tupoproxy.git
+cd tupoproxy
+```
 
 | Назначение | Значение в примере |
 |---|---|
@@ -232,10 +242,11 @@ sudo certbot certonly --webroot -w /var/www/acme \
 ### Подготовить конфигурацию tupoproxy
 
 ```bash
-sudo useradd --system --home /var/lib/tupoproxy \
+sudo groupadd --system tupoproxy 2>/dev/null || true
+sudo useradd --system --gid tupoproxy --home /var/lib/tupoproxy \
   --shell /usr/sbin/nologin tupoproxy 2>/dev/null || true
 sudo install -d -o tupoproxy -g tupoproxy -m 0750 /var/lib/tupoproxy
-sudo install -d -m 0750 /etc/tupoproxy
+sudo install -d -o root -g tupoproxy -m 0750 /etc/tupoproxy
 sudo install -m 0640 -o root -g tupoproxy \
   deploy/tupoproxy.toml.example /etc/tupoproxy/config.toml
 openssl rand -hex 16
@@ -383,7 +394,7 @@ sudo -u tupoproxy tupoproxy healthcheck \
 sudo systemctl reload tupoproxy
 
 # Обновить бинарник из последнего GitHub Release
-sudo ./install.sh --binary-only
+sudo bash install.sh --binary-only
 sudo systemctl restart tupoproxy
 
 # Либо пересобрать обновлённый checkout

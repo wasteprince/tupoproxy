@@ -35,7 +35,7 @@ HAPROXY_WAS_INSTALLED=0
 
 usage() {
     cat <<'EOF'
-Usage: sudo ./install.sh [options]
+Usage: sudo bash install.sh [options]
 
 Required interactively or as flags:
   --domain NAME          Domain used in the Telegram ee credential
@@ -60,8 +60,8 @@ Optional:
   -h, --help             Show this help
 
 Examples:
-  sudo ./install.sh --domain proxy.example.com --email admin@example.com
-  sudo ./install.sh --domain proxy.example.com --email admin@example.com \
+  sudo bash install.sh --domain proxy.example.com --email admin@example.com
+  sudo bash install.sh --domain proxy.example.com --email admin@example.com \
     --port 8443 --acme-mode dns --dns-provider cloudflare \
     --dns-credentials /root/cloudflare.ini
   curl -fsSL https://raw.githubusercontent.com/wasteprince/tupoproxy/main/install.sh \
@@ -77,6 +77,15 @@ die() {
 note() {
     printf '\n==> %s\n' "$*"
 }
+
+on_error() {
+    local status=$?
+    local line="$1"
+    printf 'tupoproxy installer: command failed at line %s (exit %s)\n' \
+        "$line" "$status" >&2
+    exit "$status"
+}
+trap 'on_error "$LINENO"' ERR
 
 while (($#)); do
     case "$1" in
@@ -170,7 +179,7 @@ while (($#)); do
     esac
 done
 
-[[ ${EUID} -eq 0 ]] || die "run this installer as root (for example: sudo ./install.sh)"
+[[ ${EUID} -eq 0 ]] || die "run this installer as root (for example: sudo bash install.sh)"
 
 if [[ ! -r /etc/os-release ]]; then
     die "only Debian and Ubuntu are supported by the automated installer"
@@ -851,6 +860,7 @@ EOF
 export DEBIAN_FRONTEND=noninteractive
 
 if ((!BINARY_ONLY)); then
+    note "Starting automated tupoproxy setup"
     load_existing_installation
     prompt_value DOMAIN "Proxy domain"
     validate_domain
