@@ -618,8 +618,90 @@ configure_acme() {
 }
 
 configure_cover_site() {
+    local cover_root="/var/www/tupoproxy-cover"
+    local seed_file="$CONFIG_DIR/cover-site.seed"
+    local site_seed theme_index accent page_background panel_background heading copy
+
     install -d -m 0750 "$CONFIG_DIR"
     install -d -m 0755 /run/tupoproxy-cover
+    install -d -o root -g www-data -m 0755 "$cover_root"
+
+    site_seed=""
+    if [[ -r "$seed_file" ]]; then
+        site_seed="$(head -n 1 "$seed_file")"
+    fi
+    if [[ ! "$site_seed" =~ ^[a-f0-9]{32}$ ]]; then
+        site_seed="$(openssl rand -hex 16)"
+        printf '%s\n' "$site_seed" >"$seed_file"
+        chmod 0640 "$seed_file"
+    fi
+
+    theme_index=$((16#${site_seed:0:2} % 4))
+    case "$theme_index" in
+        0)
+            accent="#3157d5"
+            page_background="#f4f6fb"
+            panel_background="#ffffff"
+            heading="A quiet place on the web"
+            copy="This website is online and ready for its next chapter."
+            ;;
+        1)
+            accent="#087f5b"
+            page_background="#f0f7f4"
+            panel_background="#fbfefd"
+            heading="Everything is up and running"
+            copy="Thanks for stopping by. New content will be published here soon."
+            ;;
+        2)
+            accent="#9c4d14"
+            page_background="#faf5ef"
+            panel_background="#fffdf9"
+            heading="Welcome to our new home"
+            copy="The site is available while we prepare the next update."
+            ;;
+        *)
+            accent="#6b46b5"
+            page_background="#f6f3fa"
+            panel_background="#fefcff"
+            heading="This domain is active"
+            copy="A new website is being prepared. Please check back later."
+            ;;
+    esac
+
+    cat >"$cover_root/index.html" <<EOF
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>${DOMAIN}</title>
+    <link rel="stylesheet" href="/site-${site_seed:0:8}.css">
+</head>
+<body>
+    <main>
+        <p class="domain">${DOMAIN}</p>
+        <h1>${heading}</h1>
+        <p class="copy">${copy}</p>
+    </main>
+</body>
+</html>
+EOF
+    cat >"$cover_root/site-${site_seed:0:8}.css" <<EOF
+:root { color-scheme: light; font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
+* { box-sizing: border-box; }
+body { margin: 0; min-height: 100vh; display: grid; place-items: center; color: #20242c; background: ${page_background}; }
+main { width: min(42rem, calc(100% - 2rem)); padding: clamp(2rem, 7vw, 5rem); border: 1px solid #00000014; border-radius: 1.25rem; background: ${panel_background}; box-shadow: 0 1.5rem 4rem #18203012; }
+.domain { margin: 0 0 1rem; color: ${accent}; font-size: .88rem; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; }
+h1 { max-width: 14ch; margin: 0; font-size: clamp(2.25rem, 8vw, 4.8rem); line-height: .98; letter-spacing: -.045em; }
+.copy { max-width: 34rem; margin: 1.5rem 0 0; color: #59616f; font-size: 1.08rem; line-height: 1.65; }
+EOF
+    cat >"$cover_root/robots.txt" <<'EOF'
+User-agent: *
+Allow: /
+EOF
+    chmod 0644 "$cover_root/index.html" "$cover_root/site-${site_seed:0:8}.css" \
+        "$cover_root/robots.txt"
+
     cat > "$CONFIG_DIR/nginx-cover.conf" <<EOF
 # Managed by tupoproxy install.sh
 user www-data;
@@ -634,19 +716,32 @@ events {
 http {
     access_log off;
     server_tokens off;
+    include /etc/nginx/mime.types;
+    default_type application/octet-stream;
+    etag on;
 
     server {
-        listen 127.0.0.1:19443 ssl;
+        listen 127.0.0.1:19443 ssl http2;
         server_name ${DOMAIN};
 
         ssl_certificate "${CERT_FULLCHAIN}";
         ssl_certificate_key "${CERT_KEY}";
         ssl_protocols TLSv1.2 TLSv1.3;
+        ssl_session_cache shared:TUPOPROXY_COVER:10m;
+        ssl_session_timeout 1d;
+        ssl_session_tickets on;
 
-        add_header Cache-Control "no-store" always;
         add_header X-Content-Type-Options "nosniff" always;
-        default_type text/html;
-        return 200 '<!doctype html><html><head><title>Welcome</title></head><body><h1>Welcome</h1></body></html>';
+        root "${cover_root}";
+        index index.html;
+
+        location = / {
+            try_files /index.html =404;
+        }
+
+        location / {
+            try_files \$uri =404;
+        }
     }
 }
 EOF
@@ -887,6 +982,28 @@ restart_service_or_die() {
     die "${service} failed to start; diagnostics are printed above"
 }
 
+verify_public_cover() {
+    local cover_body tls_probe
+
+    note "Verifying the public HTTPS camouflage path"
+    if ! cover_body="$(curl --fail --silent --show-error --insecure --noproxy '*' \
+        --connect-timeout 5 --max-time 15 \
+        --resolve "${DOMAIN}:${PUBLIC_PORT}:127.0.0.1" \
+        "https://${DOMAIN}:${PUBLIC_PORT}/")"; then
+        die "public HTTPS cover check failed for ${DOMAIN}:${PUBLIC_PORT}"
+    fi
+    [[ "$cover_body" == *"${DOMAIN}"* ]] \
+        || die "public HTTPS cover returned an unexpected page"
+
+    if ! tls_probe="$(timeout 15 openssl s_client \
+        -connect "127.0.0.1:${PUBLIC_PORT}" -servername "$DOMAIN" -alpn h2 \
+        </dev/null 2>/dev/null)"; then
+        die "public TLS probe failed for ${DOMAIN}:${PUBLIC_PORT}"
+    fi
+    grep -Fq 'ALPN protocol: h2' <<<"$tls_probe" \
+        || die "public HTTPS cover did not negotiate HTTP/2"
+}
+
 prompt_bot_registration() {
     local value
     if [[ -n "$AD_TAG" || ("$SETUP_WIZARD" != "1" && "$INTERACTIVE_MODE" != "1") ]]; then
@@ -1039,6 +1156,7 @@ else
     systemctl --quiet is-active tupoproxy-cover.service || die "tupoproxy cover service did not start"
     systemctl --quiet is-active tupoproxy.service || die "tupoproxy service did not start"
     systemctl --quiet is-active tupoproxy-edge.service || die "tupoproxy edge did not start"
+    verify_public_cover
     if [[ "$ACME_MODE" != "manual-dns" ]]; then
         systemctl enable --now certbot.timer >/dev/null 2>&1 || true
     fi

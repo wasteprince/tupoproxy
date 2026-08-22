@@ -15,13 +15,15 @@ server {
 
 # HAProxy and tupoproxy's mask fallback both reach this real TLS endpoint.
 server {
-    listen 127.0.0.1:9443 ssl;
-    http2 on;
+    listen 127.0.0.1:9443 ssl http2;
     server_name chrome.proxy.example.com firefox.proxy.example.com;
 
     ssl_certificate /etc/letsencrypt/live/proxy.example.com/fullchain.pem;
     ssl_certificate_key /etc/letsencrypt/live/proxy.example.com/privkey.pem;
     ssl_protocols TLSv1.2 TLSv1.3;
+    ssl_session_cache shared:TUPOPROXY_COVER:10m;
+    ssl_session_timeout 1d;
+    ssl_session_tickets on;
 
     root /var/www/tupoproxy-cover;
     index index.html;

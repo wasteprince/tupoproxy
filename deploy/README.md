@@ -25,8 +25,12 @@ DNS-плагином Certbot или универсальный интеракт�
 
 ```sh
 curl --resolve chrome.proxy.example.com:443:SERVER_IP https://chrome.proxy.example.com/
-openssl s_client -connect SERVER_IP:443 -servername chrome.proxy.example.com </dev/null
+openssl s_client -connect SERVER_IP:443 -servername chrome.proxy.example.com -alpn h2 </dev/null
 ```
+
+Вторая команда должна вывести `ALPN protocol: h2`. Это проверяет, что
+неавторизованный ClientHello получает тот же класс современного HTTPS-ответа,
+который используется серверным FakeTLS-профилем.
 
 Telegram получает credential в стандартном совместимом формате:
 `ee + 16-байтовый secret + hex(SNI)`. tupoproxy выбирает серверный профиль по
