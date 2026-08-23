@@ -195,7 +195,7 @@ hex-secret — без `ee`, Base64URL и домена.
 | Host Caddy с caddy-l4 | Добавляет listener wrapper в активный Caddyfile |
 | Docker Caddy с caddy-l4 | Изменяет постоянный Caddyfile и делает reload |
 | Docker Caddy без caddy-l4 | Сохраняет исходный бинарник, добавляет модуль и перезапускает контейнер |
-| TCP/443 свободен | Создаёт управляемый Caddy в `/opt/caddy` |
+| TCP/443 свободен | Загружает готовый Caddy с caddy-l4 из GHCR и создаёт контейнер с конфигурацией в `/opt/caddy` |
 
 Read-only bind mounts поддерживаются. Интегратор находит источник mount на
 хосте, изменяет существующий файл на месте, сохраняет его inode и выполняет
@@ -207,6 +207,10 @@ Read-only bind mounts поддерживаются. Интегратор нах�
 
 Установщик не удаляет reverse proxy, его контейнер, `/opt/caddy`, Docker,
 firewall или конфигурацию чужих сайтов.
+
+Управляемый Caddy не компилируется на сервере. Установщик загружает готовый
+образ `ghcr.io/wasteprince/tupoproxy-caddy-l4:v3.8.2` для `amd64` или `arm64`
+вместе с релизом tupoproxy.
 
 ## TLS-профили
 

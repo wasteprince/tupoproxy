@@ -141,6 +141,48 @@ class ManagedCaddyTests(unittest.TestCase):
         self.assertNotIn("layer4", config)
         self.assertNotIn("tupoproxy", config)
 
+    def test_managed_caddy_pulls_image_and_validates_with_caddy_binary(self) -> None:
+        commands: list[list[str]] = []
+
+        def run_result(
+            command: list[str], **_kwargs: object
+        ) -> subprocess.CompletedProcess[str]:
+            commands.append(command)
+            if command == ["docker", "inspect", EDGE.MANAGED_CADDY_CONTAINER]:
+                return subprocess.CompletedProcess(command, 1, "", "not found")
+            if command[:4] == ["docker", "inspect", "--format", "{{.State.Running}}"]:
+                return subprocess.CompletedProcess(command, 0, "true\n", "")
+            return subprocess.CompletedProcess(command, 0, "", "")
+
+        with tempfile.TemporaryDirectory(prefix="tupoproxy-managed-caddy-test-") as temp_dir:
+            root = Path(temp_dir)
+            opt_dir = root / "opt"
+            opt_dir.mkdir()
+            (opt_dir / EDGE.MANAGED_DIRECTORY_MARKER).write_text(
+                "Managed by tupoproxy.\n", encoding="utf-8"
+            )
+            (opt_dir / "Dockerfile").write_text("obsolete\n", encoding="utf-8")
+
+            with (
+                mock.patch.object(EDGE, "command_exists", return_value=True),
+                mock.patch.object(EDGE, "run", side_effect=run_result),
+            ):
+                EDGE.provision_managed_caddy(
+                    "site.example.com",
+                    "proxy.example.com",
+                    "172.17.0.1:18443",
+                    root / "state",
+                    opt_dir,
+                )
+
+            self.assertFalse((opt_dir / "Dockerfile").exists())
+
+        self.assertIn(["docker", "pull", EDGE.MANAGED_CADDY_IMAGE], commands)
+        validation = next(command for command in commands if "validate" in command)
+        image_index = validation.index(EDGE.MANAGED_CADDY_IMAGE)
+        self.assertEqual(validation[image_index + 1 : image_index + 3], ["caddy", "validate"])
+        self.assertFalse(any(command[:2] == ["docker", "build"] for command in commands))
+
     def test_target_record_includes_the_container_listener_port(self) -> None:
         record = EDGE.target_record(
             {

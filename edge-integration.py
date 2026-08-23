@@ -23,10 +23,9 @@ END_MARKER = "# END TUPOPROXY EDGE"
 NGINX_ORIGINAL_MARKER = "TUPOPROXY_ORIGINAL="
 DEFAULT_INTERNAL_HTTPS_PORT = 24443
 MANAGED_CADDY_CONTAINER = "tupoproxy-caddy"
-MANAGED_CADDY_IMAGE = "tupoproxy/caddy-l4:managed"
+MANAGED_CADDY_IMAGE = "ghcr.io/wasteprince/tupoproxy-caddy-l4:v3.8.2"
 MANAGED_CADDY_LABEL = "io.tupoproxy.managed"
 MANAGED_DIRECTORY_MARKER = ".tupoproxy-managed"
-MANAGED_CADDY_VERSION = "2.11.4"
 MANAGED_CADDY_L4_VERSION = "0.1.2"
 CADDY_L4_PACKAGE = f"github.com/mholt/caddy-l4@v{MANAGED_CADDY_L4_VERSION}"
 
@@ -1222,13 +1221,7 @@ def provision_managed_caddy(
     caddyfile = opt_dir / "Caddyfile"
     candidate_caddyfile = opt_dir / "Caddyfile.next"
     previous_caddyfile = caddyfile.read_text(encoding="utf-8") if caddyfile.is_file() else None
-    dockerfile = f"""FROM caddy:{MANAGED_CADDY_VERSION}-builder AS builder
-RUN xcaddy build --with github.com/mholt/caddy-l4@v{MANAGED_CADDY_L4_VERSION}
-
-FROM caddy:{MANAGED_CADDY_VERSION}
-COPY --from=builder /usr/bin/caddy /usr/bin/caddy
-"""
-    (opt_dir / "Dockerfile").write_text(dockerfile, encoding="utf-8")
+    (opt_dir / "Dockerfile").unlink(missing_ok=True)
     candidate_caddyfile.write_text(
         managed_caddyfile(domain, tls_domain, backend), encoding="utf-8"
     )
@@ -1259,14 +1252,14 @@ COPY --from=builder /usr/bin/caddy /usr/bin/caddy
                 f"rollback container {backup_name} already exists; remove it after checking its contents"
             )
 
-    build = run(
-        ["docker", "build", "--pull", "-t", MANAGED_CADDY_IMAGE, str(opt_dir)],
+    pulled = run(
+        ["docker", "pull", MANAGED_CADDY_IMAGE],
         check=False,
         capture=False,
     )
-    if build.returncode != 0:
+    if pulled.returncode != 0:
         candidate_caddyfile.unlink(missing_ok=True)
-        raise IntegrationError("failed to build the managed Caddy image with caddy-l4")
+        raise IntegrationError(f"failed to pull the managed Caddy image {MANAGED_CADDY_IMAGE}")
     validated = run(
         [
             "docker",
@@ -1275,6 +1268,7 @@ COPY --from=builder /usr/bin/caddy /usr/bin/caddy
             "--volume",
             f"{candidate_caddyfile}:/etc/caddy/Caddyfile:ro",
             MANAGED_CADDY_IMAGE,
+            "caddy",
             "validate",
             "--config",
             "/etc/caddy/Caddyfile",
