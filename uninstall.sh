@@ -4,12 +4,14 @@ set -Eeuo pipefail
 umask 027
 
 readonly INSTALL_BINARY="/usr/local/bin/tupoproxy"
+readonly EDGE_HELPER="/usr/local/lib/tupoproxy/edge-integration.py"
 readonly CONFIG_DIR="/etc/tupoproxy"
 readonly STATE_DIR="/var/lib/tupoproxy"
 readonly COVER_DIR="/var/www/tupoproxy-cover"
 readonly DNS_CREDENTIALS="/etc/letsencrypt/tupoproxy-dns.ini"
 readonly RENEWAL_HOOK="/etc/letsencrypt/renewal-hooks/deploy/tupoproxy-nginx"
 readonly SERVICES=(tupoproxy-edge.service tupoproxy.service tupoproxy-cover.service)
+readonly MANAGED_CADDY_DIR="/opt/caddy"
 
 ASSUME_YES=0
 PURGE_CERTIFICATE=0
@@ -32,10 +34,10 @@ Options:
   -h, --help           Show this help
 
 The script removes the tupoproxy services, binary, configuration, runtime
-state, generated cover site, renewal hook, system user/group, and the proxy's
-UFW rule. DNS credentials are removed together with an explicitly purged
-certificate. Shared nginx, HAProxy, Certbot packages, port 80 rules,
-certificates, and required renewal credentials are otherwise preserved.
+state, generated cover site, reverse-proxy route, renewal hook, system
+user/group, and the proxy's UFW rule. DNS credentials are removed together
+with an explicitly purged certificate. Shared nginx/Caddy, Docker, Certbot
+packages, port 80 rules, certificates, and renewal credentials are preserved.
 EOF
 }
 
@@ -122,7 +124,7 @@ confirm_removal() {
         printf 'Installed endpoint: %s:%s\n' "$DOMAIN" "${PUBLIC_PORT:-unknown}" >/dev/tty
     fi
     if ((PURGE_CERTIFICATE)); then
-        printf 'The certificate for %s will also be deleted.\n' "${DOMAIN:-unknown}" >/dev/tty
+        printf 'Installer-managed TLS certificates will also be deleted.\n' >/dev/tty
     else
         printf 'The TLS certificate and shared system packages will be preserved.\n' >/dev/tty
     fi
@@ -139,6 +141,21 @@ remove_managed_tree() {
             ;;
         *) die "refusing to remove unexpected path: $target" ;;
     esac
+}
+
+remove_managed_caddy_directory() {
+    [[ -e "$MANAGED_CADDY_DIR" ]] || return 0
+    [[ -f "$MANAGED_CADDY_DIR/.tupoproxy-managed" ]] \
+        || die "refusing to remove ${MANAGED_CADDY_DIR}: ownership marker is missing"
+    rm -rf -- "$MANAGED_CADDY_DIR"
+}
+
+remove_reverse_proxy_integration() {
+    [[ -f "$STATE_DIR/edge-integration.json" ]] || return 0
+    [[ -x "$EDGE_HELPER" ]] \
+        || die "cannot restore the reverse-proxy configuration because ${EDGE_HELPER} is missing"
+    note "Restoring the reverse-proxy configuration"
+    "$EDGE_HELPER" remove --state-dir "$STATE_DIR"
 }
 
 purge_certificate() {
@@ -184,6 +201,7 @@ remove_firewall_rule() {
 
 load_installation_metadata
 confirm_removal
+remove_reverse_proxy_integration
 
 note "Stopping and disabling tupoproxy services"
 for service in "${SERVICES[@]}"; do
@@ -200,6 +218,7 @@ purge_certificate
 note "Removing tupoproxy files and private data"
 rm -f -- \
     "$INSTALL_BINARY" \
+    "$EDGE_HELPER" \
     "$RENEWAL_HOOK" \
     /etc/systemd/system/tupoproxy.service \
     /etc/systemd/system/tupoproxy-cover.service \
@@ -210,6 +229,8 @@ remove_managed_tree "$COVER_DIR"
 remove_managed_tree /run/tupoproxy
 remove_managed_tree /run/tupoproxy-cover
 remove_managed_tree /run/tupoproxy-edge
+remove_managed_caddy_directory
+rmdir /usr/local/lib/tupoproxy 2>/dev/null || true
 
 note "Removing the dedicated system account"
 if getent passwd tupoproxy >/dev/null 2>&1; then
@@ -233,5 +254,5 @@ fi
 if ((!PURGE_CERTIFICATE)) && [[ -e "$DNS_CREDENTIALS" ]]; then
     printf 'Preserved renewal credentials: %s\n' "$DNS_CREDENTIALS"
 fi
-printf 'Preserved shared packages: nginx, HAProxy, Certbot, and their plugins.\n'
+printf 'Preserved shared packages: nginx/Caddy, Docker, Certbot, and their plugins.\n'
 printf '============================================================\n'

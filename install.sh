@@ -5,8 +5,11 @@ umask 027
 
 readonly REPOSITORY="wasteprince/tupoproxy"
 readonly INSTALL_DIR="${INSTALL_DIR:-/usr/local/bin}"
+readonly LIB_DIR="${LIB_DIR:-/usr/local/lib/tupoproxy}"
 readonly CONFIG_DIR="${CONFIG_DIR:-/etc/tupoproxy}"
 readonly STATE_DIR="${STATE_DIR:-/var/lib/tupoproxy}"
+readonly EDGE_HELPER="${LIB_DIR}/edge-integration.py"
+readonly MANAGED_CADDY_DIR="/opt/caddy"
 readonly STARTUP_PROBE_TIMEOUT_SECONDS=60
 
 DOMAIN=""
@@ -44,9 +47,14 @@ PROFILE_SET=0
 TLS_DOMAIN_PORT_SET=0
 PROXY_USER_SET=0
 NGINX_WAS_INSTALLED=0
-HAPROXY_WAS_INSTALLED=0
 AD_TAG_CHANGED=0
 INTERACTIVE_MODE=0
+EDGE_MODE=""
+EDGE_KIND=""
+EDGE_TARGET=""
+EDGE_RUNTIME_PORT=""
+INTERNAL_LISTEN_IP="127.0.0.1"
+PROXY_TRUSTED_CIDR="127.0.0.1/32"
 
 usage() {
     cat <<'EOF'
@@ -55,17 +63,15 @@ Usage: sudo bash install.sh [options]
 Required interactively or as flags:
   --domain NAME          Origin domain pointing to this server
   --tls-domain NAME      Separate HTTPS decoy encoded in the ee credential
-  --email ADDRESS        ACME account e-mail (not needed with --cert-*)
 
 Optional:
+  --email ADDRESS        ACME e-mail for a same-server decoy certificate
   --profile NAME         chrome|firefox|compat|legacy (default: chrome)
   --tls-domain-port PORT HTTPS port of the separate decoy (default: 443)
   --user NAME            Credential label (default: user)
-  --port PORT            Public TCP port (default: 443, or a free fallback)
+  --port PORT            Public reverse-proxy port (default: 443)
   --secret HEX           Existing 16-byte secret (default: generated)
   --ad-tag HEX           32-hex sponsored-channel tag from @MTProxybot
-  --cert-fullchain PATH  Existing PEM certificate chain
-  --cert-key PATH        Existing PEM private key
   --tls-cert-fullchain PATH
                          Existing PEM chain for a same-server TLS decoy
   --tls-cert-key PATH    Existing PEM key for a same-server TLS decoy
@@ -85,7 +91,7 @@ Examples:
     --email admin@example.com
   sudo bash install.sh --domain proxy.example.com --tls-domain www.example.org \
     --email admin@example.com \
-    --port 8443 --acme-mode dns --dns-provider cloudflare \
+    --port 443 --acme-mode dns --dns-provider cloudflare \
     --dns-credentials /root/cloudflare.ini
   curl -fsSL https://github.com/wasteprince/tupoproxy/releases/latest/download/install.sh \
     | sudo bash -s -- --domain proxy.example.com --tls-domain www.example.org \
@@ -270,7 +276,7 @@ prompt_value() {
 prompt_public_port() {
     local value
     [[ -z "$PUBLIC_PORT" && "$SETUP_WIZARD" == "1" ]] || return 0
-    read -r -p "Public proxy port [auto]: " value </dev/tty
+    read -r -p "Public reverse-proxy port [443]: " value </dev/tty
     PUBLIC_PORT="$value"
 }
 
@@ -402,14 +408,14 @@ tls_decoy_is_ready() {
 
 detect_tls_decoy_mode() {
     note "Checking the FakeTLS decoy"
+    if ((TLS_DECOY_SHARES_ADDRESS)); then
+        TLS_DECOY_LOCAL=1
+        note "The decoy shares this VPS; tupoproxy will keep its fallback on an isolated local port"
+        return 0
+    fi
     if tls_decoy_is_ready; then
         note "Using the existing HTTPS decoy at ${TLS_DOMAIN}:${TLS_DOMAIN_PORT}"
         TLS_DECOY_LOCAL=0
-        return 0
-    fi
-    if ((TLS_DECOY_SHARES_ADDRESS)); then
-        TLS_DECOY_LOCAL=1
-        note "The decoy shares this VPS and has no ready HTTPS endpoint; tupoproxy will create an isolated one"
         return 0
     fi
     die "TLS decoy ${TLS_DOMAIN} must expose trusted HTTP/2 HTTPS on TCP/${TLS_DOMAIN_PORT}"
@@ -459,7 +465,7 @@ validate_inputs() {
                 || die "provided TLS decoy certificate files are not readable"
         fi
     fi
-    if [[ -z "$CERT_FULLCHAIN" || ("$TLS_DECOY_LOCAL" == "1" && -z "$TLS_CERT_FULLCHAIN") ]]; then
+    if [[ "$TLS_DECOY_LOCAL" == "1" && -z "$TLS_CERT_FULLCHAIN" ]]; then
         [[ -n "$EMAIL" ]] || die "ACME e-mail address is required"
         [[ "$EMAIL" =~ ^[^[:space:]@]+@[^[:space:]@]+\.[^[:space:]@]+$ ]] \
             || die "invalid ACME e-mail address"
@@ -485,8 +491,8 @@ validate_inputs() {
             || die "invalid Cloudflare API token format"
     fi
     if [[ "$ACME_MODE" == "existing" \
-        && (-z "$CERT_FULLCHAIN" || ("$TLS_DECOY_LOCAL" == "1" && -z "$TLS_CERT_FULLCHAIN")) ]]; then
-        die "ACME mode existing requires certificate paths for the origin and local decoy"
+        && "$TLS_DECOY_LOCAL" == "1" && -z "$TLS_CERT_FULLCHAIN" ]]; then
+        die "ACME mode existing requires certificate paths for the local decoy"
     fi
     if [[ "$ACME_MODE" == "webroot" ]]; then
         [[ "$ACME_WEBROOT" =~ ^/[A-Za-z0-9_./-]+$ && -d "$ACME_WEBROOT" ]] \
@@ -553,7 +559,7 @@ download_file() {
 }
 
 install_prebuilt_binary() {
-    local machine target asset release_base checksum_line
+    local machine target asset release_base checksum_line helper_checksum_line
     machine="$(uname -m)"
     case "$machine" in
         x86_64|amd64) target="x86_64-unknown-linux-musl" ;;
@@ -571,11 +577,23 @@ install_prebuilt_binary() {
     INSTALL_TEMP_DIR="$(mktemp -d -t tupoproxy-install.XXXXXXXX)"
     download_file "${release_base}/${asset}" "${INSTALL_TEMP_DIR}/${asset}"
     download_file "${release_base}/CHECKSUMS.txt" "${INSTALL_TEMP_DIR}/CHECKSUMS.txt"
+    if ((!BINARY_ONLY)); then
+        download_file "${release_base}/edge-integration.py" \
+            "${INSTALL_TEMP_DIR}/edge-integration.py"
+    fi
 
     checksum_line="$(grep -E "^[0-9a-f]{64}  ${asset}$" "${INSTALL_TEMP_DIR}/CHECKSUMS.txt" || true)"
     [[ -n "$checksum_line" ]] || die "release checksum for ${asset} is missing"
     printf '%s\n' "$checksum_line" >"${INSTALL_TEMP_DIR}/asset.sha256"
     (cd "$INSTALL_TEMP_DIR" && sha256sum --check asset.sha256)
+    if ((!BINARY_ONLY)); then
+        helper_checksum_line="$(grep -E '^[0-9a-f]{64}  edge-integration\.py$' \
+            "${INSTALL_TEMP_DIR}/CHECKSUMS.txt" || true)"
+        [[ -n "$helper_checksum_line" ]] \
+            || die "release checksum for edge-integration.py is missing"
+        printf '%s\n' "$helper_checksum_line" >"${INSTALL_TEMP_DIR}/helper.sha256"
+        (cd "$INSTALL_TEMP_DIR" && sha256sum --check helper.sha256)
+    fi
 
     mkdir -p "${INSTALL_TEMP_DIR}/unpack"
     tar -xzf "${INSTALL_TEMP_DIR}/${asset}" -C "${INSTALL_TEMP_DIR}/unpack"
@@ -583,6 +601,12 @@ install_prebuilt_binary() {
 
     install -d -m 0755 "$INSTALL_DIR"
     install -m 0755 "${INSTALL_TEMP_DIR}/unpack/tupoproxy" "$INSTALL_DIR/tupoproxy"
+    if ((!BINARY_ONLY)); then
+        install -d -m 0755 "$LIB_DIR"
+        install -m 0755 "${INSTALL_TEMP_DIR}/edge-integration.py" "$EDGE_HELPER"
+        python3 -c 'import ast, pathlib, sys; ast.parse(pathlib.Path(sys.argv[1]).read_text())' \
+            "$EDGE_HELPER"
+    fi
     "$INSTALL_DIR/tupoproxy" --version
     rm -rf -- "$INSTALL_TEMP_DIR"
     INSTALL_TEMP_DIR=""
@@ -598,47 +622,71 @@ listener_details() {
     ss -H -ltnp "sport = :${port}" 2>/dev/null || true
 }
 
-choose_public_port() {
-    local candidate
+configure_reverse_proxy_mode() {
+    local details record
     systemctl stop tupoproxy-edge.service 2>/dev/null || true
-    if [[ -n "$PUBLIC_PORT" ]]; then
-        if ((TLS_DECOY_SHARES_ADDRESS)) && [[ "$PUBLIC_PORT" == "$TLS_DOMAIN_PORT" ]]; then
-            die "the proxy and TLS decoy share an address, so their ports must be different"
+    PUBLIC_PORT="${PUBLIC_PORT:-443}"
+
+    if record="$("$EDGE_HELPER" detect --port "$PUBLIC_PORT")"; then
+        IFS=$'\t' read -r EDGE_KIND EDGE_TARGET INTERNAL_LISTEN_IP PROXY_TRUSTED_CIDR EDGE_RUNTIME_PORT \
+            <<<"$record"
+        if [[ "$EDGE_KIND" == "managed-caddy" ]]; then
+            EDGE_MODE="managed"
+        else
+            EDGE_MODE="existing"
         fi
-        port_is_listening "$PUBLIC_PORT" && die "requested public port ${PUBLIC_PORT} is already in use"
-        return 0
+        note "Using ${EDGE_KIND} reverse proxy ${EDGE_TARGET} on TCP/${PUBLIC_PORT}"
+    else
+        if port_is_listening "$PUBLIC_PORT"; then
+            details="$(listener_details "$PUBLIC_PORT")"
+            die "TCP/${PUBLIC_PORT} is owned by an incompatible service. Install caddy-l4 or nginx with stream_ssl_preread, then retry. Listener: ${details:-unknown}"
+        fi
+        [[ "$PUBLIC_PORT" == "443" ]] \
+            || die "a managed Caddy fallback can only be created on TCP/443; use 443 or prepare a compatible reverse proxy on TCP/${PUBLIC_PORT}"
+        if ! command -v docker >/dev/null 2>&1; then
+            note "Installing Docker for the managed Caddy fallback"
+            apt_install docker.io
+        fi
+        systemctl enable --now docker.service
+        record="$("$EDGE_HELPER" managed-record --port "$PUBLIC_PORT")"
+        IFS=$'\t' read -r EDGE_KIND EDGE_TARGET INTERNAL_LISTEN_IP PROXY_TRUSTED_CIDR EDGE_RUNTIME_PORT \
+            <<<"$record"
+        EDGE_MODE="managed"
+        note "No compatible reverse proxy was found; Caddy with caddy-l4 will be created in ${MANAGED_CADDY_DIR}"
     fi
-    for candidate in 443 8443 2053 2083 2087 2096; do
-        if ((TLS_DECOY_SHARES_ADDRESS)) && [[ "$candidate" == "$TLS_DOMAIN_PORT" ]]; then
-            continue
-        fi
+
+    [[ -n "$EDGE_KIND" && -n "$EDGE_TARGET" && -n "$INTERNAL_LISTEN_IP" \
+        && -n "$PROXY_TRUSTED_CIDR" && "$EDGE_RUNTIME_PORT" =~ ^[0-9]+$ ]] \
+        || die "reverse-proxy discovery returned incomplete data"
+    ((EDGE_RUNTIME_PORT >= 1 && EDGE_RUNTIME_PORT <= 65535)) \
+        || die "reverse-proxy discovery returned an invalid runtime port"
+}
+
+choose_local_decoy_port() {
+    local candidate
+    ((TLS_DECOY_LOCAL)) || return 0
+    [[ "$TLS_DOMAIN_PORT" == "$PUBLIC_PORT" ]] || return 0
+
+    for candidate in 3443 4443 5443 6443; do
         if ! port_is_listening "$candidate"; then
-            PUBLIC_PORT="$candidate"
-            if [[ "$candidate" != "443" ]]; then
-                note "Port 443 is occupied; selected free proxy port ${candidate}"
-            fi
+            TLS_DOMAIN_PORT="$candidate"
+            note "The public edge uses TCP/${PUBLIC_PORT}; selected isolated decoy port ${candidate}"
             return 0
         fi
     done
-    die "none of the supported public ports is free; specify one with --port"
+    die "no isolated local port is free for the same-server FakeTLS decoy"
 }
 
 ensure_internal_ports_are_safe() {
-    local proxy_port=18443 cover_port=19443 decoy_cover_port=20443 api_port=9091
+    local proxy_port=18443 api_port=9091
     systemctl stop tupoproxy.service tupoproxy-cover.service 2>/dev/null || true
     if port_is_listening "$proxy_port"; then
         die "internal port ${proxy_port} is already in use"
-    fi
-    if port_is_listening "$cover_port"; then
-        die "internal port ${cover_port} is already in use"
     fi
     if port_is_listening "$api_port"; then
         die "local API port ${api_port} is already in use"
     fi
     if ((TLS_DECOY_LOCAL)); then
-        if port_is_listening "$decoy_cover_port"; then
-            die "internal TLS decoy cover port ${decoy_cover_port} is already in use"
-        fi
         if port_is_listening "$TLS_DOMAIN_PORT"; then
             die "same-server TLS decoy port ${TLS_DOMAIN_PORT} is already in use; choose another one"
         fi
@@ -676,8 +724,7 @@ prompt_dns_settings() {
 
 choose_acme_mode() {
     local details
-    if [[ -n "$CERT_FULLCHAIN" \
-        && ("$TLS_DECOY_LOCAL" != "1" || -n "$TLS_CERT_FULLCHAIN") ]]; then
+    if ((!TLS_DECOY_LOCAL)) || [[ -n "$TLS_CERT_FULLCHAIN" ]]; then
         ACME_MODE="existing"
         return 0
     fi
@@ -794,15 +841,6 @@ request_certificate() {
 
 configure_acme() {
     prepare_dns_credentials
-
-    if [[ -z "$CERT_FULLCHAIN" ]]; then
-        request_certificate "$DOMAIN"
-        CERT_FULLCHAIN="/etc/letsencrypt/live/${DOMAIN}/fullchain.pem"
-        CERT_KEY="/etc/letsencrypt/live/${DOMAIN}/privkey.pem"
-        CERTIFICATE_MANAGED=1
-    fi
-    [[ -r "$CERT_FULLCHAIN" && -r "$CERT_KEY" ]] \
-        || die "origin certificate issuance did not produce readable files"
 
     if ((TLS_DECOY_LOCAL)) && [[ -z "$TLS_CERT_FULLCHAIN" ]]; then
         request_certificate "$TLS_DOMAIN"
@@ -924,7 +962,7 @@ EOF
         decoy_server="$(cat <<EOF
 
     server {
-        listen 127.0.0.1:20443 ssl http2;
+        listen 127.0.0.1:${TLS_DOMAIN_PORT} ssl http2;
         server_name ${TLS_DOMAIN};
 
         ssl_certificate "${TLS_CERT_FULLCHAIN}";
@@ -967,29 +1005,6 @@ http {
     default_type application/octet-stream;
     etag on;
 
-    server {
-        listen 127.0.0.1:19443 ssl http2;
-        server_name ${DOMAIN};
-
-        ssl_certificate "${CERT_FULLCHAIN}";
-        ssl_certificate_key "${CERT_KEY}";
-        ssl_protocols TLSv1.2 TLSv1.3;
-        ssl_session_cache shared:TUPOPROXY_COVER:10m;
-        ssl_session_timeout 1d;
-        ssl_session_tickets on;
-
-        add_header X-Content-Type-Options "nosniff" always;
-        root "${cover_root}";
-        index index.html;
-
-        location = / {
-            try_files /index.html =404;
-        }
-
-        location / {
-            try_files \$uri =404;
-        }
-    }
 ${decoy_server}
 }
 EOF
@@ -1006,12 +1021,16 @@ EOF
 configure_proxy() {
     local ad_tag_line=""
     local mask_host_line=""
+    local trusted_cidrs='"127.0.0.1/32", "::1/128"'
     [[ -n "$SECRET" ]] || SECRET="$(openssl rand -hex 16)"
     if [[ -n "$AD_TAG" ]]; then
         ad_tag_line="ad_tag = \"${AD_TAG}\""
     fi
     if ((TLS_DECOY_LOCAL)); then
         mask_host_line="mask_host = \"127.0.0.1\""
+    fi
+    if [[ "$PROXY_TRUSTED_CIDR" != "127.0.0.1/32" ]]; then
+        trusted_cidrs="${trusted_cidrs}, \"${PROXY_TRUSTED_CIDR}\""
     fi
 
     getent group tupoproxy >/dev/null 2>&1 || groupadd --system tupoproxy
@@ -1041,10 +1060,10 @@ public_port = ${PUBLIC_PORT}
 
 [server]
 proxy_protocol = true
-proxy_protocol_trusted_cidrs = ["127.0.0.1/32", "::1/128"]
+proxy_protocol_trusted_cidrs = [${trusted_cidrs}]
 
 [[server.listeners]]
-ip = "127.0.0.1"
+ip = "${INTERNAL_LISTEN_IP}"
 port = 18443
 announce = "${DOMAIN}"
 
@@ -1073,20 +1092,6 @@ EOF
 }
 
 configure_services() {
-    local decoy_edge=""
-    if ((TLS_DECOY_LOCAL)); then
-        decoy_edge="$(cat <<EOF
-
-frontend tupoproxy_local_decoy
-    bind 127.0.0.1:${TLS_DOMAIN_PORT}
-    default_backend tupoproxy_decoy_cover
-
-backend tupoproxy_decoy_cover
-    server decoy 127.0.0.1:20443 check
-EOF
-)"
-    fi
-
     cat > /etc/systemd/system/tupoproxy-cover.service <<EOF
 [Unit]
 Description=tupoproxy isolated HTTPS cover
@@ -1159,69 +1164,30 @@ MemoryDenyWriteExecute=true
 [Install]
 WantedBy=multi-user.target
 EOF
-
-    cat > "$CONFIG_DIR/haproxy.cfg" <<EOF
-# Managed by tupoproxy install.sh
-global
-    log stdout format raw local0
-    user haproxy
-    group haproxy
-
-defaults
-    log global
-    mode tcp
-    timeout connect 5s
-    timeout client 2m
-    timeout server 2m
-
-frontend tupoproxy_public
-    bind :${PUBLIC_PORT}
-    tcp-request inspect-delay 5s
-    tcp-request content accept if { req.ssl_hello_type 1 }
-    acl credential_sni req.ssl_sni -i ${TLS_DOMAIN}
-    use_backend tupoproxy_backend if credential_sni
-    default_backend tupoproxy_cover
-
-backend tupoproxy_backend
-    server tupoproxy 127.0.0.1:18443 send-proxy-v2 check
-
-backend tupoproxy_cover
-    server cover 127.0.0.1:19443 check
-${decoy_edge}
-EOF
-    chown root:tupoproxy "$CONFIG_DIR/haproxy.cfg"
-    chmod 0640 "$CONFIG_DIR/haproxy.cfg"
-
-    cat > /etc/systemd/system/tupoproxy-edge.service <<EOF
-[Unit]
-Description=tupoproxy public TLS edge
-After=network-online.target tupoproxy-cover.service tupoproxy.service
-Requires=tupoproxy-cover.service tupoproxy.service
-
-[Service]
-Type=notify
-ExecStart=/usr/sbin/haproxy -Ws -f ${CONFIG_DIR}/haproxy.cfg -p /run/tupoproxy-edge/haproxy.pid
-ExecReload=/bin/kill -USR2 \$MAINPID
-Restart=on-failure
-RestartSec=5s
-RuntimeDirectory=tupoproxy-edge
-RuntimeDirectoryMode=0755
-PIDFile=/run/tupoproxy-edge/haproxy.pid
-KillMode=mixed
-SuccessExitStatus=143
-NoNewPrivileges=true
-ProtectHome=true
-ProtectSystem=strict
-PrivateTmp=true
-RestrictAddressFamilies=AF_INET AF_INET6 AF_UNIX
-
-[Install]
-WantedBy=multi-user.target
-EOF
-
-    haproxy -c -f "$CONFIG_DIR/haproxy.cfg"
+    systemctl disable --now tupoproxy-edge.service >/dev/null 2>&1 || true
+    rm -f -- "$CONFIG_DIR/haproxy.cfg" /etc/systemd/system/tupoproxy-edge.service
     systemctl daemon-reload
-    systemctl enable tupoproxy-cover.service tupoproxy.service tupoproxy-edge.service
+    systemctl enable tupoproxy-cover.service tupoproxy.service
+}
+
+configure_public_edge() {
+    local backend="${INTERNAL_LISTEN_IP}:18443"
+    if [[ "$EDGE_MODE" == "existing" ]]; then
+        "$EDGE_HELPER" remove --state-dir "$STATE_DIR"
+        "$EDGE_HELPER" apply \
+            --port "$PUBLIC_PORT" \
+            --tls-domain "$TLS_DOMAIN" \
+            --backend "$backend" \
+            --state-dir "$STATE_DIR"
+        return 0
+    fi
+    [[ "$EDGE_MODE" == "managed" ]] || die "unknown reverse-proxy mode: ${EDGE_MODE}"
+    "$EDGE_HELPER" provision-caddy \
+        --domain "$DOMAIN" \
+        --tls-domain "$TLS_DOMAIN" \
+        --backend "$backend" \
+        --state-dir "$STATE_DIR" \
+        --opt-dir "$MANAGED_CADDY_DIR"
 }
 
 open_firewall_ports() {
@@ -1249,12 +1215,19 @@ restart_service_or_die() {
 print_startup_diagnostics() {
     local service
 
-    for service in tupoproxy-cover.service tupoproxy.service tupoproxy-edge.service; do
+    for service in tupoproxy-cover.service tupoproxy.service; do
         printf '\n----- %s status -----\n' "$service" >&2
         systemctl --no-pager --full status "$service" >&2 || true
         printf '\n----- %s recent journal -----\n' "$service" >&2
         journalctl --no-pager --full -n 40 -u "$service" >&2 || true
     done
+    if [[ "$EDGE_MODE" == "managed" ]]; then
+        printf '\n----- tupoproxy-caddy logs -----\n' >&2
+        docker logs --tail 80 tupoproxy-caddy >&2 || true
+    else
+        printf '\n----- reverse-proxy integration -----\n' >&2
+        sed -n '1,200p' "$STATE_DIR/edge-integration.json" >&2 || true
+    fi
 }
 
 probe_tls_endpoint() {
@@ -1309,7 +1282,6 @@ wait_for_public_cover() {
     while true; do
         if cover_body="$(curl --fail --silent --show-error --insecure --noproxy '*' \
             --connect-timeout 5 --max-time 15 \
-            --resolve "${DOMAIN}:${PUBLIC_PORT}:127.0.0.1" \
             "https://${DOMAIN}:${PUBLIC_PORT}/" 2>&1)" \
             && [[ "$cover_body" == *"${DOMAIN}"* ]]; then
             return 0
@@ -1328,6 +1300,15 @@ wait_for_public_cover() {
     done
 }
 
+fail_public_verification() {
+    local message="$1"
+    print_startup_diagnostics
+    if "$EDGE_HELPER" remove --state-dir "$STATE_DIR"; then
+        die "$message; the reverse-proxy change was rolled back"
+    fi
+    die "$message; automatic reverse-proxy rollback also failed, inspect the diagnostics above"
+}
+
 verify_public_cover() {
     note "Verifying the public HTTPS camouflage path"
 
@@ -1335,26 +1316,27 @@ verify_public_cover() {
         if ! wait_for_tls_endpoint \
             "same-server TLS decoy on TCP/${TLS_DOMAIN_PORT}" \
             "127.0.0.1:${TLS_DOMAIN_PORT}" "$TLS_DOMAIN"; then
-            print_startup_diagnostics
-            die "same-server TLS decoy failed on isolated TCP/${TLS_DOMAIN_PORT}"
+            fail_public_verification \
+                "same-server TLS decoy failed on isolated TCP/${TLS_DOMAIN_PORT}"
         fi
     fi
 
     if ! wait_for_tls_endpoint \
         "public origin ${DOMAIN}:${PUBLIC_PORT}" \
-        "127.0.0.1:${PUBLIC_PORT}" "$DOMAIN"; then
-        print_startup_diagnostics
-        die "public TLS probe failed for ${DOMAIN}:${PUBLIC_PORT}"
+        "${DOMAIN}:${PUBLIC_PORT}" "$DOMAIN"; then
+        fail_public_verification "public TLS probe failed for ${DOMAIN}:${PUBLIC_PORT}"
     fi
-    if ! wait_for_public_cover; then
-        print_startup_diagnostics
-        die "public HTTPS cover check failed for ${DOMAIN}:${PUBLIC_PORT}"
+    if [[ "$EDGE_MODE" == "managed" ]]; then
+        if ! wait_for_public_cover; then
+            fail_public_verification \
+                "public HTTPS cover check failed for ${DOMAIN}:${PUBLIC_PORT}"
+        fi
     fi
     if ! wait_for_tls_endpoint \
         "FakeTLS decoy ${TLS_DOMAIN} through TCP/${PUBLIC_PORT}" \
-        "127.0.0.1:${PUBLIC_PORT}" "$TLS_DOMAIN"; then
-        print_startup_diagnostics
-        die "FakeTLS decoy fallback failed for ${TLS_DOMAIN} through the public port"
+        "${DOMAIN}:${PUBLIC_PORT}" "$TLS_DOMAIN"; then
+        fail_public_verification \
+            "FakeTLS decoy fallback failed for ${TLS_DOMAIN} through the public port"
     fi
 }
 
@@ -1407,6 +1389,10 @@ TLS decoy port: ${TLS_DOMAIN_PORT}
 TLS decoy local: $([[ "$TLS_DECOY_LOCAL" == "1" ]] && printf 'yes' || printf 'no')
 ACME e-mail: ${EMAIL}
 Public port: ${PUBLIC_PORT}
+Edge mode: ${EDGE_MODE}
+Edge kind: ${EDGE_KIND}
+Edge target: ${EDGE_TARGET}
+Edge runtime port: ${EDGE_RUNTIME_PORT}
 TLS profile: ${PROFILE}
 Credential user: ${PROXY_USER}
 Secret: ${SECRET}
@@ -1439,6 +1425,7 @@ write_summary() {
     printf '\n============================================================\n'
     printf 'tupoproxy is installed\n'
     printf 'Public endpoint: %s:%s\n' "$DOMAIN" "$PUBLIC_PORT"
+    printf 'Reverse proxy: %s (%s, %s)\n' "$EDGE_KIND" "$EDGE_MODE" "$EDGE_TARGET"
     printf 'FakeTLS decoy SNI: %s\n' "$TLS_DOMAIN"
     printf 'FakeTLS decoy HTTPS port: %s\n' "$TLS_DOMAIN_PORT"
     if ((TLS_DECOY_LOCAL)); then
@@ -1480,24 +1467,15 @@ if ((BINARY_ONLY)); then
     apt_install ca-certificates curl tar coreutils
 else
     package_is_installed nginx && NGINX_WAS_INSTALLED=1
-    package_is_installed haproxy && HAPROXY_WAS_INSTALLED=1
     apt_install \
-        ca-certificates curl tar coreutils openssl iproute2 nginx haproxy certbot
+        ca-certificates curl tar coreutils openssl iproute2 nginx certbot python3
     if ((!NGINX_WAS_INSTALLED)); then
         systemctl disable --now nginx.service >/dev/null 2>&1 || true
-    fi
-    if ((!HAPROXY_WAS_INSTALLED)); then
-        systemctl disable --now haproxy.service >/dev/null 2>&1 || true
     fi
 fi
 
 if ((!BINARY_ONLY)); then
     detect_tls_decoy_mode
-    if [[ -z "$CERT_FULLCHAIN" || ("$TLS_DECOY_LOCAL" == "1" && -z "$TLS_CERT_FULLCHAIN") ]]; then
-        prompt_value EMAIL "ACME e-mail"
-    fi
-    validate_inputs
-    validate_existing_certificates
 fi
 
 note "Installing the prebuilt static binary"
@@ -1508,7 +1486,13 @@ if ((BINARY_ONLY)); then
     exit 0
 fi
 
-choose_public_port
+configure_reverse_proxy_mode
+choose_local_decoy_port
+if ((TLS_DECOY_LOCAL)) && [[ -z "$TLS_CERT_FULLCHAIN" ]]; then
+    prompt_value EMAIL "ACME e-mail"
+fi
+validate_inputs
+validate_existing_certificates
 ensure_internal_ports_are_safe
 choose_acme_mode
 validate_inputs
@@ -1531,10 +1515,10 @@ else
     note "Starting tupoproxy"
     restart_service_or_die tupoproxy-cover.service
     restart_service_or_die tupoproxy.service
-    restart_service_or_die tupoproxy-edge.service
     systemctl --quiet is-active tupoproxy-cover.service || die "tupoproxy cover service did not start"
     systemctl --quiet is-active tupoproxy.service || die "tupoproxy service did not start"
-    systemctl --quiet is-active tupoproxy-edge.service || die "tupoproxy edge did not start"
+    note "Adding the raw FakeTLS route to the reverse proxy"
+    configure_public_edge
     verify_public_cover
     if [[ "$ACME_MODE" != "manual-dns" ]]; then
         systemctl enable --now certbot.timer >/dev/null 2>&1 || true

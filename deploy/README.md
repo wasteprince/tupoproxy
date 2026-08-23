@@ -1,73 +1,92 @@
-# Совместное размещение с HTTPS-проектами
+# Развёртывание рядом с nginx или Caddy
 
-Для нового сервера на Debian/Ubuntu корневой [`install.sh`](../install.sh)
-автоматически устанавливает зависимости и готовый статический бинарник,
-получает сертификат, настраивает изолированный cover-nginx на loopback,
-HAProxy, systemd и формирует Telegram-ссылку. Если публичный `443` занят,
-скрипт выбирает другой порт прокси. Для выпуска сертификата освобождать
-`80/443` не обязательно: используйте `--acme-mode dns` с поддерживаемым
-DNS-плагином Certbot или универсальный интерактивный режим
-`--acme-mode manual-dns`.
+Основной [`install.sh`](../install.sh) устанавливает готовый бинарник,
+настраивает systemd и добавляет в уже работающий reverse proxy сырой
+L4-маршрут для FakeTLS SNI.
 
-Decoy-домен может указывать на тот же VPS. Если на выбранном decoy-порту ещё
-нет доверенного HTTP/2 HTTPS, автоустановщик выпустит отдельный сертификат и
-поднимет локальный decoy в своей изолированной конфигурации. Публичный порт
-прокси и decoy-порт при этом должны различаться.
-
-Полностью удалить файлы и сервисы автоматической установки можно отдельной
-однострочной командой:
-
-```sh
-curl -fL https://github.com/wasteprince/tupoproxy/releases/latest/download/uninstall.sh | sudo bash
+```bash
+curl -fL https://github.com/wasteprince/tupoproxy/releases/latest/download/install.sh \
+  | sudo bash
 ```
 
-Сертификат и общие системные пакеты при этом сохраняются. Для явно управляемого
-Let's Encrypt-сертификата доступен параметр `--purge-certificate`.
+## Инвариант FakeTLS
 
-Ниже описана расширенная ручная схема с внешним decoy для случаев, когда
-tupoproxy должен делить один публичный `443` с существующими сайтами по SNI:
+Маршрут tupoproxy никогда не завершает TLS:
 
-1. HAProxy занимает публичный TCP/443 и только проверяет SNI, не завершая TLS.
-2. Отдельный decoy SNI из credential направляется в tupoproxy на
-   `127.0.0.1:8443` с PROXY v2.
-3. Origin SNI идёт в существующий HTTPS-роутер на `127.0.0.1:9443`.
-4. Неуспешная авторизация в прокси динамически пересылается на настоящий
-   внешний decoy HTTPS-сайт с его сертификатом.
-5. Существующий веб-сервер сохраняет публичный порт 80 для ACME HTTP-01.
-   DNS-01 также поддерживается и не требует входящего ACME-порта.
-
-Замените `proxy.example.com` своим origin-доменом с `A`/`AAAA` на сервер.
-`www.example.org` замените отдельным настоящим HTTPS-доменом, размещённым на
-другом адресе и поддерживающим HTTP/2. Сертификат на VPS нужен только для
-origin-домена. В примере decoy слушает `443`; `censorship.mask_port` можно
-заменить любым реально работающим HTTPS-портом decoy. Перед публикацией
-прокси-ссылок проверьте оба маршрута:
-
-```sh
-curl --resolve proxy.example.com:443:SERVER_IP https://proxy.example.com/
-openssl s_client -connect SERVER_IP:443 -servername www.example.org -alpn h2 </dev/null
+```text
+ClientHello с decoy SNI
+        │
+        ├── nginx stream + ssl_preread ── PROXY v2 ── tupoproxy
+        └── Caddy layer4 listener wrapper ─ PROXY v2 ─ tupoproxy
 ```
 
-Вторая команда должна вывести сертификат внешнего decoy-домена и
-`ALPN protocol: h2`. Это проверяет scanner-visible fallback для
-неавторизованного ClientHello.
+TLS-терминация применяется только к остальным SNI. Поэтому credential
+`ee + secret + hex(SNI)` не конфликтует с сертификатом origin-сайта и не
+получает второй ClientHello.
 
-Telegram получает credential в стандартном совместимом формате:
-`ee + 16-байтовый secret + hex(SNI)`. tupoproxy выбирает серверный профиль по
-этому SNI. Добавление собственных байтов после SNI повредило бы домен, поэтому
-такой формат не используется.
+## Автоматически поддерживаемые варианты
 
-## Совместимость с VPN
+- host nginx с модулем `stream_ssl_preread`;
+- Docker nginx с этим модулем и постоянным config mount;
+- host Caddy, собранный с caddy-l4;
+- Docker Caddy с caddy-l4 и постоянным Caddyfile mount;
+- свободный TCP/443: управляемый Caddy создаётся в `/opt/caddy`.
 
-tupoproxy использует обычный TCP и работает через VPN, который направляет
-TCP-соединения Telegram в туннель. Самый переносимый вариант — публичный
-TCP/443. Сервер не может отменить kill switch, правила отдельных приложений,
-политику Private DNS или блокировку адреса внутри VPN. Если ошибка возникает
-только при включённом VPN, разрешите Telegram в настройках VPN, уберите его из
-исключений проксирования либо добавьте адрес прокси в таблицу маршрутов VPN.
+Активный конфиг изменяется напрямую. Перед reload выполняется `nginx -t` или
+`caddy validate`. При ошибке изменения откатываются. Удаление через
+[`uninstall.sh`](../uninstall.sh) восстанавливает nginx listeners или удаляет
+управляемый блок Caddy.
 
-Не следует принудительно задавать маленький MSS за HAProxy: это изменит
-loopback-сегмент, а не клиентское TCP-рукопожатие. Кроме того, DPI умеет
-пересобирать TCP-поток, поэтому сегментация ненадёжна как основная защита.
-Адаптивные профили TLS-record остаются активными и лучше переносят уменьшенный
-эффективный MTU, характерный для VPN-туннелей.
+Обычный HTTP `reverse_proxy` для FakeTLS не подходит: он завершает TLS до
+tupoproxy. Стандартный Caddy без caddy-l4 также не может выполнить нужное
+SNI-разделение, поэтому занятый им порт не заменяется автоматически.
+
+## Docker
+
+Установщик находит контейнер по фактическому владельцу TCP-порта, а не по
+имени или рабочему каталогу. Конфигурация должна находиться в bind mount или
+named volume. Изменять только writable layer контейнера небезопасно — после
+recreation настройка исчезнет.
+
+Для Docker edge tupoproxy слушает адрес bridge gateway, а PROXY v2 доверяется
+только подсети этого bridge. Management API остаётся на loopback.
+
+## Сертификаты и порты
+
+- Сертификат origin продолжает получать существующий nginx/Caddy.
+- Управляемый Caddy получает origin-сертификат автоматически.
+- Для same-server decoy Certbot выпускает отдельный сертификат.
+- Порт `80` и конфигурация остальных проектов не заменяются.
+- Если публичный `443` совпал с портом локального decoy, установщик выбирает
+  свободный `3443`, `4443`, `5443` или `6443`.
+
+Если HTTP-01 недоступен, используйте DNS-01:
+
+```bash
+sudo env TUPOPROXY_CLOUDFLARE_API_TOKEN='TOKEN' bash install.sh \
+  --domain proxy.example.com \
+  --tls-domain decoy.example.org \
+  --email admin@example.com \
+  --acme-mode dns \
+  --dns-provider cloudflare
+```
+
+## Проверка
+
+```bash
+openssl s_client -connect SERVER_IP:443 \
+  -servername proxy.example.com -alpn h2 </dev/null
+
+openssl s_client -connect SERVER_IP:443 \
+  -servername decoy.example.org -alpn h2 </dev/null
+
+sudo -u tupoproxy /usr/local/bin/tupoproxy \
+  healthcheck /etc/tupoproxy/config.toml --mode ready
+```
+
+Первый TLS-запрос должен вернуть origin-сертификат. Второй проходит через
+tupoproxy как неавторизованная проверка и возвращает настоящий decoy.
+
+Ручные файлы в этом каталоге оставлены для нестандартных схем. Для обычной
+установки относительные пути `deploy/...` не нужны: используйте release
+`install.sh` одной командой.
