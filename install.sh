@@ -226,7 +226,7 @@ validate_domain_routes() {
     mapfile -t decoy_addresses < <(getent ahostsv4 "$TLS_DOMAIN" | awk '{print $1}' | sort -u)
     ((${#decoy_addresses[@]} > 0)) \
         || die "FakeTLS domain ${TLS_DOMAIN} has no IPv4 A record"
-    PUBLIC_HOST="${origin_addresses[0]}"
+    PUBLIC_HOST="$DOMAIN"
 }
 
 validate_ad_tag() {

@@ -94,8 +94,8 @@ Session ID, выбирает cipher/key share из предложенных кл
 - публичный TCP/443 должен принадлежать совместимому nginx/Caddy.
 
 Cloudflare можно использовать как DNS, но A-запись основного домена должна
-раскрывать прямой IPv4 сервера. Обычный Cloudflare HTTP proxy не передаёт сырой
-MTProxy-поток и не подходит как адрес из Telegram-ссылки.
+напрямую указывать на IPv4 сервера. Обычный Cloudflare HTTP proxy не передаёт
+сырой MTProxy-поток и не подходит для основного домена из Telegram-ссылки.
 
 ### Одна команда
 
@@ -164,15 +164,15 @@ site.example.com   A   203.0.113.10
 proxy.example.com  A   198.51.100.20  # либо тот же 203.0.113.10
 ```
 
-`site.example.com` определяет реальный IPv4 из Telegram-ссылки и остаётся
-обычным сайтом. `proxy.example.com` используется как SNI внутри FakeTLS
-credential. Telegram подключается к указанному IP напрямую, поэтому DNS-адрес
+`site.example.com` используется в поле `server` Telegram-ссылки и остаётся
+обычным сайтом. Его единственная A-запись должна напрямую указывать на этот VPS.
+`proxy.example.com` используется как SNI внутри FakeTLS credential. DNS-адрес
 FakeTLS-домена может отличаться: локальный edge маршрутизирует его по SNI.
 
-Telegram-ссылка использует IPv4 сервера:
+Telegram-ссылка использует первый домен, введённый при установке:
 
 ```text
-tg://proxy?server=203.0.113.10&port=443&secret=<Base64URL credential>
+tg://proxy?server=site.example.com&port=443&secret=<Base64URL credential>
 ```
 
 После Base64URL-декодирования credential имеет структуру:
@@ -265,7 +265,7 @@ sudo cat /etc/tupoproxy/INSTALLATION.txt
 
 ```bash
 sudo /usr/local/lib/tupoproxy/fake-tls-probe.py \
-  --connect 203.0.113.10:443 \
+  --connect site.example.com:443 \
   --sni proxy.example.com \
   --secret 00112233445566778899aabbccddeeff
 ```

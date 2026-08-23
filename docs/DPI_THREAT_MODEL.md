@@ -22,8 +22,8 @@ allow-list, address blocking, or a complete connectivity shutdown.
 
 - The Telegram link contains a Base64URL credential whose decoded form is
   `0xee | 16-byte secret | FakeTLS SNI`.
-- The public `server` value is the direct IPv4 of the existing origin domain;
-  the public port is always TCP/443.
+- The public `server` value is the existing origin domain, which must resolve
+  directly to the VPS; the public port is always TCP/443.
 - nginx `stream_ssl_preread` or Caddy layer4 owns TCP/443. It reads only SNI and
   passes the selected FakeTLS branch as raw TCP plus PROXY protocol v2 to the
   private tupoproxy listener on TCP/18443.

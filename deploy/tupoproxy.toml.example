@@ -9,7 +9,7 @@ tls = true
 
 [general.links]
 show = "*"
-public_host = "203.0.113.10"
+public_host = "site.example.com"
 public_port = 443
 
 [server]
@@ -19,7 +19,7 @@ proxy_protocol_trusted_cidrs = ["127.0.0.1/32", "::1/128"]
 [[server.listeners]]
 ip = "127.0.0.1"
 port = 18443
-announce = "203.0.113.10"
+announce = "site.example.com"
 
 [server.api]
 enabled = true

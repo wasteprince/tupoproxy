@@ -47,7 +47,7 @@ Read-only Docker mount поддерживается: интегратор опр
 sudo systemctl status tupoproxy --no-pager -l
 sudo journalctl -u tupoproxy -n 100 --no-pager
 sudo /usr/local/lib/tupoproxy/fake-tls-probe.py \
-  --connect 203.0.113.10:443 \
+  --connect site.example.com:443 \
   --sni proxy.example.com \
   --secret 00112233445566778899aabbccddeeff
 ```

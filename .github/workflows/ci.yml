@@ -37,11 +37,11 @@ jobs:
           grep -F 'unknown_sni_action = "drop"' install-runtime.sh
           grep -F 'tls_front_dir = "${STATE_DIR}/tlsfront-hmac-only"' install-runtime.sh
           source install-runtime.sh
-          PUBLIC_HOST=203.0.113.10
+          PUBLIC_HOST=site.example.com
           PUBLIC_PORT=443
           SECRET=00112233445566778899aabbccddeeff
           TLS_DOMAIN=proxy.example.com
-          test "$(telegram_proxy_link)" = 'tg://proxy?server=203.0.113.10&port=443&secret=7gARIjNEVWZ3iJmqu8zd7v9wcm94eS5leGFtcGxlLmNvbQ'
+          test "$(telegram_proxy_link)" = 'tg://proxy?server=site.example.com&port=443&secret=7gARIjNEVWZ3iJmqu8zd7v9wcm94eS5leGFtcGxlLmNvbQ'
           bash uninstall.sh --help | grep -F -- '--purge-certificate'
           test_dir="$(mktemp -d)"
           set +e
