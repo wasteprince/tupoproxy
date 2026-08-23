@@ -5,13 +5,13 @@
 <h1 align="center">tupoproxy</h1>
 
 <p align="center">
-  MTProto-прокси с FakeTLS, выбираемыми серверными TLS-профилями<br>
-  и безопасным совместным использованием HTTPS-порта с nginx или Caddy.
+  MTProto FakeTLS-прокси с HMAC-аутентификацией<br>
+  и безопасным совместным использованием TCP/443 с nginx или Caddy.
 </p>
 
 <p align="center">
   <a href="#быстрый-старт">Быстрый старт</a> ·
-  <a href="#как-устроен-общий-tls-порт">Архитектура</a> ·
+  <a href="#как-это-работает">Архитектура</a> ·
   <a href="#диагностика">Диагностика</a> ·
   <a href="docs/DPI_THREAT_MODEL.md">Модель угроз</a>
 </p>
@@ -24,69 +24,78 @@
 </p>
 
 > [!IMPORTANT]
-> Ни один прокси не может гарантировать обход любых настоящих и будущих
-> блокировок. Блокировка IP-адреса, разрешительный список провайдера, правила
-> VPN или клиента находятся вне контроля сервера. tupoproxy уменьшает
-> количество протокольных отличий и предоставляет настоящий HTTPS fallback,
-> но не заявляет о полной невидимости для любого DPI.
+> Ни один прокси не гарантирует обход всех существующих и будущих блокировок.
+> Адресная блокировка IP, правила мобильного оператора, VPN и изменения клиента
+> Telegram находятся вне контроля сервера.
 
 ## Главное
 
 | Возможность | Реализация |
 |---|---|
-| Совместимая Telegram-ссылка | Credential имеет стандартный вид `ee + secret + hex(SNI)` |
-| FakeTLS без конфликта с reverse proxy | Edge читает только SNI и передаёт исходный TCP-поток без TLS-терминации |
-| Общий HTTPS-порт | Существующие сайты продолжают работать на том же nginx/Caddy |
-| Защита от активной проверки | Неверный credential получает ответ настоящего HTTPS decoy |
-| TLS-профили | `chrome`, `firefox`, `compat` и `legacy` выбираются при установке |
-| Сохранение адреса клиента | Между edge и tupoproxy используется PROXY protocol v2 |
-| Docker | Поддерживаются nginx/Caddy с постоянным bind/volume-конфигом |
-| Чистое удаление | Маршрут удаляется, а изменённые nginx-listen директивы восстанавливаются |
+| FakeTLS как у проверенного рабочего прокси | `ee` credential, HMAC-SHA256 и SNI-домен |
+| Публичный порт | Всегда TCP/443 через существующий reverse proxy |
+| Другие проекты | Продолжают обслуживаться тем же nginx/Caddy |
+| Неверный credential | Соединение закрывается без сертификата и HTTPS fallback |
+| Современный ServerHello | TLS 1.3, совместимый cipher и предложенный клиентом key share |
+| Переменные TLS-записи | Размер FakeTLS Application Data меняется между соединениями |
+| Адрес клиента | Edge передаёт его через PROXY protocol v2 |
+| Telegram-ссылка | Binary Base64URL credential, как в проверенной ссылке |
+| Платформы | Статические бинарники для Debian/Ubuntu `amd64` и `arm64` |
 
-## Как устроен общий TLS-порт
+## Как это работает
 
 ```mermaid
 flowchart LR
     C[Telegram или браузер] -->|TCP 443| E[nginx stream или Caddy layer4]
-    E -->|SNI из ee credential<br>сырой TCP + PROXY v2| T[tupoproxy :18443]
-    E -->|любой другой SNI| W[существующие HTTPS-сайты]
-    T -->|валидный credential| G[Telegram DC]
-    T -->|неверный credential| D[настоящий HTTPS decoy]
+    E -->|FakeTLS SNI<br>сырой TCP + PROXY v2| T[tupoproxy :18443]
+    E -->|любой другой SNI| W[существующие HTTPS-проекты]
+    T -->|валидный HMAC| G[Telegram DC]
+    T -->|неверный HMAC| X[закрытие соединения]
 ```
 
-Reverse proxy не расшифровывает FakeTLS-маршрут. Он считывает SNI из
-ClientHello, добавляет PROXY v2 и передаёт все исходные TLS-байты tupoproxy.
-Это принципиально отличается от HTTP `reverse_proxy`: обычная TLS-терминация
-на маршруте decoy разрушила бы MTProxy credential.
+Reverse proxy выполняет только L4-маршрутизацию:
 
-Для остальных SNI поведение не меняется:
+1. Получает TCP-соединение на `443`.
+2. Читает SNI из исходного ClientHello.
+3. Для выделенного FakeTLS-домена передаёт исходные байты tupoproxy.
+4. Для остальных доменов продолжает обычную TLS-обработку сайтов.
 
-- в Caddy обработка переходит к стандартному TLS listener wrapper;
-- в nginx прежние HTTPS listeners переносятся на локальный порт, а `stream`
-  возвращает им обычный веб-трафик;
-- порт `80`, ACME-настройки и другие TCP/UDP-порты не изменяются.
+На FakeTLS-маршруте nginx/Caddy не завершает TLS, не подставляет сертификат и
+не создаёт второй ClientHello. Внешний поток остаётся таким же, как при прямом
+подключении к прокси; PROXY v2 существует только на внутреннем участке между
+edge и tupoproxy.
 
-Реализация следует документации
-[caddy-l4 listener wrappers](https://github.com/mholt/caddy-l4/blob/master/docs/servers.md)
-и
-[nginx ssl_preread](https://nginx.org/en/docs/stream/ngx_stream_ssl_preread_module.html).
+### FakeTLS handshake
+
+Telegram формирует ClientHello с SNI и 32-байтным полем аутентификации:
+
+```text
+HMAC-SHA256(16-byte secret, ClientHello with zeroed random) + timestamp
+```
+
+Если HMAC корректен, tupoproxy отвечает TLS 1.3-похожим ServerHello, отражает
+Session ID, выбирает cipher/key share из предложенных клиентом и подписывает
+весь первый server flight ответным HMAC. Дальнейший MTProto-трафик передаётся
+в TLS Application Data-подобных записях.
+
+Неверный HMAC, неизвестный SNI и активный TLS-сканер получают закрытие
+соединения. Сертификат для FakeTLS-домена не выпускается и не требуется.
 
 ## Быстрый старт
 
-### Что потребуется
+### Требования
 
 - Debian 12+ или Ubuntu 22.04+;
 - `root` либо `sudo`;
-- origin-домен прокси с корректной `A`/`AAAA` записью;
-- отдельный FakeTLS decoy-домен;
-- доступный публичный TCP/443;
-- существующий совместимый nginx/Caddy либо возможность установить Docker.
+- существующий HTTPS-домен, уже обслуживаемый reverse proxy;
+- отдельный FakeTLS-домен;
+- основной домен должен иметь одну прямую A-запись на IPv4 сервера;
+- FakeTLS-домен должен существовать, но может указывать на этот или другой сервер;
+- публичный TCP/443 должен принадлежать совместимому nginx/Caddy.
 
-Decoy может располагаться на другом сервере. Если оба домена указывают на
-один VPS, установщик выпускает отдельный сертификат decoy и поднимает его на
-изолированном loopback-порту. Когда публичный edge использует `443`, для
-локального decoy автоматически выбирается свободный `3443`, `4443`, `5443`
-или `6443`.
+Cloudflare можно использовать как DNS, но A-запись основного домена должна
+раскрывать прямой IPv4 сервера. Обычный Cloudflare HTTP proxy не передаёт сырой
+MTProxy-поток и не подходит как адрес из Telegram-ссылки.
 
 ### Одна команда
 
@@ -102,20 +111,25 @@ curl -fL https://github.com/wasteprince/tupoproxy/releases/latest/download/insta
 curl -fL https://github.com/wasteprince/tupoproxy/releases/latest/download/install.sh | sudo bash
 ```
 
-Мастер спросит только домены, TLS-профиль и имя credential. Публичный порт
-всегда `443`, а служебный loopback-порт decoy выбирается автоматически.
-E-mail Let's Encrypt запрашивается только тогда, когда same-server decoy
-действительно нуждается в сертификате.
+Мастер запросит:
 
-Затем установщик автоматически:
+1. Любой существующий HTTPS-домен на этом reverse proxy.
+2. Отдельный существующий домен для FakeTLS SNI.
+3. Серверный TLS-профиль.
+4. Имя Telegram credential.
+5. При желании рекламный tag из `@MTProxybot`.
 
-1. Установит системные зависимости.
-2. Скачает статический `amd64`/`arm64` бинарник и проверит SHA-256.
-3. Найдёт reverse proxy, который сейчас владеет TCP/443.
-4. Запишет конфигурацию tupoproxy и systemd units.
-5. Добавит сырой L4-маршрут FakeTLS, проверит конфиг и перезагрузит edge.
-6. Проверит origin HTTPS и scanner-visible fallback decoy.
-7. Покажет secret для `@MTProxybot` и готовую `tg://proxy`-ссылку.
+Порты, сертификаты, Certbot и ручные конфиги спрашивать не требуется.
+
+Установщик автоматически:
+
+1. Скачивает статический бинарник нужной архитектуры.
+2. Проверяет SHA-256 бинарника и вспомогательных скриптов.
+3. Находит владельца публичного TCP/443.
+4. Добавляет только сырой FakeTLS SNI-маршрут.
+5. Проверяет конфигурацию и reload существующего edge.
+6. Выполняет настоящий HMAC-аутентифицированный FakeTLS probe.
+7. Показывает secret для `@MTProxybot` и готовую Telegram-ссылку.
 
 Результат сохраняется с правами `0600`:
 
@@ -123,262 +137,170 @@ E-mail Let's Encrypt запрашивается только тогда, ког�
 /etc/tupoproxy/INSTALLATION.txt
 ```
 
-### Что происходит с существующим reverse proxy
-
-| Найденный edge | Действие установщика |
-|---|---|
-| Host nginx со `stream_ssl_preread` | Изменяет активные конфиги, выполняет `nginx -t`, затем reload |
-| Docker nginx со `stream_ssl_preread` | Изменяет активный конфиг в постоянном mount, проверяет и reload |
-| Host Caddy с caddy-l4 | Добавляет listener wrapper в используемый Caddyfile, затем validate/reload |
-| Docker Caddy с caddy-l4 | Изменяет Caddyfile в постоянном mount, затем validate/reload |
-| Docker Caddy без caddy-l4 | Сохраняет бинарник, добавляет caddy-l4 штатной командой Caddy и перезапускает тот же контейнер |
-| Порт 443 свободен | Создаёт управляемый Docker Caddy с caddy-l4 в `/opt/caddy` |
-| Порт занят несовместимым процессом | Останавливается с диагностикой и ничего не заменяет |
-
-Установщик изменяет именно текущий основной конфиг, а не создаёт неактивный
-фрагмент рядом. Блоки отмечены `BEGIN/END TUPOPROXY EDGE`. Перед reload всегда
-выполняется штатная проверка. Если проверка или reload завершается ошибкой,
-все изменения текущего запуска откатываются.
-
-> [!NOTE]
-> Обычная сборка Caddy без caddy-l4 не умеет прочитать SNI и одновременно
-> передать нетронутый FakeTLS поток. Для Docker Caddy установщик использует
-> штатный `caddy add-package`, сохраняет исходный бинарник и восстанавливает
-> его при удалении tupoproxy. После recreation такого контейнера установку
-> нужно повторить, потому что Docker удаляет его writable layer.
-
-### Docker
-
-Docker-контейнер поддерживается независимо от имени и каталога запуска, если:
-
-- контейнер публикует TCP/443 или работает с host networking;
-- nginx собран с `stream_ssl_preread_module`; для Caddy недостающий caddy-l4
-  может быть установлен автоматически;
-- основной конфиг и изменяемые include-файлы находятся в bind mount или
-  named volume.
-
-Bind mount или named volume может быть подключён в контейнер только для
-чтения: установщик определяет его исходный путь на хосте и обновляет именно
-существующий файл, не меняя режим mount и соседние файлы. После проверки
-конфигурации он перезагружает тот же reverse proxy; при ошибке возвращает
-исходное содержимое.
-
-Конфиг, хранящийся только во writable layer контейнера, намеренно не
-изменяется: после `docker compose up --force-recreate` такое изменение
-исчезло бы. В этом случае вынесите конфигурацию в постоянный volume и повторите
-установку.
-
-Если edge отсутствует и `443` свободен, создаётся:
-
-```text
-/opt/caddy/
-├── Caddyfile
-├── Dockerfile
-├── config/
-└── data/
-```
-
-Контейнер имеет ownership label tupoproxy. Скрипты установки и удаления не
-перезаписывают чужую папку `/opt/caddy` или контейнер с совпавшим именем без
-этого маркера.
-
-## FakeTLS credential и `@MTProxybot`
-
-Рабочая ссылка остаётся TLS-ссылкой:
-
-```text
-tg://proxy?server=proxy.example.com&port=443&secret=ee<32-hex-secret><hex-decoy-sni>
-```
-
-Когда `@MTProxybot` пишет:
-
-```text
-Now please specify its secret in hex format.
-```
-
-отправьте только базовый 32-символьный secret, который отдельно покажет
-установщик. Не добавляйте `ee` и hex-домен. После регистрации можно вставить
-выданный ботом 32-hex `ad_tag` прямо в мастер установки.
-
-FakeTLS в ссылке не конфликтует с reverse proxy: edge не завершает TLS для
-decoy SNI и не создаёт второй ClientHello.
-
-## Неинтерактивная установка
+### Неинтерактивная установка
 
 ```bash
 curl -fL https://github.com/wasteprince/tupoproxy/releases/latest/download/install.sh \
   | sudo bash -s -- \
-      --domain proxy.example.com \
-      --tls-domain decoy.example.org \
+      --domain site.example.com \
+      --tls-domain proxy.example.com \
       --profile chrome \
       --user user
 ```
 
-Для same-server decoy добавьте `--email admin@example.com`. При занятом
-порту `80` используйте DNS-01:
+Можно передать существующий секрет или рекламный tag:
 
 ```bash
-sudo env TUPOPROXY_CLOUDFLARE_API_TOKEN='TOKEN' bash install.sh \
-  --domain proxy.example.com \
-  --tls-domain decoy.example.org \
-  --email admin@example.com \
-  --acme-mode dns \
-  --dns-provider cloudflare
+--secret 00112233445566778899aabbccddeeff
+--ad-tag 0123456789abcdef0123456789abcdef
 ```
 
-Можно передать уже существующий сертификат локального decoy:
+## Домены и DNS
 
-```bash
-sudo bash install.sh \
-  --domain proxy.example.com \
-  --tls-domain decoy.example.org \
-  --tls-cert-fullchain /etc/letsencrypt/live/decoy.example.org/fullchain.pem \
-  --tls-cert-key /etc/letsencrypt/live/decoy.example.org/privkey.pem
+Пример:
+
+```text
+site.example.com   A   203.0.113.10
+proxy.example.com  A   198.51.100.20  # либо тот же 203.0.113.10
 ```
 
-Origin-сертификатом продолжает управлять существующий nginx/Caddy. В
-автоматически созданном `/opt/caddy` сертификат origin получает сам Caddy.
+`site.example.com` определяет реальный IPv4 из Telegram-ссылки и остаётся
+обычным сайтом. `proxy.example.com` используется как SNI внутри FakeTLS
+credential. Telegram подключается к указанному IP напрямую, поэтому DNS-адрес
+FakeTLS-домена может отличаться: локальный edge маршрутизирует его по SNI.
 
-### Порты
+Telegram-ссылка использует IPv4 сервера:
 
-Публичный endpoint всегда использует TCP/443, поэтому мастер не предлагает
-выбор порта и Telegram-ссылка всегда содержит `port=443`. Если decoy находится
-на этом же VPS, его непубличный loopback-порт выбирается автоматически из
-`3443`, `4443`, `5443` и `6443`.
+```text
+tg://proxy?server=203.0.113.10&port=443&secret=<Base64URL credential>
+```
+
+После Base64URL-декодирования credential имеет структуру:
+
+```text
+0xee | 16-byte secret | proxy.example.com
+```
+
+Для регистрации в `@MTProxybot` отправляется только обычный 32-символьный
+hex-secret — без `ee`, Base64URL и домена.
+
+## Reverse proxy
+
+Поддерживаемые варианты:
+
+| Edge | Действие установщика |
+|---|---|
+| Host nginx со `stream_ssl_preread` | Добавляет stream map и переносит существующие HTTPS listeners на локальный порт |
+| Docker nginx со `stream_ssl_preread` | Изменяет постоянный bind/volume config и делает reload контейнера |
+| Host Caddy с caddy-l4 | Добавляет listener wrapper в активный Caddyfile |
+| Docker Caddy с caddy-l4 | Изменяет постоянный Caddyfile и делает reload |
+| Docker Caddy без caddy-l4 | Сохраняет исходный бинарник, добавляет модуль и перезапускает контейнер |
+| TCP/443 свободен | Создаёт управляемый Caddy в `/opt/caddy` |
+
+Read-only bind mounts поддерживаются. Интегратор находит источник mount на
+хосте, изменяет существующий файл на месте, сохраняет его inode и выполняет
+откат при ошибке. Режим mount и соседние файлы не меняются.
+
+Обычный HTTP `reverse_proxy` для FakeTLS не подходит: он завершает TLS и
+разрушает HMAC ClientHello. Необходим Caddy layer4 или nginx stream с
+`ssl_preread`.
+
+Установщик не удаляет reverse proxy, его контейнер, `/opt/caddy`, Docker,
+firewall или конфигурацию чужих сайтов.
 
 ## TLS-профили
 
+Доступные значения:
+
 | Профиль | Назначение |
 |---|---|
-| `chrome` | Основной современный серверный профиль |
-| `firefox` | Альтернативные TLS-record фазы и размеры |
-| `compat` | Более консервативная форма для туннелей с уменьшенным MTU |
-| `legacy` | Совместимость с прежним фиксированным поведением |
+| `chrome` | Современная Chrome/BoringSSL-подобная форма ответа |
+| `firefox` | Firefox-подобные границы TLS-записей |
+| `compat` | Более консервативная совместимость |
+| `legacy` | Старые клиенты и сети |
 
-Профиль влияет только на доступную серверу сторону обмена. ClientHello,
-JA3/JA4 и TCP/IP-параметры телефона создаются Telegram и операционной
-системой; сервер не способен безопасно переписать их задним числом.
+Профиль влияет на серверный ответ и последующие TLS-записи. Входящий
+ClientHello, JA3/JA4 и TCP-параметры создаются Telegram и операционной системой
+телефона; сервер не может переписать их до получения соединения.
 
-## Работа вместе с VPN
+## Обновление
 
-tupoproxy использует обычный TCP. Если VPN направляет трафик Telegram в
-туннель, соединение с прокси обычно проходит внутри него. Сервер не может
-отменить клиентский kill switch, split tunneling, Private DNS или запрет
-локальной сети в приложении VPN.
-
-Если прокси работает только в одном из двух режимов, сравните:
-
-- разрешение origin-домена и IP в обеих сетях;
-- доступность TCP/443;
-- правила split tunneling для Telegram;
-- наличие `AAAA`, если сервер фактически не принимает IPv6;
-- SNI и сертификат scanner-visible decoy.
-
-Принудительное дробление TCP-пакетов не является надёжной основной защитой:
-DPI может собрать байтовый поток обратно. Поэтому edge сохраняет ClientHello
-без изменений, а tupoproxy использует адаптивные границы TLS records на своей
-стороне соединения.
-
-## Управление
+Повторно выполните ту же команду:
 
 ```bash
-systemctl status tupoproxy --no-pager
-journalctl -u tupoproxy -f
-sudo -u tupoproxy /usr/local/bin/tupoproxy \
-  healthcheck /etc/tupoproxy/config.toml --mode ready
+curl -fL https://github.com/wasteprince/tupoproxy/releases/latest/download/install.sh | sudo bash
 ```
 
-Повторный запуск однострочного установщика обновляет бинарник, сохраняет
-secret и заново применяет управляемый reverse-proxy маршрут.
+Сохранённые домены, secret, пользователь, профиль и рекламный tag подхватятся
+из `INSTALLATION.txt`. Маршрут edge будет применён повторно с проверкой и
+возможностью отката.
 
-### Полное удаление
+## Удаление
+
+```bash
+curl -fL https://github.com/wasteprince/tupoproxy/releases/latest/download/uninstall.sh | sudo bash
+```
+
+Для неинтерактивного удаления:
 
 ```bash
 curl -fL https://github.com/wasteprince/tupoproxy/releases/latest/download/uninstall.sh \
-  | sudo bash
+  | sudo bash -s -- --yes
 ```
 
-Удаление восстанавливает прежние nginx listeners или удаляет блок Caddy,
-перезагружает существующий edge, останавливает сервисы и удаляет приватные
-данные tupoproxy. Сам reverse proxy не удаляется: созданный контейнер Caddy,
-`/opt/caddy`, его сайт, Docker и firewall-правила сохраняются. Чужие сайты,
-общие пакеты и сертификаты также не затрагиваются.
-
-Удалить также сертификат локального decoy, выпущенный установщиком:
-
-```bash
-curl -fL https://github.com/wasteprince/tupoproxy/releases/latest/download/uninstall.sh \
-  | sudo bash -s -- --purge-certificate
-```
-
-Для удаления без подтверждения добавьте `--yes`.
+Удаление убирает маршрут FakeTLS, сервис, бинарник, secret и приватное
+состояние. Reverse proxy, его контейнер, `/opt/caddy`, другие сайты,
+сертификаты, firewall и общие системные пакеты сохраняются.
 
 ## Диагностика
 
-### Проверка двух SNI-маршрутов
-
 ```bash
-openssl s_client -connect SERVER_IP:443 \
-  -servername proxy.example.com -alpn h2 </dev/null
-
-openssl s_client -connect SERVER_IP:443 \
-  -servername decoy.example.org -alpn h2 </dev/null
+sudo systemctl status tupoproxy --no-pager -l
+sudo journalctl -u tupoproxy -n 150 --no-pager
+sudo ss -ltnp 'sport = :443'
+sudo cat /etc/tupoproxy/INSTALLATION.txt
 ```
 
-Первый запрос должен показать origin-сертификат существующего сайта. Второй
-попадает в tupoproxy как неверный credential и должен вернуть сертификат
-настоящего decoy.
+Проверка FakeTLS HMAC через публичный edge:
 
-### Полезные файлы и команды
+```bash
+sudo /usr/local/lib/tupoproxy/fake-tls-probe.py \
+  --connect 203.0.113.10:443 \
+  --sni proxy.example.com \
+  --secret 00112233445566778899aabbccddeeff
+```
 
-| Назначение | Путь или команда |
+| Ошибка | Причина |
 |---|---|
-| Конфигурация | `/etc/tupoproxy/config.toml` |
-| Итог установки и ссылка | `/etc/tupoproxy/INSTALLATION.txt` |
-| Метаданные отката edge | `/var/lib/tupoproxy/edge-integration.json` |
-| Логи tupoproxy | `journalctl -u tupoproxy -n 100 --no-pager` |
-| Управляемый Caddy | `docker logs --tail 100 tupoproxy-caddy` |
-| Проверка nginx | `nginx -t` |
-| Проверка Caddy | `caddy validate --config /path/to/Caddyfile` |
+| `must have exactly one direct IPv4 A record` | Основной домен не указывает прямо на единственный IPv4 VPS либо включён CDN proxy |
+| `owned by an incompatible service` | TCP/443 занят неизвестным или неподдерживаемым edge |
+| `configuration is not stored in a persistent mount` | Docker-конфиг находится только во writable layer |
+| `cannot update ... in container` | Mount недоступен через Docker и не найден его host source |
+| `authenticated FakeTLS did not pass` | SNI-маршрут не дошёл до tupoproxy или secret/config не совпали |
 
-### Типовые ошибки
+## Файлы установки
 
-| Сообщение | Что означает |
+| Назначение | Путь |
 |---|---|
-| `owned by an incompatible service` | TCP/443 занят host Caddy без caddy-l4, несовместимым nginx либо неизвестным контейнером; следующая строка показывает точного владельца |
-| `configuration is not stored in a persistent mount` | Docker-конфиг исчез бы после recreation; подключите bind/volume |
-| `custom stream context` | В nginx уже есть ручная L4-схема, которую нельзя безопасно объединить автоматически |
-| `listener_wrappers already contain layer4` | В Caddy уже есть ручные L4-правила; объедините маршруты вручную |
-| `FakeTLS decoy fallback failed` | Неверный ClientHello не получил доверенный сертификат decoy |
-| Работает только через VPN | Проверяйте DNS/AAAA, маршрут провайдера, доступность порта и блокировку IP |
+| Бинарник | `/usr/local/bin/tupoproxy` |
+| Основной конфиг | `/etc/tupoproxy/config.toml` |
+| Итог установки | `/etc/tupoproxy/INSTALLATION.txt` |
+| Edge-интегратор | `/usr/local/lib/tupoproxy/edge-integration.py` |
+| FakeTLS probe | `/usr/local/lib/tupoproxy/fake-tls-probe.py` |
+| Проверенный runtime установщика | `/usr/local/lib/tupoproxy/install-runtime.sh` |
+| Состояние | `/var/lib/tupoproxy` |
+| systemd unit | `/etc/systemd/system/tupoproxy.service` |
 
-## Сборка и бинарники
+## Ограничения
 
-Установить только готовый статический бинарник:
+- Рабочий сегодня IP может быть заблокирован завтра.
+- Сервер не способен изменить уже отправленный Telegram ClientHello.
+- TCP-сегментация не является гарантией обхода stateful DPI.
+- VPN на телефоне может менять маршрут, MTU, DNS и доступность IP.
+- FakeTLS HMAC маскирует протокол, но не превращает MTProto в XHTTP.
 
-```bash
-curl -fL https://github.com/wasteprince/tupoproxy/releases/latest/download/install.sh \
-  | sudo bash -s -- --binary-only
-tupoproxy --version
-```
+## Лицензия
 
-Релизы собираются для `x86_64-unknown-linux-musl` и
-`aarch64-unknown-linux-musl`, поэтому соответствующий бинарник работает и в
-Debian, и в Ubuntu.
-
-Сборка текущей версии из исходников:
-
-```bash
-git clone https://github.com/wasteprince/tupoproxy.git
-cd tupoproxy
-./install-source.sh
-```
-
-## Безопасность и лицензия
-
-Не публикуйте `/etc/tupoproxy/config.toml` и `INSTALLATION.txt`: они содержат
-secret и могут содержать рекламный tag. О найденной уязвимости сообщайте
-приватно владельцу репозитория, не прикладывая рабочие credentials.
-
-Условия распространения находятся в [LICENSE](LICENSE) и
+Проект распространяется по лицензии из [LICENSE](LICENSE). Дополнительная
+информация о происхождении и совместимых условиях находится в
 [LICENSING.md](LICENSING.md).

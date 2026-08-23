@@ -72,9 +72,11 @@ jobs:
           install -m 0755 install.sh dist/install.sh
           install -m 0755 uninstall.sh dist/uninstall.sh
           install -m 0755 edge-integration.py dist/edge-integration.py
+          install -m 0755 fake-tls-probe.py dist/fake-tls-probe.py
+          install -m 0644 install-runtime.sh dist/install-runtime.sh
       - name: Generate checksums
         working-directory: dist
-        run: sha256sum tupoproxy-*.tar.gz install.sh uninstall.sh edge-integration.py | sort -k2 > CHECKSUMS.txt
+        run: sha256sum tupoproxy-*.tar.gz install.sh install-runtime.sh uninstall.sh edge-integration.py fake-tls-probe.py | sort -k2 > CHECKSUMS.txt
       - name: Create release
         env:
           GH_TOKEN: ${{ github.token }}

@@ -5,6 +5,8 @@ umask 027
 
 readonly INSTALL_BINARY="/usr/local/bin/tupoproxy"
 readonly EDGE_HELPER="/usr/local/lib/tupoproxy/edge-integration.py"
+readonly FAKETLS_PROBE="/usr/local/lib/tupoproxy/fake-tls-probe.py"
+readonly INSTALL_RUNTIME="/usr/local/lib/tupoproxy/install-runtime.sh"
 readonly CONFIG_DIR="/etc/tupoproxy"
 readonly STATE_DIR="/var/lib/tupoproxy"
 readonly COVER_DIR="/var/www/tupoproxy-cover"
@@ -201,6 +203,8 @@ note "Removing tupoproxy files and private data"
 rm -f -- \
     "$INSTALL_BINARY" \
     "$EDGE_HELPER" \
+    "$FAKETLS_PROBE" \
+    "$INSTALL_RUNTIME" \
     "$RENEWAL_HOOK" \
     /etc/systemd/system/tupoproxy.service \
     /etc/systemd/system/tupoproxy-cover.service \

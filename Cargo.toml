@@ -1,8 +1,8 @@
 [package]
 name = "tupoproxy"
-version = "3.7.1"
+version = "3.8.0"
 edition = "2024"
-description = "MTProto proxy with selectable TLS camouflage and real HTTPS fallback"
+description = "MTProto proxy with authenticated FakeTLS and selectable TLS camouflage"
 repository = "https://github.com/wasteprince/tupoproxy"
 readme = "README.md"
 license-file = "LICENSE"

@@ -6,9 +6,16 @@ fn coexistence_deployment_example_loads() {
         .join("deploy/tupoproxy.toml.example");
     let cfg = ProxyConfig::load(path).expect("deployment example must remain valid");
 
-    assert_eq!(cfg.server.port, 8443);
+    assert!(
+        cfg.server
+            .listeners
+            .iter()
+            .any(|listener| listener.port == Some(18443))
+    );
     assert!(cfg.server.proxy_protocol);
-    assert_eq!(cfg.censorship.tls_fingerprints.len(), 2);
+    assert_eq!(cfg.censorship.tls_fingerprints.len(), 1);
+    assert!(!cfg.censorship.mask);
+    assert_eq!(cfg.censorship.unknown_sni_action, UnknownSniAction::Drop);
 }
 
 #[test]

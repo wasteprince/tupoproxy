@@ -1,7 +1,7 @@
 [Unit]
 Description=tupoproxy MTProto proxy
 Documentation=https://github.com/wasteprince/tupoproxy
-After=network-online.target haproxy.service nginx.service
+After=network-online.target
 Wants=network-online.target
 
 [Service]

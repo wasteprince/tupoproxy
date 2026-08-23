@@ -9,18 +9,17 @@ tls = true
 
 [general.links]
 show = "*"
-public_host = "proxy.example.com"
+public_host = "203.0.113.10"
 public_port = 443
 
 [server]
-port = 8443
 proxy_protocol = true
 proxy_protocol_trusted_cidrs = ["127.0.0.1/32", "::1/128"]
 
 [[server.listeners]]
 ip = "127.0.0.1"
-port = 8443
-announce = "proxy.example.com"
+port = 18443
+announce = "203.0.113.10"
 
 [server.api]
 enabled = true
@@ -28,29 +27,27 @@ listen = "127.0.0.1:9091"
 whitelist = ["127.0.0.1/32", "::1/128"]
 
 [censorship]
-tls_domain = "www.example.org"
-tls_fingerprints = {
-  "www.example.org" = "chrome"
-}
+tls_domain = "proxy.example.com"
+tls_fingerprints = { "proxy.example.com" = "chrome" }
 
-# Invalid credentials and active probes are relayed to the real decoy HTTPS
-# origin selected by the configured SNI.
-mask = true
-mask_dynamic = true
+# The reverse proxy passes this SNI as raw TCP. Invalid credentials and probes
+# are closed without a certificate or an HTTPS fallback.
+mask = false
+mask_dynamic = false
 mask_port = 443
-unknown_sni_action = "mask"
+unknown_sni_action = "drop"
 
 tls_emulation = true
-tls_front_dir = "/var/lib/tupoproxy/tlsfront"
+tls_front_dir = "/var/lib/tupoproxy/tlsfront-hmac-only"
 alpn_enforce = true
+tls_new_session_tickets = 0
 
 [access.users]
 # Replace with: openssl rand -hex 16
 hello = "00000000000000000000000000000000"
 
-# Optional: route the server-to-Telegram leg through a local Xray XHTTP/Reality
-# SOCKS listener. This changes the outbound leg, not the stock Telegram client.
-# Set general.use_middle_proxy = false when enabling this entry.
+# Optional: route the server-to-Telegram leg through a local SOCKS listener.
+# This changes only the outbound leg, not the Telegram client transport.
 # [[upstreams]]
 # type = "socks5"
 # address = "127.0.0.1:1080"
