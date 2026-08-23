@@ -3,8 +3,10 @@
 from __future__ import annotations
 
 import importlib.util
+import json
 from pathlib import Path
 import subprocess
+import tempfile
 import unittest
 from unittest import mock
 
@@ -181,6 +183,78 @@ class ManagedCaddyTests(unittest.TestCase):
 
         self.assertEqual(EDGE.docker_mapped_port(container, 443), 8443)
 
+    def test_read_only_file_mount_is_updated_through_the_host_source(self) -> None:
+        with tempfile.TemporaryDirectory(prefix="tupoproxy-edge-test-") as temp_dir:
+            host_config = Path(temp_dir) / "Caddyfile"
+            host_config.write_text("old\n", encoding="utf-8")
+            target = {
+                "kind": "docker-caddy",
+                "target": "web-edge",
+                "persistent_mounts": ["/etc/caddy/Caddyfile"],
+                "mounts": [
+                    {
+                        "destination": "/etc/caddy/Caddyfile",
+                        "source": str(host_config),
+                        "type": "bind",
+                        "rw": False,
+                    }
+                ],
+            }
+
+            with mock.patch.object(EDGE, "run") as run_command:
+                EDGE.write_target_file(target, "/etc/caddy/Caddyfile", "new\n")
+
+            self.assertEqual(host_config.read_text(encoding="utf-8"), "new\n")
+            run_command.assert_not_called()
+
+    def test_read_only_directory_mount_resolves_the_host_config(self) -> None:
+        with tempfile.TemporaryDirectory(prefix="tupoproxy-edge-test-") as temp_dir:
+            host_directory = Path(temp_dir)
+            host_config = host_directory / "Caddyfile"
+            host_config.write_text("site.example { respond ok }\n", encoding="utf-8")
+            target = {
+                "mounts": [
+                    {
+                        "destination": "/etc/caddy",
+                        "source": str(host_directory),
+                        "type": "bind",
+                        "rw": False,
+                    }
+                ]
+            }
+
+            resolved = EDGE.docker_host_path(target, "/etc/caddy/Caddyfile")
+
+            self.assertEqual(resolved, host_config.resolve())
+
+    def test_saved_target_refreshes_mount_sources_for_removal(self) -> None:
+        container = {
+            "Id": "b" * 64,
+            "Mounts": [
+                {
+                    "Destination": "/etc/caddy/Caddyfile",
+                    "Source": "/srv/caddy/Caddyfile",
+                    "Type": "bind",
+                    "RW": False,
+                }
+            ],
+        }
+        inspected = subprocess.CompletedProcess(
+            ["docker", "inspect", "web-edge"],
+            0,
+            json.dumps([container]),
+            "",
+        )
+
+        with mock.patch.object(EDGE, "run", return_value=inspected):
+            refreshed = EDGE.rediscover_saved_target(
+                {"kind": "docker-caddy", "target": "web-edge"}
+            )
+
+        self.assertEqual(refreshed["container_id"], "b" * 64)
+        self.assertEqual(refreshed["persistent_mounts"], ["/etc/caddy/Caddyfile"])
+        self.assertEqual(refreshed["mounts"][0]["source"], "/srv/caddy/Caddyfile")
+
     def test_standard_docker_caddy_is_reported_as_upgradeable(self) -> None:
         container = {
             "Id": "a" * 64,
@@ -202,7 +276,14 @@ class ManagedCaddyTests(unittest.TestCase):
                     "edge": {"Gateway": "172.19.0.1", "IPPrefixLen": 16},
                 },
             },
-            "Mounts": [{"Destination": "/etc/caddy", "Type": "bind"}],
+            "Mounts": [
+                {
+                    "Destination": "/etc/caddy",
+                    "Source": "/srv/caddy/config",
+                    "Type": "bind",
+                    "RW": False,
+                }
+            ],
         }
 
         def command_result(_container_id: str, command: list[str]) -> subprocess.CompletedProcess[str]:
@@ -227,6 +308,8 @@ class ManagedCaddyTests(unittest.TestCase):
         self.assertEqual(target["edge_port"], 443)
         self.assertEqual(target["backend_ip"], "172.19.0.1")
         self.assertEqual(target["caddy_executable"], "/usr/bin/caddy")
+        self.assertEqual(target["mounts"][0]["source"], "/srv/caddy/config")
+        self.assertFalse(target["mounts"][0]["rw"])
 
     def test_docker_caddy_upgrade_keeps_a_restorable_binary(self) -> None:
         target = {

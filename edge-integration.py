@@ -278,6 +278,24 @@ def docker_persistent_mounts(container: dict[str, Any]) -> list[str]:
     return sorted(set(mounts))
 
 
+def docker_mount_records(container: dict[str, Any]) -> list[dict[str, Any]]:
+    records: list[dict[str, Any]] = []
+    for mount in container.get("Mounts", []):
+        destination = str(mount.get("Destination") or "")
+        source = str(mount.get("Source") or "")
+        if not destination.startswith("/") or not source.startswith("/"):
+            continue
+        records.append(
+            {
+                "destination": destination,
+                "source": source,
+                "type": str(mount.get("Type") or ""),
+                "rw": bool(mount.get("RW")),
+            }
+        )
+    return sorted(records, key=lambda record: len(str(record["destination"])), reverse=True)
+
+
 def docker_target(port: int) -> dict[str, Any] | None:
     for container in docker_containers():
         edge_port = docker_mapped_port(container, port)
@@ -313,6 +331,7 @@ def docker_target(port: int) -> dict[str, Any] | None:
                     "container_id": container_id,
                     "runtime_config": config,
                     "persistent_mounts": docker_persistent_mounts(container),
+                    "mounts": docker_mount_records(container),
                     "backend_ip": backend_ip,
                     "trusted_cidr": trusted_cidr,
                     "edge_port": edge_port,
@@ -354,6 +373,7 @@ def docker_target(port: int) -> dict[str, Any] | None:
                     "container_id": container_id,
                     "runtime_config": config,
                     "persistent_mounts": docker_persistent_mounts(container),
+                    "mounts": docker_mount_records(container),
                     "backend_ip": backend_ip,
                     "trusted_cidr": trusted_cidr,
                     "edge_port": edge_port,
@@ -439,6 +459,35 @@ def target_path_is_persistent(target: dict[str, Any], runtime_path: str) -> bool
     return False
 
 
+def docker_host_path(target: dict[str, Any], runtime_path: str) -> Path | None:
+    runtime = Path(runtime_path)
+    for mount in target.get("mounts", []):
+        destination = Path(str(mount.get("destination") or ""))
+        source = Path(str(mount.get("source") or ""))
+        if not destination.is_absolute() or not source.is_absolute():
+            continue
+        try:
+            relative = runtime.relative_to(destination)
+        except ValueError:
+            continue
+        candidate = source if relative == Path(".") else source / relative
+        try:
+            resolved_candidate = candidate.resolve(strict=True)
+            resolved_source = source.resolve(strict=True)
+        except OSError:
+            continue
+        if resolved_source.is_dir():
+            try:
+                resolved_candidate.relative_to(resolved_source)
+            except ValueError:
+                continue
+        elif relative != Path("."):
+            continue
+        if resolved_candidate.is_file():
+            return resolved_candidate
+    return None
+
+
 def read_target_file(target: dict[str, Any], runtime_path: str) -> str:
     runtime_path = validate_path(runtime_path)
     if target["kind"].startswith("host-"):
@@ -475,6 +524,19 @@ def write_target_file(target: dict[str, Any], runtime_path: str, content: str) -
         raise IntegrationError(
             f"Docker configuration {runtime_path} is not stored in a persistent mount"
         )
+    host_path = docker_host_path(target, runtime_path)
+    if host_path is not None:
+        try:
+            # In-place writes preserve the inode used by read-only file bind mounts.
+            with host_path.open("w", encoding="utf-8") as output:
+                output.write(content)
+                output.flush()
+                os.fsync(output.fileno())
+        except OSError as error:
+            raise IntegrationError(
+                f"cannot update Docker configuration through host mount {host_path}: {error}"
+            ) from error
+        return
     container_id = container_id_for(target)
     written = run(
         [
@@ -1294,6 +1356,7 @@ def rediscover_saved_target(metadata: dict[str, Any]) -> dict[str, Any]:
         metadata = dict(metadata)
         metadata["container_id"] = payload["Id"]
         metadata["persistent_mounts"] = docker_persistent_mounts(payload)
+        metadata["mounts"] = docker_mount_records(payload)
         return metadata
     raise IntegrationError(f"unsupported saved edge target: {kind}")
 
