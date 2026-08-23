@@ -28,6 +28,7 @@ MANAGED_CADDY_LABEL = "io.tupoproxy.managed"
 MANAGED_DIRECTORY_MARKER = ".tupoproxy-managed"
 MANAGED_CADDY_VERSION = "2.11.4"
 MANAGED_CADDY_L4_VERSION = "0.1.2"
+CADDY_L4_PACKAGE = f"github.com/mholt/caddy-l4@v{MANAGED_CADDY_L4_VERSION}"
 
 
 class IntegrationError(RuntimeError):
@@ -203,13 +204,20 @@ def docker_mapped_port(container: dict[str, Any], port: int) -> int | None:
             ):
                 return port
         return None
-    published = container.get("NetworkSettings", {}).get("Ports", {})
-    for container_socket, bindings in published.items():
-        match = re.fullmatch(r"([0-9]{1,5})/tcp", str(container_socket))
-        if not match:
-            continue
-        if any(str(binding.get("HostPort", "")) == str(port) for binding in bindings or []):
-            return int(match.group(1))
+    published_sources = [
+        container.get("NetworkSettings", {}).get("Ports") or {},
+        container.get("HostConfig", {}).get("PortBindings") or {},
+    ]
+    for published in published_sources:
+        for container_socket, bindings in published.items():
+            match = re.fullmatch(r"([0-9]{1,5})/tcp", str(container_socket))
+            if not match:
+                continue
+            if any(
+                str(binding.get("HostPort", "")) == str(port)
+                for binding in bindings or []
+            ):
+                return int(match.group(1))
     return None
 
 
@@ -290,15 +298,17 @@ def docker_target(port: int) -> dict[str, Any] | None:
             }
 
         modules = docker_command(container_id, ["caddy", "list-modules"])
-        if modules.returncode == 0 and re.search(r"(?m)^layer4(?:\.|$)", modules.stdout):
+        if modules.returncode == 0:
             adapter = option_value(arguments, "--adapter") or "caddyfile"
             if adapter != "caddyfile":
                 continue
             config = validate_path(option_value(arguments, "--config") or "/etc/caddy/Caddyfile")
             exists = docker_command(container_id, ["test", "-f", config])
             if exists.returncode == 0 and docker_path_is_persistent(container, config):
-                return {
-                    "kind": "docker-caddy",
+                target = {
+                    "kind": "docker-caddy"
+                    if re.search(r"(?m)^layer4(?:\.|$)", modules.stdout)
+                    else "upgradeable-docker-caddy",
                     "target": name or container_id[:12],
                     "container_id": container_id,
                     "runtime_config": config,
@@ -307,6 +317,27 @@ def docker_target(port: int) -> dict[str, Any] | None:
                     "trusted_cidr": trusted_cidr,
                     "edge_port": edge_port,
                 }
+                if target["kind"] == "docker-caddy":
+                    return target
+                add_package = docker_command(container_id, ["caddy", "help", "add-package"])
+                executable = docker_command(
+                    container_id,
+                    ["sh", "-c", "command -v caddy"],
+                )
+                if add_package.returncode == 0 and executable.returncode == 0:
+                    caddy_executable = validate_path(executable.stdout.strip())
+                    backup = docker_command(
+                        container_id,
+                        ["test", "-e", f"{caddy_executable}.tmp"],
+                    )
+                    if backup.returncode != 0:
+                        target["caddy_executable"] = caddy_executable
+                        target["caddy_modules"] = sorted(
+                            line.strip()
+                            for line in modules.stdout.splitlines()
+                            if re.fullmatch(r"[A-Za-z0-9_.-]+", line.strip())
+                        )
+                        return target
 
         version = docker_command(container_id, ["nginx", "-V"])
         version_output = f"{version.stdout}\n{version.stderr}"
@@ -332,6 +363,49 @@ def docker_target(port: int) -> dict[str, Any] | None:
 
 def detect_target(port: int) -> dict[str, Any] | None:
     return host_caddy_target(port) or host_nginx_target(port) or docker_target(port)
+
+
+def docker_target_diagnostics(port: int) -> str:
+    messages: list[str] = []
+    for container in docker_containers():
+        edge_port = docker_mapped_port(container, port)
+        if edge_port is None:
+            continue
+        container_id = str(container.get("Id", ""))
+        name = str(container.get("Name", "")).lstrip("/") or container_id[:12]
+        image = str(container.get("Config", {}).get("Image") or "unknown image")
+        modules = docker_command(container_id, ["caddy", "list-modules"])
+        if modules.returncode == 0:
+            arguments = docker_process_arguments(container)
+            adapter = option_value(arguments, "--adapter") or "caddyfile"
+            config = option_value(arguments, "--config") or "/etc/caddy/Caddyfile"
+            if adapter != "caddyfile":
+                reason = f"unsupported Caddy adapter {adapter}"
+            elif not docker_path_is_persistent(container, config):
+                reason = f"Caddy config {config} is not in a persistent Docker mount"
+            else:
+                reason = "Caddy cannot install caddy-l4 automatically"
+            messages.append(
+                f"container {name} ({image}), host {port} -> container {edge_port}: {reason}"
+            )
+            continue
+        version = docker_command(container_id, ["nginx", "-V"])
+        version_output = f"{version.stdout}\n{version.stderr}"
+        if version.returncode == 0:
+            reason = (
+                "nginx was built without stream_ssl_preread"
+                if "--with-stream_ssl_preread_module" not in version_output
+                else "nginx configuration is not stored in a supported persistent mount"
+            )
+            messages.append(
+                f"container {name} ({image}), host {port} -> container {edge_port}: {reason}"
+            )
+            continue
+        messages.append(
+            f"container {name} ({image}), host {port} -> container {edge_port}: "
+            "service is neither a supported Caddy nor nginx edge"
+        )
+    return "\n".join(messages)
 
 
 def target_record(target: dict[str, Any]) -> str:
@@ -735,6 +809,84 @@ def validate_target(target: dict[str, Any]) -> None:
         raise IntegrationError(f"reverse-proxy configuration validation failed:\n{result.stderr}")
 
 
+def restore_docker_caddy_binary(target: dict[str, Any]) -> None:
+    container_id = container_id_for(target)
+    executable = validate_path(str(target.get("caddy_executable") or ""))
+    backup = validate_path(str(target.get("caddy_binary_backup") or f"{executable}.tmp"))
+    stopped = run(["docker", "stop", container_id], check=False)
+    if stopped.returncode != 0:
+        raise IntegrationError("cannot stop Docker Caddy to restore its original binary")
+    with tempfile.TemporaryDirectory(prefix="tupoproxy-caddy-restore-") as temp_dir:
+        local_backup = Path(temp_dir) / "caddy"
+        copied_out = run(
+            ["docker", "cp", f"{container_id}:{backup}", str(local_backup)],
+            check=False,
+        )
+        if copied_out.returncode != 0:
+            run(["docker", "start", container_id], check=False)
+            raise IntegrationError("the original Docker Caddy binary backup is unavailable")
+        copied_in = run(
+            ["docker", "cp", str(local_backup), f"{container_id}:{executable}"],
+            check=False,
+        )
+        if copied_in.returncode != 0:
+            run(["docker", "start", container_id], check=False)
+            raise IntegrationError("cannot restore the original Docker Caddy binary")
+    started = run(["docker", "start", container_id], check=False)
+    if started.returncode != 0:
+        raise IntegrationError("Docker Caddy did not start with its restored binary")
+    docker_command(container_id, ["rm", "-f", backup])
+
+
+def upgrade_docker_caddy(target: dict[str, Any]) -> dict[str, Any]:
+    container_id = container_id_for(target)
+    executable = validate_path(str(target.get("caddy_executable") or ""))
+    upgraded = run(
+        [
+            "docker",
+            "exec",
+            "--user",
+            "0",
+            container_id,
+            "caddy",
+            "add-package",
+            "--keep-backup",
+            CADDY_L4_PACKAGE,
+        ],
+        check=False,
+        capture=False,
+    )
+    if upgraded.returncode != 0:
+        raise IntegrationError(
+            "Docker Caddy does not include caddy-l4 and its binary could not be upgraded"
+        )
+    upgraded_target = {
+        **target,
+        "kind": "docker-caddy",
+        "caddy_binary_upgraded": True,
+        "caddy_binary_backup": f"{executable}.tmp",
+    }
+    restarted = run(["docker", "restart", container_id], check=False)
+    if restarted.returncode != 0:
+        restore_docker_caddy_binary(upgraded_target)
+        raise IntegrationError("Docker Caddy did not restart after installing caddy-l4")
+    modules = docker_command(container_id, ["caddy", "list-modules"])
+    if modules.returncode != 0 or not re.search(r"(?m)^layer4(?:\.|$)", modules.stdout):
+        restore_docker_caddy_binary(upgraded_target)
+        raise IntegrationError("the upgraded Docker Caddy binary does not expose caddy-l4")
+    upgraded_modules = {
+        line.strip()
+        for line in modules.stdout.splitlines()
+        if re.fullmatch(r"[A-Za-z0-9_.-]+", line.strip())
+    }
+    missing_modules = set(target.get("caddy_modules", [])) - upgraded_modules
+    if missing_modules:
+        restore_docker_caddy_binary(upgraded_target)
+        missing = ", ".join(sorted(missing_modules))
+        raise IntegrationError(f"the upgraded Docker Caddy binary lost existing modules: {missing}")
+    return upgraded_target
+
+
 def reload_target(target: dict[str, Any]) -> None:
     config = str(target["runtime_config"])
     kind = str(target["kind"])
@@ -795,7 +947,11 @@ def apply_existing(
     state_dir: Path,
 ) -> None:
     originals: dict[str, str] = {}
+    binary_upgraded = False
     try:
+        if target["kind"] == "upgradeable-docker-caddy":
+            target = upgrade_docker_caddy(target)
+            binary_upgraded = True
         if target["kind"].endswith("caddy"):
             config = str(target["runtime_config"])
             originals[config] = read_target_file(target, config)
@@ -857,7 +1013,7 @@ def apply_existing(
 
         validate_target(target)
         reload_target(target)
-    except Exception:
+    except Exception as error:
         for config_file, content in originals.items():
             try:
                 write_target_file(target, config_file, content)
@@ -868,6 +1024,14 @@ def apply_existing(
             reload_target(target)
         except Exception:
             pass
+        if binary_upgraded:
+            try:
+                restore_docker_caddy_binary(target)
+            except Exception as restore_error:
+                raise IntegrationError(
+                    f"{error}; restoring the original Docker Caddy binary also failed: "
+                    f"{restore_error}"
+                ) from error
         raise
 
     save_metadata(
@@ -917,6 +1081,15 @@ def managed_caddyfile(domain: str, tls_domain: str, backend: str) -> str:
 }}
 
 {domain} {{
+    encode zstd gzip
+    header Cache-Control "no-store"
+    respond `<html><head><title>{domain}</title></head><body><h1>Welcome</h1></body></html>` 200
+}}
+"""
+
+
+def preserved_managed_caddyfile(domain: str) -> str:
+    return f"""{domain} {{
     encode zstd gzip
     header Cache-Control "no-store"
     respond `<html><head><title>{domain}</title></head><body><h1>Welcome</h1></body></html>` 200
@@ -1139,6 +1312,8 @@ def remove_existing(metadata: dict[str, Any], state_dir: Path) -> None:
             write_target_file(target, config_file, cleaned)
         validate_target(target)
         reload_target(target)
+        if metadata.get("caddy_binary_upgraded"):
+            restore_docker_caddy_binary(target)
     except Exception:
         for config_file, content in originals.items():
             try:
@@ -1159,29 +1334,48 @@ def remove_integration(state_dir: Path) -> None:
     if not metadata:
         return
     if metadata.get("mode") == "managed":
-        container_names = [
-            MANAGED_CADDY_CONTAINER,
-            f"{MANAGED_CADDY_CONTAINER}-rollback",
-        ]
-        for container_name in container_names:
-            inspected = run(["docker", "inspect", container_name], check=False)
-            if inspected.returncode != 0:
-                continue
-            try:
-                labels = json.loads(inspected.stdout)[0].get("Config", {}).get("Labels", {}) or {}
-            except (json.JSONDecodeError, IndexError, TypeError) as error:
-                raise IntegrationError("cannot inspect the managed Caddy container") from error
-            if labels.get(MANAGED_CADDY_LABEL) != "true":
-                raise IntegrationError(
-                    f"refusing to remove {container_name} because its ownership label is missing"
-                )
-            removed = run(
-                ["docker", "rm", "-f", container_name],
-                check=False,
-                capture=False,
+        inspected = run(["docker", "inspect", MANAGED_CADDY_CONTAINER], check=False)
+        if inspected.returncode != 0:
+            raise IntegrationError("the managed Caddy container is not available")
+        try:
+            payload = json.loads(inspected.stdout)[0]
+            labels = payload.get("Config", {}).get("Labels", {}) or {}
+        except (json.JSONDecodeError, IndexError, TypeError) as error:
+            raise IntegrationError("cannot inspect the managed Caddy container") from error
+        if labels.get(MANAGED_CADDY_LABEL) != "true":
+            raise IntegrationError(
+                "refusing to modify tupoproxy-caddy because its ownership label is missing"
             )
-            if removed.returncode != 0:
-                raise IntegrationError(f"cannot remove the managed Caddy container {container_name}")
+        opt_dir = Path(str(metadata.get("opt_dir") or ""))
+        if opt_dir != Path("/opt/caddy"):
+            raise IntegrationError("refusing to modify an unexpected managed Caddy directory")
+        marker = opt_dir / MANAGED_DIRECTORY_MARKER
+        caddyfile = opt_dir / "Caddyfile"
+        if not marker.is_file() or not caddyfile.is_file():
+            raise IntegrationError("managed Caddy ownership files are missing")
+        try:
+            domain = valid_domain(str(metadata.get("domain") or ""))
+        except argparse.ArgumentTypeError as error:
+            raise IntegrationError("managed Caddy metadata contains an invalid domain") from error
+        previous = caddyfile.read_text(encoding="utf-8")
+        caddyfile.write_text(preserved_managed_caddyfile(domain), encoding="utf-8")
+        target = {
+            "kind": "docker-caddy",
+            "container_id": str(payload.get("Id") or ""),
+            "runtime_config": "/etc/caddy/Caddyfile",
+            "target": MANAGED_CADDY_CONTAINER,
+        }
+        try:
+            validate_target(target)
+            reload_target(target)
+        except Exception:
+            caddyfile.write_text(previous, encoding="utf-8")
+            try:
+                validate_target(target)
+                reload_target(target)
+            except Exception:
+                pass
+            raise
         metadata_path(state_dir).unlink(missing_ok=True)
         return
     remove_existing(metadata, state_dir)
@@ -1209,6 +1403,9 @@ def parser() -> argparse.ArgumentParser:
 
     detect = subparsers.add_parser("detect")
     detect.add_argument("--port", type=int, default=443)
+
+    diagnose = subparsers.add_parser("diagnose")
+    diagnose.add_argument("--port", type=int, default=443)
 
     managed = subparsers.add_parser("managed-record")
     managed.add_argument("--port", type=int, default=443)
@@ -1238,6 +1435,11 @@ def main() -> int:
         if not target:
             return 1
         print(target_record(target))
+        return 0
+    if args.command == "diagnose":
+        diagnostics = docker_target_diagnostics(args.port)
+        if diagnostics:
+            print(diagnostics)
         return 0
     if args.command == "managed-record":
         if args.port != 443:

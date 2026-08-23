@@ -18,7 +18,7 @@ TLS_DOMAIN_PORT="443"
 EMAIL=""
 PROFILE="chrome"
 PROXY_USER="user"
-PUBLIC_PORT=""
+readonly PUBLIC_PORT="443"
 SECRET=""
 AD_TAG=""
 CERT_FULLCHAIN=""
@@ -44,7 +44,6 @@ CREATED_POLICY_RC_D=0
 APT_UPDATED=0
 SETUP_WIZARD=0
 PROFILE_SET=0
-TLS_DOMAIN_PORT_SET=0
 PROXY_USER_SET=0
 NGINX_WAS_INSTALLED=0
 AD_TAG_CHANGED=0
@@ -67,9 +66,7 @@ Required interactively or as flags:
 Optional:
   --email ADDRESS        ACME e-mail for a same-server decoy certificate
   --profile NAME         chrome|firefox|compat|legacy (default: chrome)
-  --tls-domain-port PORT HTTPS port of the separate decoy (default: 443)
   --user NAME            Credential label (default: user)
-  --port PORT            Public reverse-proxy port (default: 443)
   --secret HEX           Existing 16-byte secret (default: generated)
   --ad-tag HEX           32-hex sponsored-channel tag from @MTProxybot
   --tls-cert-fullchain PATH
@@ -91,7 +88,7 @@ Examples:
     --email admin@example.com
   sudo bash install.sh --domain proxy.example.com --tls-domain www.example.org \
     --email admin@example.com \
-    --port 443 --acme-mode dns --dns-provider cloudflare \
+    --acme-mode dns --dns-provider cloudflare \
     --dns-credentials /root/cloudflare.ini
   curl -fsSL https://github.com/wasteprince/tupoproxy/releases/latest/download/install.sh \
     | sudo bash -s -- --domain proxy.example.com --tls-domain www.example.org \
@@ -138,12 +135,6 @@ while (($#)); do
             TLS_DOMAIN="$2"
             shift 2
             ;;
-        --tls-domain-port)
-            (($# >= 2)) || die "--tls-domain-port requires a value"
-            TLS_DOMAIN_PORT="$2"
-            TLS_DOMAIN_PORT_SET=1
-            shift 2
-            ;;
         --email)
             (($# >= 2)) || die "--email requires a value"
             EMAIL="$2"
@@ -159,11 +150,6 @@ while (($#)); do
             (($# >= 2)) || die "--user requires a value"
             PROXY_USER="$2"
             PROXY_USER_SET=1
-            shift 2
-            ;;
-        --port)
-            (($# >= 2)) || die "--port requires a value"
-            PUBLIC_PORT="$2"
             shift 2
             ;;
         --secret)
@@ -273,20 +259,6 @@ prompt_value() {
     SETUP_WIZARD=1
 }
 
-prompt_public_port() {
-    local value
-    [[ -z "$PUBLIC_PORT" && "$SETUP_WIZARD" == "1" ]] || return 0
-    read -r -p "Public reverse-proxy port [443]: " value </dev/tty
-    PUBLIC_PORT="$value"
-}
-
-prompt_tls_domain_port() {
-    local value
-    [[ "$SETUP_WIZARD" == "1" ]] || return 0
-    read -r -p "FakeTLS decoy HTTPS port [${TLS_DOMAIN_PORT}]: " value </dev/tty
-    [[ -z "$value" ]] || TLS_DOMAIN_PORT="$value"
-}
-
 prompt_setup_options() {
     local value
     [[ "$SETUP_WIZARD" == "1" ]] || return 0
@@ -311,12 +283,9 @@ load_existing_installation() {
 
     [[ -n "$DOMAIN" ]] || DOMAIN="$(installation_value Domain)"
     [[ -n "$TLS_DOMAIN" ]] || TLS_DOMAIN="$(installation_value 'TLS decoy domain')"
-    if ((!TLS_DOMAIN_PORT_SET)); then
-        saved_value="$(installation_value 'TLS decoy port')"
-        [[ -z "$saved_value" ]] || TLS_DOMAIN_PORT="$saved_value"
-    fi
+    saved_value="$(installation_value 'TLS decoy port')"
+    [[ -z "$saved_value" ]] || TLS_DOMAIN_PORT="$saved_value"
     [[ -n "$EMAIL" ]] || EMAIL="$(installation_value 'ACME e-mail')"
-    [[ -n "$PUBLIC_PORT" ]] || PUBLIC_PORT="$(installation_value 'Public port')"
     [[ -n "$SECRET" ]] || SECRET="$(installation_value Secret)"
     [[ -n "$AD_TAG" ]] || AD_TAG="$(installation_value 'Advertising tag')"
     if ((!PROFILE_SET)); then
@@ -436,10 +405,6 @@ validate_inputs() {
         *) die "profile must be chrome, firefox, compat, or legacy" ;;
     esac
     [[ "$PROXY_USER" =~ ^[A-Za-z0-9_.-]{1,64}$ ]] || die "invalid credential user label"
-    if [[ -n "$PUBLIC_PORT" ]]; then
-        [[ "$PUBLIC_PORT" =~ ^[0-9]+$ ]] || die "port must be numeric"
-        ((PUBLIC_PORT >= 1 && PUBLIC_PORT <= 65535)) || die "port must be between 1 and 65535"
-    fi
     if [[ -n "$SECRET" ]]; then
         [[ "$SECRET" =~ ^[A-Fa-f0-9]{32}$ ]] || die "secret must be exactly 32 hex characters"
         SECRET="${SECRET,,}"
@@ -623,10 +588,8 @@ listener_details() {
 }
 
 configure_reverse_proxy_mode() {
-    local details record
+    local details diagnostics record
     systemctl stop tupoproxy-edge.service 2>/dev/null || true
-    PUBLIC_PORT="${PUBLIC_PORT:-443}"
-
     if record="$("$EDGE_HELPER" detect --port "$PUBLIC_PORT")"; then
         IFS=$'\t' read -r EDGE_KIND EDGE_TARGET INTERNAL_LISTEN_IP PROXY_TRUSTED_CIDR EDGE_RUNTIME_PORT \
             <<<"$record"
@@ -639,10 +602,9 @@ configure_reverse_proxy_mode() {
     else
         if port_is_listening "$PUBLIC_PORT"; then
             details="$(listener_details "$PUBLIC_PORT")"
-            die "TCP/${PUBLIC_PORT} is owned by an incompatible service. Install caddy-l4 or nginx with stream_ssl_preread, then retry. Listener: ${details:-unknown}"
+            diagnostics="$("$EDGE_HELPER" diagnose --port "$PUBLIC_PORT" || true)"
+            die "TCP/${PUBLIC_PORT} is owned by an incompatible service. ${diagnostics:-Listener: ${details:-unknown}}"
         fi
-        [[ "$PUBLIC_PORT" == "443" ]] \
-            || die "a managed Caddy fallback can only be created on TCP/443; use 443 or prepare a compatible reverse proxy on TCP/${PUBLIC_PORT}"
         if ! command -v docker >/dev/null 2>&1; then
             note "Installing Docker for the managed Caddy fallback"
             apt_install docker.io
@@ -1455,10 +1417,8 @@ if ((!BINARY_ONLY)); then
     validate_domain
     prompt_value TLS_DOMAIN "Separate FakeTLS decoy domain"
     validate_tls_domain
-    prompt_tls_domain_port
-    validate_tls_domain_port
     validate_domain_routes
-    prompt_public_port
+    validate_tls_domain_port
     prompt_setup_options
 fi
 

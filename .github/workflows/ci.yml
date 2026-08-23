@@ -27,8 +27,10 @@ jobs:
           shellcheck -x install.sh install-source.sh uninstall.sh
           python3 -c 'import ast, pathlib; ast.parse(pathlib.Path("edge-integration.py").read_text())'
           PYTHONDONTWRITEBYTECODE=1 python3 -m unittest discover -s tests -p 'test_edge_integration.py'
-          bash install.sh --help | grep -F -- '--tls-domain-port PORT'
-          bash install.sh --help | grep -F -- '--tls-cert-fullchain PATH'
+          installer_help="$(bash install.sh --help)"
+          grep -F -- '--tls-cert-fullchain PATH' <<<"$installer_help"
+          ! grep -F -- '--tls-domain-port PORT' <<<"$installer_help"
+          ! grep -F -- '--port PORT' <<<"$installer_help"
           bash uninstall.sh --help | grep -F -- '--purge-certificate'
           test_dir="$(mktemp -d)"
           set +e

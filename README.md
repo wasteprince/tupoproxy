@@ -102,15 +102,16 @@ curl -fL https://github.com/wasteprince/tupoproxy/releases/latest/download/insta
 curl -fL https://github.com/wasteprince/tupoproxy/releases/latest/download/install.sh | sudo bash
 ```
 
-Мастер спросит домены, порт decoy, публичный порт, TLS-профиль и имя
-credential. E-mail Let's Encrypt запрашивается только тогда, когда
-same-server decoy действительно нуждается в сертификате.
+Мастер спросит только домены, TLS-профиль и имя credential. Публичный порт
+всегда `443`, а служебный loopback-порт decoy выбирается автоматически.
+E-mail Let's Encrypt запрашивается только тогда, когда same-server decoy
+действительно нуждается в сертификате.
 
 Затем установщик автоматически:
 
 1. Установит системные зависимости.
 2. Скачает статический `amd64`/`arm64` бинарник и проверит SHA-256.
-3. Найдёт reverse proxy, который сейчас владеет выбранным портом.
+3. Найдёт reverse proxy, который сейчас владеет TCP/443.
 4. Запишет конфигурацию tupoproxy и systemd units.
 5. Добавит сырой L4-маршрут FakeTLS, проверит конфиг и перезагрузит edge.
 6. Проверит origin HTTPS и scanner-visible fallback decoy.
@@ -130,6 +131,7 @@ same-server decoy действительно нуждается в сертиф�
 | Docker nginx со `stream_ssl_preread` | Изменяет активный конфиг в постоянном mount, проверяет и reload |
 | Host Caddy с caddy-l4 | Добавляет listener wrapper в используемый Caddyfile, затем validate/reload |
 | Docker Caddy с caddy-l4 | Изменяет Caddyfile в постоянном mount, затем validate/reload |
+| Docker Caddy без caddy-l4 | Сохраняет бинарник, добавляет caddy-l4 штатной командой Caddy и перезапускает тот же контейнер |
 | Порт 443 свободен | Создаёт управляемый Docker Caddy с caddy-l4 в `/opt/caddy` |
 | Порт занят несовместимым процессом | Останавливается с диагностикой и ничего не заменяет |
 
@@ -140,16 +142,18 @@ same-server decoy действительно нуждается в сертиф�
 
 > [!NOTE]
 > Обычная сборка Caddy без caddy-l4 не умеет прочитать SNI и одновременно
-> передать нетронутый FakeTLS поток. Если такой Caddy уже занимает `443`,
-> установщик не заменит пользовательский бинарник автоматически.
+> передать нетронутый FakeTLS поток. Для Docker Caddy установщик использует
+> штатный `caddy add-package`, сохраняет исходный бинарник и восстанавливает
+> его при удалении tupoproxy. После recreation такого контейнера установку
+> нужно повторить, потому что Docker удаляет его writable layer.
 
 ### Docker
 
 Docker-контейнер поддерживается независимо от имени и каталога запуска, если:
 
-- контейнер публикует выбранный TCP-порт или работает с host networking;
-- Caddy содержит модуль caddy-l4 либо nginx собран с
-  `stream_ssl_preread_module`;
+- контейнер публикует TCP/443 или работает с host networking;
+- nginx собран с `stream_ssl_preread_module`; для Caddy недостающий caddy-l4
+  может быть установлен автоматически;
 - основной конфиг и изменяемые include-файлы находятся в bind mount или
   named volume.
 
@@ -200,8 +204,6 @@ curl -fL https://github.com/wasteprince/tupoproxy/releases/latest/download/insta
   | sudo bash -s -- \
       --domain proxy.example.com \
       --tls-domain decoy.example.org \
-      --tls-domain-port 443 \
-      --port 443 \
       --profile chrome \
       --user user
 ```
@@ -213,7 +215,6 @@ curl -fL https://github.com/wasteprince/tupoproxy/releases/latest/download/insta
 sudo env TUPOPROXY_CLOUDFLARE_API_TOKEN='TOKEN' bash install.sh \
   --domain proxy.example.com \
   --tls-domain decoy.example.org \
-  --port 443 \
   --email admin@example.com \
   --acme-mode dns \
   --dns-provider cloudflare
@@ -225,7 +226,6 @@ sudo env TUPOPROXY_CLOUDFLARE_API_TOKEN='TOKEN' bash install.sh \
 sudo bash install.sh \
   --domain proxy.example.com \
   --tls-domain decoy.example.org \
-  --tls-domain-port 3443 \
   --tls-cert-fullchain /etc/letsencrypt/live/decoy.example.org/fullchain.pem \
   --tls-cert-key /etc/letsencrypt/live/decoy.example.org/privkey.pem
 ```
@@ -233,12 +233,12 @@ sudo bash install.sh \
 Origin-сертификатом продолжает управлять существующий nginx/Caddy. В
 автоматически созданном `/opt/caddy` сертификат origin получает сам Caddy.
 
-### Пользовательский публичный порт
+### Порты
 
-`--port` поддерживает любой `1–65535`, если этот порт уже обслуживает
-совместимый nginx/Caddy. Автоматический Caddy fallback создаётся только для
-стандартного `443`, поскольку это сохраняет нормальный HTTPS и автоматическую
-выдачу сертификата.
+Публичный endpoint всегда использует TCP/443, поэтому мастер не предлагает
+выбор порта и Telegram-ссылка всегда содержит `port=443`. Если decoy находится
+на этом же VPS, его непубличный loopback-порт выбирается автоматически из
+`3443`, `4443`, `5443` и `6443`.
 
 ## TLS-профили
 
@@ -263,7 +263,7 @@ tupoproxy использует обычный TCP. Если VPN направля
 Если прокси работает только в одном из двух режимов, сравните:
 
 - разрешение origin-домена и IP в обеих сетях;
-- доступность выбранного TCP-порта;
+- доступность TCP/443;
 - правила split tunneling для Telegram;
 - наличие `AAAA`, если сервер фактически не принимает IPv6;
 - SNI и сертификат scanner-visible decoy.
@@ -294,8 +294,9 @@ curl -fL https://github.com/wasteprince/tupoproxy/releases/latest/download/unins
 
 Удаление восстанавливает прежние nginx listeners или удаляет блок Caddy,
 перезагружает существующий edge, останавливает сервисы и удаляет приватные
-данные tupoproxy. Управляемый контейнер и `/opt/caddy` удаляются только при
-наличии ownership marker. Чужие сайты, общие пакеты и сертификаты сохраняются.
+данные tupoproxy. Сам reverse proxy не удаляется: созданный контейнер Caddy,
+`/opt/caddy`, его сайт, Docker и firewall-правила сохраняются. Чужие сайты,
+общие пакеты и сертификаты также не затрагиваются.
 
 Удалить также сертификат локального decoy, выпущенный установщиком:
 
@@ -338,7 +339,7 @@ openssl s_client -connect SERVER_IP:443 \
 
 | Сообщение | Что означает |
 |---|---|
-| `owned by an incompatible service` | Порт занят Caddy без caddy-l4, nginx без stream preread или другим процессом |
+| `owned by an incompatible service` | TCP/443 занят host Caddy без caddy-l4, несовместимым nginx либо неизвестным контейнером; следующая строка показывает точного владельца |
 | `configuration is not stored in a persistent mount` | Docker-конфиг исчез бы после recreation; подключите bind/volume |
 | `custom stream context` | В nginx уже есть ручная L4-схема, которую нельзя безопасно объединить автоматически |
 | `listener_wrappers already contain layer4` | В Caddy уже есть ручные L4-правила; объедините маршруты вручную |

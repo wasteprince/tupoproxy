@@ -30,16 +30,19 @@ TLS-терминация применяется только к остальны
 - Docker nginx с этим модулем и постоянным config mount;
 - host Caddy, собранный с caddy-l4;
 - Docker Caddy с caddy-l4 и постоянным Caddyfile mount;
+- Docker Caddy без caddy-l4: модуль добавляется с резервной копией бинарника;
 - свободный TCP/443: управляемый Caddy создаётся в `/opt/caddy`.
 
 Активный конфиг изменяется напрямую. Перед reload выполняется `nginx -t` или
 `caddy validate`. При ошибке изменения откатываются. Удаление через
 [`uninstall.sh`](../uninstall.sh) восстанавливает nginx listeners или удаляет
-управляемый блок Caddy.
+управляемый маршрут Caddy, но не удаляет сам reverse proxy, его контейнер,
+`/opt/caddy` или firewall-правила.
 
 Обычный HTTP `reverse_proxy` для FakeTLS не подходит: он завершает TLS до
-tupoproxy. Стандартный Caddy без caddy-l4 также не может выполнить нужное
-SNI-разделение, поэтому занятый им порт не заменяется автоматически.
+tupoproxy. Для стандартного Docker Caddy установщик добавляет caddy-l4 через
+`caddy add-package`, перезапускает тот же контейнер и сохраняет исходный
+бинарник для удаления или отката.
 
 ## Docker
 
@@ -50,6 +53,10 @@ recreation настройка исчезнет.
 
 Для Docker edge tupoproxy слушает адрес bridge gateway, а PROXY v2 доверяется
 только подсети этого bridge. Management API остаётся на loopback.
+
+Публичный порт не запрашивается и всегда равен `443`. После recreation
+автоматически расширенного Caddy-контейнера повторно запустите установщик:
+изменения бинарника внутри writable layer Docker при recreation удаляются.
 
 ## Сертификаты и порты
 
