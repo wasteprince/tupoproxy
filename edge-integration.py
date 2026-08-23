@@ -23,7 +23,7 @@ END_MARKER = "# END TUPOPROXY EDGE"
 NGINX_ORIGINAL_MARKER = "TUPOPROXY_ORIGINAL="
 DEFAULT_INTERNAL_HTTPS_PORT = 24443
 MANAGED_CADDY_CONTAINER = "tupoproxy-caddy"
-MANAGED_CADDY_IMAGE = "ghcr.io/wasteprince/tupoproxy-caddy-l4:v3.8.2"
+MANAGED_CADDY_IMAGE = "ghcr.io/wasteprince/tupoproxy-caddy-l4:v3.8.3"
 MANAGED_CADDY_LABEL = "io.tupoproxy.managed"
 MANAGED_DIRECTORY_MARKER = ".tupoproxy-managed"
 MANAGED_CADDY_L4_VERSION = "0.1.2"
@@ -303,17 +303,17 @@ def docker_target(port: int) -> dict[str, Any] | None:
         container_id = str(container.get("Id", ""))
         name = str(container.get("Name", "")).lstrip("/")
         arguments = docker_process_arguments(container)
-        backend_ip, trusted_cidr = docker_network_route(container)
         labels = container.get("Config", {}).get("Labels", {}) or {}
         if labels.get(MANAGED_CADDY_LABEL) == "true":
             return {
                 "kind": "managed-caddy",
                 "target": name or container_id[:12],
-                "backend_ip": backend_ip,
-                "trusted_cidr": trusted_cidr,
+                "backend_ip": "127.0.0.1",
+                "trusted_cidr": "127.0.0.1/32",
                 "edge_port": edge_port,
             }
 
+        backend_ip, trusted_cidr = docker_network_route(container)
         modules = docker_command(container_id, ["caddy", "list-modules"])
         if modules.returncode == 0:
             adapter = option_value(arguments, "--adapter") or "caddyfile"
@@ -1123,13 +1123,12 @@ def docker_bridge_route() -> tuple[str, str]:
 
 
 def managed_caddy_record() -> str:
-    gateway, subnet = docker_bridge_route()
     return target_record(
         {
             "kind": "managed-caddy",
             "target": "tupoproxy-caddy",
-            "backend_ip": gateway,
-            "trusted_cidr": subnet,
+            "backend_ip": "127.0.0.1",
+            "trusted_cidr": "127.0.0.1/32",
             "edge_port": 443,
         }
     )
@@ -1138,6 +1137,8 @@ def managed_caddy_record() -> str:
 def managed_caddyfile(domain: str, tls_domain: str, backend: str) -> str:
     block = "\n".join(caddy_block(tls_domain, backend, 443, "    ")[1:-1])
     return f"""{{
+    admin off
+    auto_https disable_redirects
 {block}
 }}
 
@@ -1150,7 +1151,12 @@ def managed_caddyfile(domain: str, tls_domain: str, backend: str) -> str:
 
 
 def preserved_managed_caddyfile(domain: str) -> str:
-    return f"""{domain} {{
+    return f"""{{
+    admin off
+    auto_https disable_redirects
+}}
+
+{domain} {{
     encode zstd gzip
     header Cache-Control "no-store"
     respond `<html><head><title>{domain}</title></head><body><h1>Welcome</h1></body></html>` 200
@@ -1169,12 +1175,8 @@ def managed_caddy_run_command(opt_dir: Path) -> list[str]:
         f"{MANAGED_CADDY_LABEL}=true",
         "--restart",
         "unless-stopped",
-        "--add-host",
-        "host.docker.internal:host-gateway",
-        "--publish",
-        "443:443/tcp",
-        "--publish",
-        "443:443/udp",
+        "--network",
+        "host",
         "--volume",
         f"{opt_dir / 'Caddyfile'}:/etc/caddy/Caddyfile:ro",
         "--volume",
@@ -1424,14 +1426,12 @@ def remove_integration(state_dir: Path) -> None:
         }
         try:
             validate_target(target)
-            reload_target(target)
+            restarted = run(["docker", "restart", MANAGED_CADDY_CONTAINER], check=False)
+            if restarted.returncode != 0:
+                raise IntegrationError("managed Caddy did not restart after removing the proxy route")
         except Exception:
             caddyfile.write_text(previous, encoding="utf-8")
-            try:
-                validate_target(target)
-                reload_target(target)
-            except Exception:
-                pass
+            run(["docker", "restart", MANAGED_CADDY_CONTAINER], check=False)
             raise
         metadata_path(state_dir).unlink(missing_ok=True)
         return

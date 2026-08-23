@@ -124,13 +124,15 @@ class ManagedCaddyTests(unittest.TestCase):
         config = EDGE.managed_caddyfile(
             "proxy.example.com",
             "decoy.example.org",
-            "172.17.0.1:18443",
+            "127.0.0.1:18443",
         )
 
         self.assertIn("servers :443", config)
-        self.assertIn("upstream tcp/172.17.0.1:18443", config)
+        self.assertIn("upstream tcp/127.0.0.1:18443", config)
         self.assertIn("proxy_protocol v2", config)
         self.assertIn("proxy.example.com {", config)
+        self.assertIn("admin off", config)
+        self.assertIn("auto_https disable_redirects", config)
         self.assertLess(config.index("layer4 {"), config.index("        tls\n"))
 
     def test_preserved_managed_caddy_keeps_site_without_proxy_route(self) -> None:
@@ -138,8 +140,46 @@ class ManagedCaddyTests(unittest.TestCase):
 
         self.assertIn("proxy.example.com {", config)
         self.assertIn("Welcome", config)
+        self.assertIn("admin off", config)
+        self.assertIn("auto_https disable_redirects", config)
         self.assertNotIn("layer4", config)
         self.assertNotIn("tupoproxy", config)
+
+    def test_managed_caddy_uses_host_network_and_loopback_backend(self) -> None:
+        self.assertEqual(
+            EDGE.managed_caddy_record(),
+            "managed-caddy\ttupoproxy-caddy\t127.0.0.1\t127.0.0.1/32\t443",
+        )
+
+        command = EDGE.managed_caddy_run_command(Path("/opt/caddy"))
+
+        self.assertIn("--network", command)
+        self.assertEqual(command[command.index("--network") + 1], "host")
+        self.assertNotIn("--publish", command)
+        self.assertNotIn("--add-host", command)
+
+    def test_existing_managed_caddy_is_migrated_off_the_bridge(self) -> None:
+        container = {
+            "Id": "a" * 64,
+            "Name": "/tupoproxy-caddy",
+            "Config": {"Labels": {EDGE.MANAGED_CADDY_LABEL: "true"}},
+            "HostConfig": {
+                "NetworkMode": "bridge",
+                "PortBindings": {
+                    "443/tcp": [{"HostIp": "0.0.0.0", "HostPort": "443"}],
+                },
+            },
+            "NetworkSettings": {"Ports": {}},
+        }
+
+        with mock.patch.object(EDGE, "docker_containers", return_value=[container]):
+            target = EDGE.docker_target(443)
+
+        self.assertIsNotNone(target)
+        assert target is not None
+        self.assertEqual(target["kind"], "managed-caddy")
+        self.assertEqual(target["backend_ip"], "127.0.0.1")
+        self.assertEqual(target["trusted_cidr"], "127.0.0.1/32")
 
     def test_managed_caddy_pulls_image_and_validates_with_caddy_binary(self) -> None:
         commands: list[list[str]] = []
@@ -170,7 +210,7 @@ class ManagedCaddyTests(unittest.TestCase):
                 EDGE.provision_managed_caddy(
                     "site.example.com",
                     "proxy.example.com",
-                    "172.17.0.1:18443",
+                    "127.0.0.1:18443",
                     root / "state",
                     opt_dir,
                 )

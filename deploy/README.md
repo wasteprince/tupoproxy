@@ -34,8 +34,14 @@ Read-only Docker mount поддерживается: интегратор опр
 пересоздаются.
 
 Если TCP/443 свободен, управляемый Caddy загружается готовым multi-arch образом
-`ghcr.io/wasteprince/tupoproxy-caddy-l4:v3.8.2`. Сборка Caddy на сервере не
+`ghcr.io/wasteprince/tupoproxy-caddy-l4:v3.8.3`. Сборка Caddy на сервере не
 выполняется.
+
+Контейнер запускается с host network, а внутренний FakeTLS listener доступен
+ему только на `127.0.0.1:18443`. HTTP-редиректы и admin API отключены, поэтому
+управляемый Caddy занимает только публичный TCP/UDP 443.
+После запуска FakeTLS проверяется через loopback listener Caddy, без требования
+NAT hairpin к собственному публичному адресу VPS.
 
 ## Сетевые границы
 

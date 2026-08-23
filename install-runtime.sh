@@ -234,24 +234,29 @@ print_startup_diagnostics() {
 }
 
 verify_fake_tls_route() {
-    local deadline last_output=""
+    local connect_host="$PUBLIC_HOST" deadline last_output=""
+
+    if [[ "$EDGE_MODE" == "managed" ]]; then
+        connect_host="127.0.0.1"
+    fi
 
     note "Verifying the authenticated FakeTLS route through the reverse proxy"
     deadline=$((SECONDS + 30))
     while ((SECONDS < deadline)); do
         if last_output="$("$FAKETLS_PROBE" \
-            --connect "${PUBLIC_HOST}:${PUBLIC_PORT}" \
+            --connect "${connect_host}:${PUBLIC_PORT}" \
             --sni "$TLS_DOMAIN" \
             --secret "$SECRET" \
             --timeout 5 2>&1)"; then
-            printf '%s via %s:%s\n' "$last_output" "$PUBLIC_HOST" "$PUBLIC_PORT"
+            printf '%s via %s:%s (public endpoint %s:%s)\n' \
+                "$last_output" "$connect_host" "$PUBLIC_PORT" "$PUBLIC_HOST" "$PUBLIC_PORT"
             return 0
         fi
         sleep 2
     done
     printf 'Last FakeTLS probe output:\n%s\n' "$last_output" >&2
     fail_public_verification \
-        "authenticated FakeTLS did not pass through TCP/${PUBLIC_PORT} for SNI ${TLS_DOMAIN}"
+        "authenticated FakeTLS did not pass through ${connect_host}:${PUBLIC_PORT} for SNI ${TLS_DOMAIN}"
 }
 
 fail_public_verification() {
